@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Week 3 — Wiskunde</title>
+<link href="https://fonts.googleapis.com/css2?family=Lato:wght@300;400;700;900&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --blauw: #2c4a6e; --blauw-donker: #1e3a56;
+    --grijs-licht: #f2f2f2; --wit: #ffffff; --geel: #fffacd;
+    --oranje: #e07b00; --tekst: #222222; --tekst-licht: #555555;
+    --font: 'Lato', sans-serif;
+  }
+  body { font-family: var(--font); font-size: 11pt; color: var(--tekst); background: #fff; }
+
+  .site-header {
+    background: linear-gradient(135deg, #1e3a56 0%, #2c4a6e 50%, #3a5f8a 100%);
+    color: white; text-align: center; padding: 60px 20px 50px;
+    position: relative; overflow: hidden;
+  }
+  .site-header::before {
+    content: ''; position: absolute; inset: 0;
+    background: repeating-linear-gradient(45deg, transparent, transparent 40px, rgba(255,255,255,0.02) 40px, rgba(255,255,255,0.02) 80px);
+  }
+  .site-header h1 { font-size: 48pt; font-weight: 900; letter-spacing: 2px; position: relative; }
+
+  .route-sectie { background: var(--wit); padding: 28px 40px 24px; border-bottom: 1px solid #ddd; }
+  .route-label { font-size: 10pt; color: var(--tekst-licht); margin-bottom: 14px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; }
+  .route-tegels { display: flex; gap: 14px; flex-wrap: wrap; }
+  .route-tegel { padding: 14px 32px; border-radius: 8px; font-size: 15pt; font-weight: 900; cursor: pointer; border: 3px solid transparent; transition: all 0.2s ease; letter-spacing: 1px; opacity: 0.72; }
+  .route-tegel.G { background: #d4edda; color: #1a6b2f; border-color: #a8d5b5; }
+  .route-tegel.B { background: #cce5ff; color: #0d47a1; border-color: #90c4f9; }
+  .route-tegel.Z { background: #f8d7da; color: #8b1a1a; border-color: #f0a8ae; }
+  .route-tegel:hover { opacity: 1; transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.12); }
+  .route-tegel.actief { opacity: 1; box-shadow: 0 4px 16px rgba(0,0,0,0.18); transform: translateY(-2px); }
+
+  .welkom-bericht { padding: 56px 40px; text-align: center; color: var(--tekst-licht); font-size: 13pt; line-height: 1.8; }
+  .welkom-bericht strong { color: var(--blauw); font-size: 15pt; display: block; margin-bottom: 8px; }
+
+  .inhoudstafel { padding: 16px 40px 20px; background: var(--wit); border-bottom: 2px solid #eee; }
+  .inhoudstafel-titel { font-size: 10pt; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: var(--tekst-licht); margin-bottom: 8px; }
+  .inhoudstafel a { color: var(--blauw); text-decoration: underline; font-size: 11pt; display: block; margin-bottom: 4px; line-height: 1.6; }
+  .inhoudstafel a:hover { color: var(--oranje); }
+
+  .taak-blok { margin: 0; border-top: 4px solid var(--blauw-donker); }
+  .verborgen { display: none !important; }
+
+  .titelbalk { background: var(--blauw); color: white; padding: 16px 40px; font-size: 19pt; font-weight: 700; scroll-margin-top: 20px; }
+
+  .sectie { display: flex; align-items: flex-start; gap: 24px; padding: 28px 40px; }
+  .sectie.grijs { background: var(--grijs-licht); }
+  .sectie.wit { background: var(--wit); }
+  .sectie.geel { background: var(--geel); }
+
+  .sectie-icoon { width: 56px; min-width: 56px; height: 56px; display: flex; align-items: center; justify-content: center; margin-top: 2px; }
+  .sectie-icoon img { width: 56px; height: 56px; object-fit: contain; }
+
+  .sectie-inhoud { flex: 1; }
+  .sectie-titel { font-size: 15pt; font-weight: 700; color: var(--tekst); margin-bottom: 12px; }
+
+  ul.doel-lijst { list-style: disc; padding-left: 22px; line-height: 1.7; }
+  ul.doel-lijst li { margin-bottom: 4px; }
+  ul.sub-lijst { list-style: disc; padding-left: 24px; margin-top: 4px; }
+  ul.sub-lijst li { margin-bottom: 2px; font-size: 10.5pt; }
+
+  /* INSTRUCTIES: gewone tekst nummering met | */
+  .instructie-stappen { display: flex; flex-direction: column; gap: 6px; }
+  .instructie-stap { display: flex; align-items: flex-start; line-height: 1.7; }
+  .stap-nr { min-width: 28px; font-size: 11pt; flex-shrink: 0; padding-top: 1px; }
+  .stap-tekst { flex: 1; }
+  .stap-tekst ul.sub-lijst { margin-top: 6px; margin-bottom: 4px; }
+
+  .sc-subtitel { font-size: 11pt; font-weight: 700; color: var(--oranje); margin: 14px 0 6px; text-decoration: underline; }
+  .sc-subtitel:first-child { margin-top: 0; }
+  .score-tekst { font-size: 9pt; color: var(--tekst-licht); margin-left: 4px; line-height: 1.6; margin-top: 2px; }
+  .leerplandoel { color: var(--tekst-licht); font-size: 10pt; }
+
+  .bron-tegels { display: flex; flex-wrap: wrap; gap: 14px; margin-top: 6px; }
+  .bron-tegel { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; width: 110px; height: 110px; padding: 12px 8px; background: white; border: 1.5px solid #ccc; border-radius: 10px; text-decoration: none; color: var(--tekst); font-size: 10pt; font-weight: 700; text-align: center; transition: all 0.18s ease; box-shadow: 0 1px 4px rgba(0,0,0,0.07); line-height: 1.3; }
+  .bron-tegel:hover { border-color: var(--blauw); color: var(--blauw); box-shadow: 0 3px 10px rgba(44,74,110,0.15); transform: translateY(-2px); }
+  .bron-tegel .bron-icoon { font-size: 28px; }
+
+  .indienen-rijen { display: flex; flex-direction: column; gap: 18px; margin-top: 4px; }
+  .indienen-rij { display: flex; align-items: flex-start; gap: 16px; }
+  .indienen-rij-icoon { font-size: 28px; min-width: 40px; text-align: center; }
+  .indienen-rij-tekst { font-size: 11pt; line-height: 1.6; }
+  .indienen-rij-tekst a { color: var(--blauw); }
+  .indienen-rij-tekst strong { font-weight: 700; }
+
+  @media (max-width: 600px) {
+    .sectie { padding: 20px 18px; gap: 14px; }
+    .titelbalk { padding: 14px 18px; font-size: 15pt; }
+    .route-sectie, .inhoudstafel { padding: 18px; }
+  }
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <h1>week 3</h1>
+</header>
+
+<div class="route-sectie">
+  <div class="route-label">Kies jouw route</div>
+  <div class="route-tegels">
+    <div class="route-tegel G" onclick="kiesRoute('G')">G-route</div>
+    <div class="route-tegel B" onclick="kiesRoute('B')">B-route</div>
+    <div class="route-tegel Z" onclick="kiesRoute('Z')">Z-route</div>
+  </div>
+</div>
+
+<div class="welkom-bericht" id="welkom-bericht">
+  <strong>Welkom op de weekpagina wiskunde!</strong>
+  Klik hierboven op jouw route om de taken en lessen voor deze week te zien.
+</div>
+
+<nav class="inhoudstafel verborgen" id="inhoudstafel">
+  <div class="inhoudstafel-titel">Deze week</div>
+  <a href="#taak-rv" class="inhoudslink" data-routes="G,B,Z">WI RV: Rekenvaardigheden trainen (15')</a>
+  <a href="#taak-breuken" class="inhoudslink" data-routes="G">WI T6.1: Breuken (50')</a>
+  <a href="#taak-stats" class="inhoudslink" data-routes="B,Z">WI T6.2: Statistiek (50')</a>
+</nav>
+
+<!-- TAAK 1: alle routes -->
+<div class="taak-blok verborgen" id="taak-rv" data-routes="G,B,Z">
+  <div class="titelbalk">WI RV: Rekenvaardigheden trainen (15')</div>
+
+  <div class="sectie wit">
+    <div class="sectie-icoon"><img src="https://drive.google.com/uc?export=download&id=1qa5uvwCN8zeC9i3yVGHMXspEQqjaELgt" alt="Voorkennis"></div>
+    <div class="sectie-inhoud">
+      <div class="sectie-titel">Welke voorkennis heb je nodig?</div>
+      <ul class="doel-lijst">
+        <li>Ik ken de rekenregels voor het rekenen met positieve en negatieve getallen:
+          <ul class="sub-lijst">
+            <li>optellen en aftrekken;</li>
+            <li>vermenigvuldigen en delen;</li>
+            <li>de machtsverheffing;</li>
+            <li>de vierkantsworteltrekking;</li>
+            <li>de volgorde van de bewerkingen;</li>
+            <li>rekenen met procenten.</li>
+          </ul>
+        </li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="sectie grijs">
+    <div class="sectie-icoon"><img src="https://drive.google.com/uc?export=download&id=15n5B9uJo0_1Ta12mGVbaI9Xuz_T5zAXF" alt="Succescriteria"></div>
+    <div class="sectie-inhoud">
+      <div class="sectie-titel">Succescriteria</div>
+      <div class="sc-subtitel">Wat leer je met deze taak?</div>
+      <ul class="doel-lijst">
+        <li>Ik los een wiskundig probleem op door gebruik te maken van de heuristiek "een patroon herkennen". <span class="leerplandoel">(06.22)</span></li>
+      </ul>
+      <div class="sc-subtitel">Waarop word je geëvalueerd bij deze taak?</div>
+      <ul class="doel-lijst">
+        <li>
+          Ik los een probleem op door een vooraf vastgelegde heuristiek toe te passen. <span class="leerplandoel">(06.22)</span>
+          <div class="score-tekst">
+            A+: Ik pas de heuristiek zichtbaar toe en vind de juiste oplossing.<br>
+            A: Ik pas de heuristiek zichtbaar toe, maar vind niet de juiste oplossing.<br>
+            B: Ik pas de heuristiek zichtbaar toe, maar het patroon past niet bij het probleem.<br>
+            C: Ik pas de heuristiek niet zichtbaar toe.
+          </div>
+        </li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="sectie wit">
+    <div class="sectie-icoon"><img src="https://drive.google.com/uc?export=download&id=1AVd4jCXAeuphZk5Cr_u8kMOmug40ZNxR" alt="Instructies"></div>
+    <div class="sectie-inhoud">
+      <div class="sectie-titel">Instructies</div>
+      <div class="instructie-stappen">
+        <div class="instructie-stap"><div class="stap-nr">1|</div><div class="stap-tekst">Maak opdracht 1, cursus blz. 276.</div></div>
+        <div class="instructie-stap"><div class="stap-nr">2|</div><div class="stap-tekst">Overloop de theorie bij 6.1 Breuken (theorie blz. 48-49).</div></div>
+        <div class="instructie-stap"><div class="stap-nr">3|</div><div class="stap-tekst">Maak de voorbeeldopdrachten. (cursus blz. 277, opdrachten 2 en 3)</div></div>
+        <div class="instructie-stap"><div class="stap-nr">4|</div><div class="stap-tekst">Test hoe ver je staat. (cursus blz. 278)</div></div>
+        <div class="instructie-stap"><div class="stap-nr">5|</div><div class="stap-tekst">Verbeter en kies welke opdrachtenreeks je maakt. Duid aan in het overzicht van de opdrachten! (cursus blz. 275)</div></div>
+        <div class="instructie-stap"><div class="stap-nr">6|</div><div class="stap-tekst">Start met de opdrachten van jouw reeks. (cursus blz. 279-282)</div></div>
+        <div class="instructie-stap">
+          <div class="stap-nr">7|</div>
+          <div class="stap-tekst">
+            Verbeter de opdrachten met de correctiesleutel (zie bronnen).
+            <ul class="sub-lijst">
+              <li>Verbeter in kleur!</li>
+              <li>Fout gemaakt? Onderzoek je fout: Waarom is het niet juist? Wat kun je de volgende keer doen om die fout niet meer te maken?</li>
+            </ul>
+          </div>
+        </div>
+        <div class="instructie-stap">
+          <div class="stap-nr">8|</div>
+          <div class="stap-tekst">
+            Neem het overzicht van de opdrachten, op blz. 275 in de cursus. Markeer bij <u>6.1 Breuken</u>, bij het symbool van de reeks die jij gemaakt hebt, de opdrachten met de juiste kleur.
+            <ul class="sub-lijst">
+              <li>Groen als je geen enkel probleem had met de opdracht. Dit betekent dat je geen enkele fout had en dat je de opdracht ook echt begrijpt.</li>
+              <li>Geel als je nog wat hulp nodig had bij de opdracht. Dit betekent dat je af en toe wel een fout maakte, maar dat je wel je fouten en de juiste oplossing begrijpt.</li>
+              <li>Roos als je de opdracht niet begrijpt of als je nog vragen hebt bij de opdracht.</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="sectie grijs">
+    <div class="sectie-icoon"><img src="https://drive.google.com/uc?export=download&id=1xoZkRvo0acjwhoZbV460uRL2fKqVmJoM" alt="Bronnen"></div>
+    <div class="sectie-inhoud">
+      <div class="sectie-titel">Te gebruiken bronnen</div>
+      <div class="bron-tegels">
+        <a href="#" class="bron-tegel"><span class="bron-icoon">📄</span>Cursus H3</a>
+        <a href="#" class="bron-tegel"><span class="bron-icoon">📖</span>Theorie H3</a>
+        <a href="#" class="bron-tegel"><span class="bron-icoon">🌐</span>Vaksite</a>
+        <a href="#" class="bron-tegel"><span class="bron-icoon">📝</span>Oefenbestand</a>
+      </div>
+    </div>
+  </div>
+
+  <div class="sectie geel">
+    <div class="sectie-icoon"><img src="https://drive.google.com/uc?export=download&id=11CZpO9RyTGGgQOI4NPodTdExWiEFrOag" alt="Indienen"></div>
+    <div class="sectie-inhoud">
+      <div class="sectie-titel">Indienen</div>
+      <div class="indienen-rijen">
+        <div class="indienen-rij">
+          <div class="indienen-rij-icoon">📁</div>
+          <div class="indienen-rij-tekst">Bewaar alles in je map.</div>
+        </div>
+        <div class="indienen-rij">
+          <div class="indienen-rij-icoon"><img src="https://drive.google.com/uc?export=download&id=1JVQV3Uu1u2nB2jNjW8N7-iCkZsOxlg1q" alt="Google Classroom" style="width:32px;height:32px;object-fit:contain;"></div>
+          <div class="indienen-rij-tekst"><a href="#">Bookwidget</a>: indienen in Google Classroom, ten laatste <strong>zondag 25/01</strong>, voor <strong>21u00</strong>.</div>
+        </div>
+        <div class="indienen-rij">
+          <div class="indienen-rij-icoon">📥</div>
+          <div class="indienen-rij-tekst">In het vakje van wiskunde, ten laatste <strong>maandag 02/02</strong>, voor <strong>8.50 uur</strong>.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- TAAK 2: alleen G -->
+<div class="taak-blok verborgen" id="taak-breuken" data-routes="G">
+  <div class="titelbalk">WI T6.1: Breuken (50')</div>
+  <div class="sectie wit">
+    <div class="sectie-icoon"><img src="https://drive.google.com/uc?export=download&id=1qa5uvwCN8zeC9i3yVGHMXspEQqjaELgt" alt="Voorkennis"></div>
+    <div class="sectie-inhoud">
+      <div class="sectie-titel">Welke voorkennis heb je nodig?</div>
+      <ul class="doel-lijst">
+        <li>Ik kan optellen en aftrekken met breuken.</li>
+        <li>Ik kan breuken vereenvoudigen.</li>
+      </ul>
+    </div>
+  </div>
+  <div class="sectie grijs">
+    <div class="sectie-icoon"><img src="https://drive.google.com/uc?export=download&id=15n5B9uJo0_1Ta12mGVbaI9Xuz_T5zAXF" alt="Succescriteria"></div>
+    <div class="sectie-inhoud">
+      <div class="sectie-titel">Succescriteria</div>
+      <div class="sc-subtitel">Wat leer je met deze taak?</div>
+      <ul class="doel-lijst">
+        <li>Ik kan vermenigvuldigen en delen met breuken. <span class="leerplandoel">(04.12)</span></li>
+      </ul>
+    </div>
+  </div>
+  <div class="sectie wit">
+    <div class="sectie-icoon"><img src="https://drive.google.com/uc?export=download&id=1AVd4jCXAeuphZk5Cr_u8kMOmug40ZNxR" alt="Instructies"></div>
+    <div class="sectie-inhoud">
+      <div class="sectie-titel">Instructies</div>
+      <div class="instructie-stappen">
+        <div class="instructie-stap"><div class="stap-nr">1|</div><div class="stap-tekst">Lees de theorie op blz. 48-49.</div></div>
+        <div class="instructie-stap"><div class="stap-nr">2|</div><div class="stap-tekst">Maak de oefeningen op blz. 50-52.</div></div>
+        <div class="instructie-stap"><div class="stap-nr">3|</div><div class="stap-tekst">Verbeter met de correctiesleutel (zie bronnen).</div></div>
+      </div>
+    </div>
+  </div>
+  <div class="sectie grijs">
+    <div class="sectie-icoon"><img src="https://drive.google.com/uc?export=download&id=1xoZkRvo0acjwhoZbV460uRL2fKqVmJoM" alt="Bronnen"></div>
+    <div class="sectie-inhoud">
+      <div class="sectie-titel">Te gebruiken bronnen</div>
+      <div class="bron-tegels">
+        <a href="#" class="bron-tegel"><span class="bron-icoon">📄</span>Cursus H6</a>
+        <a href="#" class="bron-tegel"><span class="bron-icoon">✅</span>Correctiesleutel</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- TAAK 3: B en Z -->
+<div class="taak-blok verborgen" id="taak-stats" data-routes="B,Z">
+  <div class="titelbalk">WI T6.2: Statistiek (50')</div>
+  <div class="sectie wit">
+    <div class="sectie-icoon"><img src="https://drive.google.com/uc?export=download&id=1qa5uvwCN8zeC9i3yVGHMXspEQqjaELgt" alt="Voorkennis"></div>
+    <div class="sectie-inhoud">
+      <div class="sectie-titel">Welke voorkennis heb je nodig?</div>
+      <ul class="doel-lijst">
+        <li>Ik kan gemiddelden berekenen.</li>
+        <li>Ik ken het begrip mediaan.</li>
+      </ul>
+    </div>
+  </div>
+  <div class="sectie grijs">
+    <div class="sectie-icoon"><img src="https://drive.google.com/uc?export=download&id=15n5B9uJo0_1Ta12mGVbaI9Xuz_T5zAXF" alt="Succescriteria"></div>
+    <div class="sectie-inhoud">
+      <div class="sectie-titel">Succescriteria</div>
+      <div class="sc-subtitel">Wat leer je met deze taak?</div>
+      <ul class="doel-lijst">
+        <li>Ik kan statistische gegevens interpreteren en verwerken. <span class="leerplandoel">(05.08)</span></li>
+      </ul>
+    </div>
+  </div>
+  <div class="sectie wit">
+    <div class="sectie-icoon"><img src="https://drive.google.com/uc?export=download&id=1AVd4jCXAeuphZk5Cr_u8kMOmug40ZNxR" alt="Instructies"></div>
+    <div class="sectie-inhoud">
+      <div class="sectie-titel">Instructies</div>
+      <div class="instructie-stappen">
+        <div class="instructie-stap"><div class="stap-nr">1|</div><div class="stap-tekst">Bestudeer de theorie op blz. 60-63.</div></div>
+        <div class="instructie-stap"><div class="stap-nr">2|</div><div class="stap-tekst">Maak de oefeningen op blz. 64-67.</div></div>
+      </div>
+    </div>
+  </div>
+  <div class="sectie grijs">
+    <div class="sectie-icoon"><img src="https://drive.google.com/uc?export=download&id=1xoZkRvo0acjwhoZbV460uRL2fKqVmJoM" alt="Bronnen"></div>
+    <div class="sectie-inhoud">
+      <div class="sectie-titel">Te gebruiken bronnen</div>
+      <div class="bron-tegels">
+        <a href="#" class="bron-tegel"><span class="bron-icoon">📄</span>Cursus H6</a>
+        <a href="#" class="bron-tegel"><span class="bron-icoon">🌐</span>Vaksite statistiek</a>
+      </div>
+    </div>
+  </div>
+  <div class="sectie geel">
+    <div class="sectie-icoon"><img src="https://drive.google.com/uc?export=download&id=11CZpO9RyTGGgQOI4NPodTdExWiEFrOag" alt="Indienen"></div>
+    <div class="sectie-inhoud">
+      <div class="sectie-titel">Indienen</div>
+      <div class="indienen-rijen">
+        <div class="indienen-rij">
+          <div class="indienen-rij-icoon"><img src="https://drive.google.com/uc?export=download&id=1JVQV3Uu1u2nB2jNjW8N7-iCkZsOxlg1q" alt="Google Classroom" style="width:32px;height:32px;object-fit:contain;"></div>
+          <div class="indienen-rij-tekst"><a href="#">Taak statistiek</a>: indienen in Google Classroom, ten laatste <strong>zondag 25/01</strong>, voor <strong>21u00</strong>.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  function kiesRoute(route) {
+    document.querySelectorAll('.route-tegel').forEach(t => t.classList.remove('actief'));
+    document.querySelector('.route-tegel.' + route).classList.add('actief');
+    document.getElementById('welkom-bericht').classList.add('verborgen');
+    document.getElementById('inhoudstafel').classList.remove('verborgen');
+    document.querySelectorAll('.taak-blok').forEach(blok => {
+      blok.classList.toggle('verborgen', !blok.dataset.routes.split(',').includes(route));
+    });
+    document.querySelectorAll('.inhoudslink').forEach(link => {
+      link.style.display = link.dataset.routes.split(',').includes(route) ? 'block' : 'none';
+    });
+  }
+</script>
+</body>
+</html>
