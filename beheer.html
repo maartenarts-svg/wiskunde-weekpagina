@@ -246,7 +246,7 @@
       </div>
       <div class="menu-scheiding"></div>
       <div class="menu-sectie-titel">Binnenkort</div>
-      <div class="menu-item" style="opacity:0.4;cursor:default;">
+      <div class="menu-item" onclick="toonSectie('doelen')" id="menu-doelen" data-sectie="doelen">
         <span class="menu-icoon">🎯</span> Doelen
       </div>
       <div class="menu-item" style="opacity:0.4;cursor:default;">
@@ -446,6 +446,134 @@
         </div>
       </div>
 
+
+      <!-- ===== DOELEN ===== -->
+      <div class="sectie" id="sectie-doelen">
+        <div class="pagina-titel">Doelen</div>
+        <div class="pagina-ondertitel">Beheer voorkennis en succescriteria.</div>
+
+        <div id="melding-doelen" class="melding"></div>
+
+        <!-- Formulier nieuw doel -->
+        <div class="kaart">
+          <div class="kaart-titel">
+            <span id="formulier-doel-titel">Nieuw doel toevoegen</span>
+            <div style="display:flex;gap:8px;align-items:center;">
+              <label class="knop knop-secundair knop-klein" style="cursor:pointer;margin:0;">
+                📂 Importeren via CSV
+                <input type="file" id="doelen-csv-import" accept=".csv" style="display:none">
+              </label>
+              <button class="knop knop-secundair knop-klein" onclick="annuleerDoel()" id="annuleer-doel" style="display:none">Annuleren</button>
+            </div>
+          </div>
+
+          <div id="doelen-import-voortgang" style="display:none;margin-bottom:14px;">
+            <div style="background:var(--grijs);border-radius:8px;height:8px;overflow:hidden;">
+              <div id="doelen-import-balk" style="background:var(--blauw);height:100%;width:0%;transition:width 0.3s;"></div>
+            </div>
+            <div id="doelen-import-tekst" style="font-size:9.5pt;color:var(--tekst-licht);margin-top:6px;"></div>
+          </div>
+
+          <div class="formulier-rij">
+            <div class="formulier-groep vol">
+              <label>Tekst</label>
+              <textarea id="doel-tekst" placeholder="Ik kan breuken optellen en aftrekken. (06.01)"></textarea>
+            </div>
+          </div>
+
+          <div class="formulier-rij">
+            <div class="formulier-groep">
+              <label>Type</label>
+              <select id="doel-type">
+                <option value="succescriterium">Succescriterium</option>
+                <option value="voorkennis">Voorkennis</option>
+              </select>
+            </div>
+            <div class="formulier-groep">
+              <label>Leerplandoel-code</label>
+              <input type="text" id="doel-leerplan" placeholder="bv. 6.1">
+            </div>
+            <div class="formulier-groep">
+              <label>Evalueerbaar</label>
+              <select id="doel-evalueerbaar" onchange="toggleScores()">
+                <option value="nee">Nee</option>
+                <option value="ja">Ja</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Referenties -->
+          <div style="margin-top: 8px; margin-bottom: 14px;">
+            <label>Referenties (hoofdstuk.paragraaf)</label>
+            <div class="subdoel-blok" id="referentie-container">
+              <div id="geen-referenties" style="padding:12px;font-size:9.5pt;color:var(--tekst-licht);">Nog geen referenties toegevoegd.</div>
+            </div>
+            <button class="knop knop-secundair knop-klein" style="margin-top:8px;" onclick="voegReferentieToe()">+ Referentie toevoegen</button>
+          </div>
+
+          <!-- Scores (enkel zichtbaar als evalueerbaar = ja) -->
+          <div id="scores-blok" style="display:none;">
+            <div class="formulier-rij">
+              <div class="formulier-groep vol">
+                <label>Scores <span style="font-weight:400;text-transform:none;">(gebruik ### voor een nieuwe regel)</span></label>
+                <textarea id="doel-scores" placeholder="A+: Omschrijving###A: Omschrijving###B: Omschrijving###C: Omschrijving"></textarea>
+              </div>
+            </div>
+          </div>
+
+          <div class="formulier-rij">
+            <div class="formulier-groep vol">
+              <label>Notities</label>
+              <input type="text" id="doel-notities" placeholder="Optionele notitie...">
+            </div>
+          </div>
+
+          <div style="margin-top: 20px;">
+            <button class="knop knop-primair" onclick="slaDoelOp()">💾 Opslaan</button>
+          </div>
+        </div>
+
+        <!-- Filters + overzicht -->
+        <div class="kaart">
+          <div class="kaart-titel">
+            <span>Overzicht doelen</span>
+            <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+              <select id="filter-doel-type" onchange="laadDoelen()" style="font-size:9.5pt;padding:5px 10px;">
+                <option value="">Alle types</option>
+                <option value="succescriterium">Succescriteria</option>
+                <option value="voorkennis">Voorkennis</option>
+              </select>
+              <select id="filter-doel-leerplan" onchange="laadDoelen()" style="font-size:9.5pt;padding:5px 10px;">
+                <option value="">Alle leerplandoelen</option>
+              </select>
+              <select id="filter-doel-referentie" onchange="laadDoelen()" style="font-size:9.5pt;padding:5px 10px;">
+                <option value="">Alle referenties</option>
+              </select>
+            </div>
+          </div>
+          <div id="doelen-lader" class="lader">Laden...</div>
+          <div class="tabel-wrapper" id="doelen-tabel" style="display:none;">
+            <table>
+              <thead>
+                <tr>
+                  <th>Tekst</th>
+                  <th>Type</th>
+                  <th>Leerplan</th>
+                  <th>Referenties</th>
+                  <th>Eval.</th>
+                  <th>Acties</th>
+                </tr>
+              </thead>
+              <tbody id="doelen-tbody"></tbody>
+            </table>
+          </div>
+          <div class="leeg-staat" id="doelen-leeg" style="display:none;">
+            <div class="leeg-icoon">🎯</div>
+            <p>Nog geen doelen ingegeven.</p>
+          </div>
+        </div>
+      </div>
+
     </main>
   </div>
 </div>
@@ -535,6 +663,7 @@
       console.log('Jouw UID (kopieer dit voor Firestore regels):', gebruiker.uid);
       laadLeerplandoelen();
       laadHoofdstukken();
+      laadDoelen();
     } else {
       document.getElementById('inlogscherm').style.display = 'flex';
       document.getElementById('app').style.display = 'none';
@@ -1050,6 +1179,297 @@
       toonMelding('hoofdstukken', 'Fout bij verwijderen: ' + e.message, 'fout');
     }
   };
+
+
+  // ===== DOELEN =====
+
+  let bewerkDoelId = null;
+  let referentieTeller = 0;
+  const cacheDoelen = { alle: null };
+
+  // Scores tonen/verbergen
+  window.toggleScores = () => {
+    const evalueerbaar = document.getElementById('doel-evalueerbaar').value;
+    document.getElementById('scores-blok').style.display = evalueerbaar === 'ja' ? 'block' : 'none';
+  };
+
+  // Referenties
+  window.voegReferentieToe = (waarde = '') => {
+    const container = document.getElementById('referentie-container');
+    document.getElementById('geen-referenties').style.display = 'none';
+    referentieTeller++;
+    const id = 'ref-' + referentieTeller;
+    const div = document.createElement('div');
+    div.className = 'subdoel-item';
+    div.id = id;
+    div.innerHTML = `
+      <input type="text" placeholder="bv. 7.1" value="${waarde}"
+        style="width:120px;" class="referentie-waarde">
+      <button class="subdoel-verwijder" onclick="verwijderReferentie('${id}')">✕</button>
+    `;
+    container.appendChild(div);
+  };
+
+  window.verwijderReferentie = (id) => {
+    document.getElementById(id).remove();
+    if (document.querySelectorAll('.referentie-waarde').length === 0) {
+      document.getElementById('geen-referenties').style.display = 'block';
+    }
+  };
+
+  function haalReferenties() {
+    return Array.from(document.querySelectorAll('.referentie-waarde'))
+      .map(i => i.value.trim()).filter(v => v);
+  }
+
+  function resetDoelFormulier() {
+    document.getElementById('doel-tekst').value = '';
+    document.getElementById('doel-type').value = 'succescriterium';
+    document.getElementById('doel-leerplan').value = '';
+    document.getElementById('doel-evalueerbaar').value = 'nee';
+    document.getElementById('doel-scores').value = '';
+    document.getElementById('doel-notities').value = '';
+    document.getElementById('scores-blok').style.display = 'none';
+    document.getElementById('referentie-container').querySelectorAll('.subdoel-item').forEach(e => e.remove());
+    document.getElementById('geen-referenties').style.display = 'block';
+    document.getElementById('formulier-doel-titel').textContent = 'Nieuw doel toevoegen';
+    document.getElementById('annuleer-doel').style.display = 'none';
+    bewerkDoelId = null;
+  }
+
+  window.annuleerDoel = resetDoelFormulier;
+
+  // Opslaan
+  window.slaDoelOp = async () => {
+    const tekst = document.getElementById('doel-tekst').value.trim();
+    const evalueerbaar = document.getElementById('doel-evalueerbaar').value;
+    const scores = document.getElementById('doel-scores').value.trim();
+    if (!tekst) { toonMelding('doelen', 'Vul minstens de tekst in.', 'fout'); return; }
+    if (evalueerbaar === 'ja' && !scores) {
+      toonMelding('doelen', 'Voeg scores toe als het doel evalueerbaar is.', 'fout'); return;
+    }
+    const data = {
+      tekst,
+      type: document.getElementById('doel-type').value,
+      leerplandoel_code: document.getElementById('doel-leerplan').value.trim(),
+      referenties: haalReferenties(),
+      evalueerbaar,
+      scores: scores || '',
+      notities: document.getElementById('doel-notities').value.trim(),
+      aangepastOp: new Date().toISOString(),
+    };
+    try {
+      const docRef = bewerkDoelId ? doc(db, 'doelen', bewerkDoelId) : doc(collection(db, 'doelen'));
+      await setDoc(docRef, data);
+      cacheDoelen.alle = null;
+      toonMelding('doelen', 'Doel succesvol opgeslagen.', 'succes');
+      resetDoelFormulier();
+      laadDoelen();
+    } catch (e) {
+      toonMelding('doelen', 'Fout bij opslaan: ' + e.message, 'fout');
+    }
+  };
+
+  // Laden + filteropties vullen
+  window.laadDoelen = async () => {
+    document.getElementById('doelen-lader').style.display = 'block';
+    document.getElementById('doelen-tabel').style.display = 'none';
+    document.getElementById('doelen-leeg').style.display = 'none';
+
+    try {
+      if (!cacheDoelen.alle) {
+        const snap = await getDocs(collection(db, 'doelen'));
+        cacheDoelen.alle = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      }
+      let doelen = cacheDoelen.alle;
+
+      // Filteropties bijwerken
+      const leerplanSet = [...new Set(doelen.map(d => d.leerplandoel_code).filter(Boolean))].sort((a,b) => a.localeCompare(b, 'nl', {numeric:true}));
+      const refSet = [...new Set(doelen.flatMap(d => d.referenties || []))].sort((a,b) => a.localeCompare(b, 'nl', {numeric:true}));
+
+      const leerplanFilter = document.getElementById('filter-doel-leerplan');
+      const huidigLeerplan = leerplanFilter.value;
+      leerplanFilter.innerHTML = '<option value="">Alle leerplandoelen</option>' +
+        leerplanSet.map(c => `<option value="${c}" ${c === huidigLeerplan ? 'selected' : ''}>${c}</option>`).join('');
+
+      const refFilter = document.getElementById('filter-doel-referentie');
+      const huidigRef = refFilter.value;
+      refFilter.innerHTML = '<option value="">Alle referenties</option>' +
+        refSet.map(r => `<option value="${r}" ${r === huidigRef ? 'selected' : ''}>${r}</option>`).join('');
+
+      // Filteren
+      const filterType = document.getElementById('filter-doel-type').value;
+      const filterLeerplan = leerplanFilter.value;
+      const filterRef = refFilter.value;
+      if (filterType) doelen = doelen.filter(d => d.type === filterType);
+      if (filterLeerplan) doelen = doelen.filter(d => d.leerplandoel_code === filterLeerplan);
+      if (filterRef) doelen = doelen.filter(d => (d.referenties || []).includes(filterRef));
+
+      doelen.sort((a, b) => a.tekst.localeCompare(b.tekst, 'nl'));
+
+      document.getElementById('doelen-lader').style.display = 'none';
+      if (doelen.length === 0) {
+        document.getElementById('doelen-leeg').style.display = 'block';
+        return;
+      }
+      const tbody = document.getElementById('doelen-tbody');
+      tbody.innerHTML = doelen.map(d => `
+        <tr>
+          <td style="max-width:300px;">${d.tekst}</td>
+          <td><span class="badge ${d.type === 'succescriterium' ? 'badge-basis' : 'badge-bg'}">${d.type === 'succescriterium' ? 'SC' : 'VK'}</span></td>
+          <td>${d.leerplandoel_code || '—'}</td>
+          <td style="font-size:9.5pt;">${(d.referenties || []).join(', ') || '—'}</td>
+          <td>${d.evalueerbaar === 'ja' ? '✓' : '—'}</td>
+          <td>
+            <button class="knop knop-secundair knop-klein" onclick="bewerkDoel('${d.id}')">✏️</button>
+            <button class="knop knop-gevaar knop-klein" onclick="verwijderDoel('${d.id}')">🗑️</button>
+          </td>
+        </tr>
+      `).join('');
+      document.getElementById('doelen-tabel').style.display = 'block';
+    } catch (e) {
+      toonMelding('doelen', 'Fout bij laden: ' + e.message, 'fout');
+      document.getElementById('doelen-lader').style.display = 'none';
+    }
+  };
+
+  // Bewerken
+  window.bewerkDoel = async (id) => {
+    try {
+      const snap = await getDoc(doc(db, 'doelen', id));
+      if (!snap.exists()) return;
+      const d = snap.data();
+      document.getElementById('doel-tekst').value = d.tekst || '';
+      document.getElementById('doel-type').value = d.type || 'succescriterium';
+      document.getElementById('doel-leerplan').value = d.leerplandoel_code || '';
+      document.getElementById('doel-evalueerbaar').value = d.evalueerbaar || 'nee';
+      document.getElementById('doel-scores').value = d.scores || '';
+      document.getElementById('doel-notities').value = d.notities || '';
+      document.getElementById('scores-blok').style.display = d.evalueerbaar === 'ja' ? 'block' : 'none';
+      document.getElementById('referentie-container').querySelectorAll('.subdoel-item').forEach(e => e.remove());
+      document.getElementById('geen-referenties').style.display = (d.referenties?.length) ? 'none' : 'block';
+      (d.referenties || []).forEach(r => voegReferentieToe(r));
+      document.getElementById('formulier-doel-titel').textContent = 'Doel bewerken';
+      document.getElementById('annuleer-doel').style.display = 'inline-flex';
+      bewerkDoelId = id;
+      toonSectie('doelen');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    } catch (e) {
+      toonMelding('doelen', 'Fout bij laden: ' + e.message, 'fout');
+    }
+  };
+
+  // Verwijderen
+  window.verwijderDoel = async (id) => {
+    if (!confirm('Ben je zeker dat je dit doel wil verwijderen?')) return;
+    try {
+      await deleteDoc(doc(db, 'doelen', id));
+      cacheDoelen.alle = null;
+      toonMelding('doelen', 'Doel verwijderd.', 'succes');
+      laadDoelen();
+    } catch (e) {
+      toonMelding('doelen', 'Fout bij verwijderen: ' + e.message, 'fout');
+    }
+  };
+
+  // CSV Import doelen
+  document.addEventListener('DOMContentLoaded', () => {
+    document.getElementById('doelen-csv-import').addEventListener('change', async (event) => {
+      const bestand = event.target.files[0];
+      if (!bestand) return;
+
+      const tekst = await bestand.text();
+
+      function parseCSV(tekst) {
+        const rijen = [];
+        let huidigRij = [];
+        let huidigVeld = '';
+        let inAanhalingstekens = false;
+        let i = 0;
+        while (i < tekst.length) {
+          const teken = tekst[i];
+          if (teken === '"') {
+            if (inAanhalingstekens && tekst[i+1] === '"') { huidigVeld += '"'; i += 2; }
+            else { inAanhalingstekens = !inAanhalingstekens; i++; }
+          } else if (teken === ',' && !inAanhalingstekens) {
+            huidigRij.push(huidigVeld.trim()); huidigVeld = ''; i++;
+          } else if ((teken === '\n' || (teken === '\r' && tekst[i+1] === '\n')) && !inAanhalingstekens) {
+            huidigRij.push(huidigVeld.trim()); huidigVeld = '';
+            if (huidigRij.some(v => v)) rijen.push(huidigRij);
+            huidigRij = []; i += (teken === '\r') ? 2 : 1;
+          } else if (teken === '\r' && !inAanhalingstekens) { i++; }
+          else { huidigVeld += teken; i++; }
+        }
+        if (huidigVeld || huidigRij.length) {
+          huidigRij.push(huidigVeld.trim());
+          if (huidigRij.some(v => v)) rijen.push(huidigRij);
+        }
+        return rijen;
+      }
+
+      const alleRijen = parseCSV(tekst);
+      // Sla header over
+      const dataRijen = alleRijen.slice(1).filter(r => r[0] && r[0].trim());
+
+      // Samenvoegen: doelen met dezelfde tekst+type+leerplan krijgen gecombineerde referenties
+      const doelMap = new Map();
+      for (const rij of dataRijen) {
+        const doelTekst = (rij[0] || '').trim();
+        const type = (rij[1] || 'succescriterium').trim();
+        const leerplan = (rij[2] || '').trim();
+        const referentie = (rij[3] || '').trim();
+        const evalueerbaar = (rij[4] || 'nee').trim() || 'nee';
+        const scores = (rij[5] || '').trim().replace(/###/g, '\n');
+        if (!doelTekst) continue;
+        const sleutel = doelTekst + '|' + type + '|' + leerplan;
+        if (doelMap.has(sleutel)) {
+          const bestaand = doelMap.get(sleutel);
+          if (referentie && !bestaand.referenties.includes(referentie)) {
+            bestaand.referenties.push(referentie);
+          }
+        } else {
+          doelMap.set(sleutel, {
+            tekst: doelTekst, type, leerplandoel_code: leerplan,
+            referenties: referentie ? [referentie] : [],
+            evalueerbaar, scores, notities: '',
+            aangepastOp: new Date().toISOString(),
+          });
+        }
+      }
+
+      const doelen = Array.from(doelMap.values());
+      if (doelen.length === 0) {
+        toonMelding('doelen', 'Geen geldige doelen gevonden.', 'fout'); return;
+      }
+
+      const voortgang = document.getElementById('doelen-import-voortgang');
+      const balk = document.getElementById('doelen-import-balk');
+      const importTekst = document.getElementById('doelen-import-tekst');
+      voortgang.style.display = 'block';
+
+      let opgeslagen = 0, fouten = 0;
+      for (let i = 0; i < doelen.length; i++) {
+        const d = doelen[i];
+        importTekst.textContent = `Bezig... ${i + 1} van ${doelen.length}`;
+        balk.style.width = ((i + 1) / doelen.length * 100) + '%';
+        try {
+          await setDoc(doc(collection(db, 'doelen')), d);
+          opgeslagen++;
+        } catch (e) { fouten++; }
+        if (i % 5 === 4) await new Promise(r => setTimeout(r, 200));
+      }
+
+      cacheDoelen.alle = null;
+      voortgang.style.display = 'none';
+      event.target.value = '';
+      toonMelding('doelen', fouten === 0
+        ? `✓ ${opgeslagen} doelen succesvol geïmporteerd.`
+        : `${opgeslagen} geïmporteerd, ${fouten} mislukt.`,
+        fouten === 0 ? 'succes' : 'fout');
+      laadDoelen();
+    });
+  });
+
 
 </script>
 </body>
