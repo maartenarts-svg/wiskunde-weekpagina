@@ -179,7 +179,28 @@
 
 
 
-  /* ===== DATALIST INVOER ===== */
+
+  /* ===== CUSTOM DROPDOWN ===== */
+  .cd-wrapper { position: relative; width: 100%; }
+  .cd-input { width: 100%; }
+  .cd-lijst {
+    display: none; position: absolute; left: 0; right: 0; top: calc(100% + 2px);
+    background: var(--wit); border: 1.5px solid var(--blauw); border-radius: 8px;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.15); z-index: 500;
+    max-height: 220px; overflow-y: auto;
+  }
+  .cd-lijst.zichtbaar { display: block; }
+  .cd-item {
+    padding: 8px 12px; cursor: pointer; font-size: 10pt; line-height: 1.4;
+    border-bottom: 1px solid var(--grijs-rand);
+  }
+  .cd-item:last-child { border-bottom: none; }
+  .cd-item:hover, .cd-item.actief { background: var(--blauw-licht); }
+  .cd-code { font-weight: 700; color: var(--blauw); margin-right: 8px; }
+  .cd-omschrijving { color: var(--tekst-licht); font-size: 9.5pt; }
+  .cd-geen { padding: 10px 12px; color: var(--tekst-licht); font-size: 9.5pt; font-style: italic; }
+  .cd-waarschuwing { font-size: 8.5pt; color: var(--oranje); margin-top: 3px; display: none; }
+
   .datalist-wrapper { position: relative; width: 100%; }
   .datalist-wrapper input { width: 100%; }
   .datalist-wrapper .waarschuwing {
@@ -499,7 +520,6 @@
             </div>
             <div class="formulier-groep" style="flex:100%;min-width:100%;">
               <label>Leerplandoel-codes</label>
-              <datalist id="datalist-leerplancodes"></datalist>
               <div class="subdoel-blok" id="leerplan-container">
                 <div id="geen-leerplancodes" style="padding:12px;font-size:9.5pt;color:var(--tekst-licht);">Nog geen leerplandoel-codes toegevoegd.</div>
               </div>
@@ -517,7 +537,6 @@
           <!-- Referenties -->
           <div style="margin-top: 8px; margin-bottom: 14px;">
             <label>Referenties (hoofdstuk.paragraaf)</label>
-            <datalist id="datalist-referenties"></datalist>
             <div class="subdoel-blok" id="referentie-container">
               <div id="geen-referenties" style="padding:12px;font-size:9.5pt;color:var(--tekst-licht);">Nog geen referenties toegevoegd.</div>
             </div>
@@ -1197,59 +1216,80 @@
 
 
 
-  // ===== DATALISTS VULLEN =====
+  // ===== CUSTOM DROPDOWN =====
 
-  let alleLeerplancodes = [];
-  let alleReferentieCodes = [];
+  let alleLeerplancodes = []; // [{code, omschrijving}]
+  let alleReferentieCodes = []; // [{code, omschrijving}]
 
   async function vulDatalijsten() {
     try {
-      // Leerplancodes uit Firebase
       if (alleLeerplancodes.length === 0) {
         const snap = await getDocs(collection(db, 'leerplandoelen'));
-        alleLeerplancodes = snap.docs.map(d => d.data().code).filter(Boolean).sort((a,b) => a.localeCompare(b,'nl',{numeric:true}));
+        alleLeerplancodes = snap.docs
+          .map(d => ({ code: d.data().code, omschrijving: d.data().doel || '' }))
+          .filter(d => d.code)
+          .sort((a,b) => a.code.localeCompare(b.code,'nl',{numeric:true}));
       }
-      const dlLeerplan = document.getElementById('datalist-leerplancodes');
-      if (dlLeerplan) dlLeerplan.innerHTML = alleLeerplancodes.map(c => `<option value="${c}">`).join('');
-
-      // Referenties uit hoofdstukken
       if (alleReferentieCodes.length === 0) {
         const snap = await getDocs(collection(db, 'hoofdstukken'));
         const refs = [];
         snap.docs.forEach(d => {
           const h = d.data();
-          refs.push(h.nummer + '.0'); // volledig hoofdstuk
-          (h.paragrafen || []).forEach(p => refs.push(p.nummer));
+          refs.push({ code: h.nummer + '.0', omschrijving: 'Hoofdstuk ' + h.nummer + ': ' + h.titel });
+          (h.paragrafen || []).forEach(p => refs.push({
+            code: p.nummer,
+            omschrijving: '§' + p.nummer + ' ' + p.titel
+          }));
         });
-        alleReferentieCodes = [...new Set(refs)].sort((a,b) => a.localeCompare(b,'nl',{numeric:true}));
+        alleReferentieCodes = refs.sort((a,b) => a.code.localeCompare(b.code,'nl',{numeric:true}));
       }
-      const dlRef = document.getElementById('datalist-referenties');
-      if (dlRef) dlRef.innerHTML = alleReferentieCodes.map(r => `<option value="${r}">`).join('');
-    } catch(e) {
-      console.error('Fout bij vullen datalists:', e);
-    }
+    } catch(e) { console.error('Fout bij laden dropdown data:', e); }
   }
 
-  // Controleer of een referentie bestaat
-  window.controleerReferentie = (input) => {
-    const waarde = input.value.trim();
-    const waarschuwing = input.closest('.datalist-wrapper').querySelector('.referentie-waarschuwing');
-    if (waarde && !alleReferentieCodes.includes(waarde)) {
-      waarschuwing.style.display = 'block';
+  window.cdFilter = (input) => {
+    const wrapper = input.closest('.cd-wrapper');
+    const lijstId = wrapper.querySelector('.cd-lijst').id;
+    const lijst = document.getElementById(lijstId);
+    const type = input.dataset.type;
+    const zoek = input.value.trim().toLowerCase();
+    const data = type === 'leerplan' ? alleLeerplancodes : alleReferentieCodes;
+
+    const gefilterd = zoek
+      ? data.filter(d => d.code.toLowerCase().includes(zoek) || d.omschrijving.toLowerCase().includes(zoek))
+      : data;
+
+    if (gefilterd.length === 0) {
+      lijst.innerHTML = '<div class="cd-geen">Geen resultaten — eigen invoer wordt bewaard.</div>';
     } else {
-      waarschuwing.style.display = 'none';
+      lijst.innerHTML = gefilterd.slice(0, 20).map(d => `
+        <div class="cd-item" onmousedown="cdKies(event, '${lijstId}', '${d.code.replace(/'/g,"\\'")}')">
+          <span class="cd-code">${d.code}</span>
+          <span class="cd-omschrijving">${d.omschrijving.length > 60 ? d.omschrijving.slice(0,60)+'…' : d.omschrijving}</span>
+        </div>
+      `).join('');
     }
+    lijst.classList.add('zichtbaar');
+
+    // Waarschuwing tonen als code niet bestaat
+    const waarschuwing = wrapper.querySelector('.cd-waarschuwing');
+    const bestaatNiet = input.value.trim() && !data.find(d => d.code === input.value.trim());
+    waarschuwing.style.display = bestaatNiet ? 'block' : 'none';
   };
 
-  // Controleer of een leerplancode bestaat
-  window.controleerLeerplancode = (input) => {
-    const waarde = input.value.trim();
-    const waarschuwing = input.closest('.datalist-wrapper').querySelector('.leerplan-waarschuwing');
-    if (waarde && !alleLeerplancodes.includes(waarde)) {
-      waarschuwing.style.display = 'block';
-    } else {
-      waarschuwing.style.display = 'none';
-    }
+  window.cdKies = (event, lijstId, code) => {
+    event.preventDefault();
+    const lijst = document.getElementById(lijstId);
+    const input = lijst.closest('.cd-wrapper').querySelector('.cd-input');
+    input.value = code;
+    lijst.classList.remove('zichtbaar');
+    lijst.closest('.cd-wrapper').querySelector('.cd-waarschuwing').style.display = 'none';
+  };
+
+  window.cdVerberg = (input) => {
+    setTimeout(() => {
+      const lijst = input.closest('.cd-wrapper').querySelector('.cd-lijst');
+      if (lijst) lijst.classList.remove('zichtbaar');
+    }, 200);
   };
 
   // ===== LEERPLANDOEL-CODES (meerdere mogelijk) =====
@@ -1265,10 +1305,13 @@
     div.className = 'subdoel-item';
     div.id = id;
     div.innerHTML = `
-      <div class="datalist-wrapper" style="flex:1;">
-        <input type="text" list="datalist-leerplancodes" placeholder="bv. 6.1" value="${waarde}"
-          class="leerplancode-waarde" oninput="controleerLeerplancode(this)">
-        <div class="waarschuwing leerplan-waarschuwing">⚠ Deze code bestaat nog niet in de databank.</div>
+      <div class="cd-wrapper" style="flex:1;">
+        <input type="text" class="cd-input leerplancode-waarde" placeholder="bv. 6.1" value="${waarde}"
+          autocomplete="off"
+          data-type="leerplan"
+          oninput="cdFilter(this)" onfocus="cdFilter(this)" onblur="cdVerberg(this)">
+        <div class="cd-lijst" id="cd-lijst-lp-${id}"></div>
+        <div class="cd-waarschuwing">⚠ Deze code bestaat nog niet in de databank.</div>
       </div>
       <button class="subdoel-verwijder" onclick="verwijderLeerplancode('${id}')">✕</button>
     `;
@@ -1310,10 +1353,13 @@
     div.className = 'subdoel-item';
     div.id = id;
     div.innerHTML = `
-      <div class="datalist-wrapper" style="flex:1;">
-        <input type="text" list="datalist-referenties" placeholder="bv. 7.1" value="${waarde}"
-          class="referentie-waarde" oninput="controleerReferentie(this)">
-        <div class="waarschuwing referentie-waarschuwing">⚠ Deze referentie bestaat nog niet in de databank.</div>
+      <div class="cd-wrapper" style="flex:1;">
+        <input type="text" class="cd-input referentie-waarde" placeholder="bv. 7.1" value="${waarde}"
+          autocomplete="off"
+          data-type="referentie"
+          oninput="cdFilter(this)" onfocus="cdFilter(this)" onblur="cdVerberg(this)">
+        <div class="cd-lijst" id="cd-lijst-${id}"></div>
+        <div class="cd-waarschuwing">⚠ Deze referentie bestaat nog niet in de databank.</div>
       </div>
       <button class="subdoel-verwijder" onclick="verwijderReferentie('${id}')">✕</button>
     `;
