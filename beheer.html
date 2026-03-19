@@ -278,7 +278,7 @@
       <div class="menu-item" onclick="toonSectie('doelen')" id="menu-doelen" data-sectie="doelen">
         <span class="menu-icoon">🎯</span> Doelen
       </div>
-      <div class="menu-item" style="opacity:0.4;cursor:default;">
+      <div class="menu-item" onclick="toonSectie('bronnen')" id="menu-bronnen" data-sectie="bronnen">
         <span class="menu-icoon">🔗</span> Bronnen
       </div>
       <div class="menu-item" style="opacity:0.4;cursor:default;">
@@ -435,6 +435,25 @@
             </div>
           </div>
 
+          <!-- Bronnen per hoofdstuk -->
+          <div style="margin-top: 8px; margin-bottom: 14px;">
+            <label>Bronnen</label>
+            <div class="formulier-rij" style="margin-top:8px;">
+              <div class="formulier-groep">
+                <label>📄 Cursus (link)</label>
+                <input type="url" id="hst-cursus" placeholder="https://...">
+              </div>
+              <div class="formulier-groep">
+                <label>📖 Theorie (link)</label>
+                <input type="url" id="hst-theorie" placeholder="https://...">
+              </div>
+              <div class="formulier-groep">
+                <label>✅ Correctiesleutel (link)</label>
+                <input type="url" id="hst-correctiesleutel" placeholder="https://...">
+              </div>
+            </div>
+          </div>
+
           <!-- Paragrafen -->
           <div style="margin-top: 8px;">
             <label>Paragrafen</label>
@@ -462,6 +481,7 @@
                   <th>Nr.</th>
                   <th>Titel</th>
                   <th>Paragrafen</th>
+                  <th>Bronnen</th>
                   <th>Acties</th>
                 </tr>
               </thead>
@@ -606,6 +626,101 @@
         </div>
       </div>
 
+
+      <!-- ===== BRONNEN ===== -->
+      <div class="sectie" id="sectie-bronnen">
+        <div class="pagina-titel">Bronnen</div>
+        <div class="pagina-ondertitel">Beheer overige bronnen zoals websites, video's en Google Classroom-taken.</div>
+
+        <div id="melding-bronnen" class="melding"></div>
+
+        <div class="kaart">
+          <div class="kaart-titel">
+            <span id="formulier-bron-titel">Nieuwe bron toevoegen</span>
+            <button class="knop knop-secundair knop-klein" onclick="annuleerBron()" id="annuleer-bron" style="display:none">Annuleren</button>
+          </div>
+
+          <div class="formulier-rij">
+            <div class="formulier-groep">
+              <label>Label</label>
+              <input type="text" id="bron-label" placeholder="bv. Uitlegvideo breuken">
+            </div>
+            <div class="formulier-groep">
+              <label>Type</label>
+              <select id="bron-type">
+                <option value="website">🌐 Website</option>
+                <option value="video">▶️ Video (Drive/YouTube)</option>
+                <option value="classroom">🎓 Google Classroom</option>
+                <option value="bestand">📄 PDF/Bestand</option>
+                <option value="andere">📎 Andere</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="formulier-rij">
+            <div class="formulier-groep vol">
+              <label>Link</label>
+              <input type="url" id="bron-link" placeholder="https://...">
+            </div>
+          </div>
+
+          <div class="formulier-rij">
+            <div class="formulier-groep">
+              <label>Referentie (optioneel)</label>
+              <div class="cd-wrapper">
+                <input type="text" class="cd-input" id="bron-referentie" placeholder="bv. 7.1"
+                  autocomplete="off" data-type="referentie"
+                  oninput="cdFilter(this)" onfocus="cdFilter(this)" onblur="cdVerberg(this)">
+                <div class="cd-lijst" id="cd-lijst-bron-ref"></div>
+                <div class="cd-waarschuwing">⚠ Deze referentie bestaat nog niet in de databank.</div>
+              </div>
+            </div>
+            <div class="formulier-groep">
+              <label>Notities</label>
+              <input type="text" id="bron-notities" placeholder="Optionele notitie...">
+            </div>
+          </div>
+
+          <div style="margin-top: 20px;">
+            <button class="knop knop-primair" onclick="slaBronOp()">💾 Opslaan</button>
+          </div>
+        </div>
+
+        <!-- Overzicht -->
+        <div class="kaart">
+          <div class="kaart-titel">
+            <span>Overzicht bronnen</span>
+            <select id="filter-bron-type" onchange="laadBronnen()" style="font-size:9.5pt;padding:5px 10px;">
+              <option value="">Alle types</option>
+              <option value="website">Website</option>
+              <option value="video">Video</option>
+              <option value="classroom">Google Classroom</option>
+              <option value="bestand">PDF/Bestand</option>
+              <option value="andere">Andere</option>
+            </select>
+          </div>
+          <div id="bronnen-lader" class="lader">Laden...</div>
+          <div class="tabel-wrapper" id="bronnen-tabel" style="display:none;">
+            <table>
+              <thead>
+                <tr>
+                  <th>Label</th>
+                  <th>Type</th>
+                  <th>Link</th>
+                  <th>Referentie</th>
+                  <th>Acties</th>
+                </tr>
+              </thead>
+              <tbody id="bronnen-tbody"></tbody>
+            </table>
+          </div>
+          <div class="leeg-staat" id="bronnen-leeg" style="display:none;">
+            <div class="leeg-icoon">🔗</div>
+            <p>Nog geen bronnen ingegeven.</p>
+          </div>
+        </div>
+      </div>
+
     </main>
   </div>
 </div>
@@ -664,7 +779,7 @@
       document.querySelectorAll('.menu-item').forEach(m => m.classList.remove('actief'));
       document.getElementById('sectie-' + naam).classList.add('actief');
       item.classList.add('actief');
-      if (naam === 'doelen') vulDatalijsten();
+      if (naam === 'doelen' || naam === 'bronnen') vulDatalijsten();
     });
   });
     // Tooltip afbakening bijwerken bij invoer
@@ -697,6 +812,7 @@
       laadLeerplandoelen();
       laadHoofdstukken();
       laadDoelen();
+      laadBronnen();
       vulDatalijsten();
     } else {
       document.getElementById('inlogscherm').style.display = 'flex';
@@ -1097,6 +1213,9 @@
 
   function resetHoofdstukFormulier() {
     document.getElementById('hst-nummer').value = '';
+    document.getElementById('hst-cursus').value = '';
+    document.getElementById('hst-theorie').value = '';
+    document.getElementById('hst-correctiesleutel').value = '';
     document.getElementById('hst-titel').value = '';
     document.getElementById('paragraaf-container').querySelectorAll('.paragraaf-item').forEach(e => e.remove());
     document.getElementById('geen-paragrafen').style.display = 'block';
@@ -1119,6 +1238,11 @@
     const data = {
       nummer,
       titel,
+      bronnen: {
+        cursus: document.getElementById('hst-cursus').value.trim(),
+        theorie: document.getElementById('hst-theorie').value.trim(),
+        correctiesleutel: document.getElementById('hst-correctiesleutel').value.trim(),
+      },
       paragrafen: haalParagrafen(),
       aangepastOp: new Date().toISOString(),
     };
@@ -1165,6 +1289,9 @@
           <td style="font-size:9.5pt;color:var(--tekst-licht);">
             ${(h.paragrafen || []).map(p => `${p.nummer} ${p.titel}`).join('<br>') || '—'}
           </td>
+          <td style="font-size:9.5pt;">
+            ${h.bronnen?.cursus ? '📄 ' : ''}${h.bronnen?.theorie ? '📖 ' : ''}${h.bronnen?.correctiesleutel ? '✅ ' : ''}
+          </td>
           <td>
             <button class="knop knop-secundair knop-klein" onclick="bewerkHoofdstuk('${h.id}')">✏️ Bewerken</button>
             <button class="knop knop-gevaar knop-klein" onclick="verwijderHoofdstuk('${h.id}', ${h.nummer})">🗑️</button>
@@ -1186,6 +1313,9 @@
       if (!snap.exists()) return;
       const h = snap.data();
       document.getElementById('hst-nummer').value = h.nummer;
+      document.getElementById('hst-cursus').value = h.bronnen?.cursus || '';
+      document.getElementById('hst-theorie').value = h.bronnen?.theorie || '';
+      document.getElementById('hst-correctiesleutel').value = h.bronnen?.correctiesleutel || '';
       document.getElementById('hst-titel').value = h.titel;
       document.getElementById('paragraaf-container').querySelectorAll('.paragraaf-item').forEach(e => e.remove());
       document.getElementById('geen-paragrafen').style.display = h.paragrafen?.length ? 'none' : 'block';
@@ -1229,13 +1359,11 @@
           .map(d => ({ code: d.data().code, omschrijving: d.data().doel || '' }))
           .filter(d => d.code)
           .sort((a,b) => {
-            // Sorteer op het numerieke deel, dan op niveau (BG < basis < V)
-            const numA = a.code.replace(/^(BG|V)/, '');
-            const numB = b.code.replace(/^(BG|V)/, '');
-            const numVgl = numA.localeCompare(numB, 'nl', {numeric:true});
-            if (numVgl !== 0) return numVgl;
-            const volgorde = (c) => c.startsWith('BG') ? 0 : c.startsWith('V') ? 2 : 1;
-            return volgorde(a.code) - volgorde(b.code);
+            const volgorde = (c) => c.startsWith('BG') ? 2 : c.startsWith('V') ? 1 : 0;
+            const vA = volgorde(a.code);
+            const vB = volgorde(b.code);
+            if (vA !== vB) return vA - vB;
+            return a.code.localeCompare(b.code, 'nl', {numeric:true});
           });
       }
       if (alleReferentieCodes.length === 0) {
@@ -1636,6 +1764,130 @@
       laadDoelen();
     });
   });
+
+
+
+  // ===== BRONNEN =====
+
+  let bewerkBronId = null;
+  const cacheBronnen = { alle: null };
+
+  const typeIconen = {
+    website: '🌐', video: '▶️', classroom: '🎓', bestand: '📄', andere: '📎'
+  };
+  const typeLabels = {
+    website: 'Website', video: 'Video', classroom: 'Google Classroom',
+    bestand: 'PDF/Bestand', andere: 'Andere'
+  };
+
+  function resetBronFormulier() {
+    document.getElementById('bron-label').value = '';
+    document.getElementById('bron-type').value = 'website';
+    document.getElementById('bron-link').value = '';
+    document.getElementById('bron-referentie').value = '';
+    document.getElementById('bron-notities').value = '';
+    document.getElementById('formulier-bron-titel').textContent = 'Nieuwe bron toevoegen';
+    document.getElementById('annuleer-bron').style.display = 'none';
+    bewerkBronId = null;
+  }
+
+  window.annuleerBron = resetBronFormulier;
+
+  window.slaBronOp = async () => {
+    const label = document.getElementById('bron-label').value.trim();
+    const link = document.getElementById('bron-link').value.trim();
+    if (!label) { toonMelding('bronnen', 'Vul minstens een label in.', 'fout'); return; }
+    const data = {
+      label,
+      type: document.getElementById('bron-type').value,
+      link,
+      referentie: document.getElementById('bron-referentie').value.trim(),
+      notities: document.getElementById('bron-notities').value.trim(),
+      aangepastOp: new Date().toISOString(),
+    };
+    try {
+      const docRef = bewerkBronId ? doc(db, 'bronnen', bewerkBronId) : doc(collection(db, 'bronnen'));
+      await setDoc(docRef, data);
+      cacheBronnen.alle = null;
+      toonMelding('bronnen', 'Bron succesvol opgeslagen.', 'succes');
+      resetBronFormulier();
+      laadBronnen();
+    } catch(e) {
+      toonMelding('bronnen', 'Fout bij opslaan: ' + e.message, 'fout');
+    }
+  };
+
+  window.laadBronnen = async () => {
+    document.getElementById('bronnen-lader').style.display = 'block';
+    document.getElementById('bronnen-tabel').style.display = 'none';
+    document.getElementById('bronnen-leeg').style.display = 'none';
+    try {
+      if (!cacheBronnen.alle) {
+        const snap = await getDocs(collection(db, 'bronnen'));
+        cacheBronnen.alle = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        cacheBronnen.alle.sort((a,b) => a.label.localeCompare(b.label, 'nl'));
+      }
+      let bronnen = cacheBronnen.alle;
+      const filterType = document.getElementById('filter-bron-type').value;
+      if (filterType) bronnen = bronnen.filter(b => b.type === filterType);
+
+      document.getElementById('bronnen-lader').style.display = 'none';
+      if (bronnen.length === 0) {
+        document.getElementById('bronnen-leeg').style.display = 'block'; return;
+      }
+      const tbody = document.getElementById('bronnen-tbody');
+      tbody.innerHTML = bronnen.map(b => `
+        <tr>
+          <td><strong>${b.label}</strong></td>
+          <td>${typeIconen[b.type] || '📎'} ${typeLabels[b.type] || b.type}</td>
+          <td style="font-size:9.5pt;">
+            ${b.link ? `<a href="${b.link}" target="_blank" style="color:var(--blauw);">Openen ↗</a>` : '—'}
+          </td>
+          <td>${b.referentie || '—'}</td>
+          <td>
+            <button class="knop knop-secundair knop-klein" onclick="bewerkBron('${b.id}')">✏️</button>
+            <button class="knop knop-gevaar knop-klein" onclick="verwijderBron('${b.id}')">🗑️</button>
+          </td>
+        </tr>
+      `).join('');
+      document.getElementById('bronnen-tabel').style.display = 'block';
+    } catch(e) {
+      toonMelding('bronnen', 'Fout bij laden: ' + e.message, 'fout');
+      document.getElementById('bronnen-lader').style.display = 'none';
+    }
+  };
+
+  window.bewerkBron = async (id) => {
+    try {
+      const snap = await getDoc(doc(db, 'bronnen', id));
+      if (!snap.exists()) return;
+      const b = snap.data();
+      document.getElementById('bron-label').value = b.label || '';
+      document.getElementById('bron-type').value = b.type || 'website';
+      document.getElementById('bron-link').value = b.link || '';
+      document.getElementById('bron-referentie').value = b.referentie || '';
+      document.getElementById('bron-notities').value = b.notities || '';
+      document.getElementById('formulier-bron-titel').textContent = 'Bron bewerken';
+      document.getElementById('annuleer-bron').style.display = 'inline-flex';
+      bewerkBronId = id;
+      toonSectie('bronnen');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    } catch(e) {
+      toonMelding('bronnen', 'Fout bij laden: ' + e.message, 'fout');
+    }
+  };
+
+  window.verwijderBron = async (id) => {
+    if (!confirm('Ben je zeker dat je deze bron wil verwijderen?')) return;
+    try {
+      await deleteDoc(doc(db, 'bronnen', id));
+      cacheBronnen.alle = null;
+      toonMelding('bronnen', 'Bron verwijderd.', 'succes');
+      laadBronnen();
+    } catch(e) {
+      toonMelding('bronnen', 'Fout bij verwijderen: ' + e.message, 'fout');
+    }
+  };
 
 
 </script>
