@@ -1,0 +1,861 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Wiskunde Lab — Beheer</title>
+<link href="https://fonts.googleapis.com/css2?family=Lato:wght@300;400;700;900&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --blauw: #2c4a6e;
+    --blauw-donker: #1e3a56;
+    --blauw-licht: #e8eef5;
+    --grijs: #f4f5f7;
+    --grijs-rand: #dde1e7;
+    --wit: #ffffff;
+    --oranje: #e07b00;
+    --rood: #c0392b;
+    --groen: #27ae60;
+    --tekst: #1a1a2e;
+    --tekst-licht: #6b7280;
+    --font: 'Lato', sans-serif;
+    --schaduw: 0 2px 8px rgba(0,0,0,0.08);
+    --schaduw-hover: 0 4px 16px rgba(0,0,0,0.14);
+  }
+
+  body { font-family: var(--font); font-size: 11pt; color: var(--tekst); background: var(--grijs); min-height: 100vh; }
+
+  /* ===== INLOGSCHERM ===== */
+  #inlogscherm {
+    display: flex; align-items: center; justify-content: center;
+    min-height: 100vh; background: linear-gradient(135deg, #1e3a56 0%, #2c4a6e 60%, #3a5f8a 100%);
+  }
+  .inlog-kaart {
+    background: var(--wit); border-radius: 16px; padding: 48px 40px;
+    text-align: center; width: 100%; max-width: 400px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+  }
+  .inlog-kaart h1 { font-size: 22pt; font-weight: 900; color: var(--blauw); margin-bottom: 6px; }
+  .inlog-kaart p { color: var(--tekst-licht); margin-bottom: 32px; font-size: 10.5pt; }
+  .google-knop {
+    display: flex; align-items: center; justify-content: center; gap: 12px;
+    width: 100%; padding: 14px 20px; border: 2px solid var(--grijs-rand);
+    border-radius: 10px; background: var(--wit); cursor: pointer;
+    font-family: var(--font); font-size: 11pt; font-weight: 700; color: var(--tekst);
+    transition: all 0.2s ease;
+  }
+  .google-knop:hover { border-color: var(--blauw); box-shadow: var(--schaduw-hover); transform: translateY(-1px); }
+  .google-knop img { width: 22px; height: 22px; }
+
+  /* ===== APP LAYOUT ===== */
+  #app { display: none; }
+
+  .topbalk {
+    background: var(--blauw); color: white; padding: 0 32px;
+    display: flex; align-items: center; justify-content: space-between;
+    height: 60px; position: sticky; top: 0; z-index: 100;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+  }
+  .topbalk-titel { font-size: 14pt; font-weight: 900; letter-spacing: 0.5px; }
+  .topbalk-gebruiker { display: flex; align-items: center; gap: 12px; font-size: 10pt; }
+  .topbalk-gebruiker img { width: 32px; height: 32px; border-radius: 50%; border: 2px solid rgba(255,255,255,0.4); }
+  .uitlog-knop {
+    background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.3);
+    color: white; padding: 6px 14px; border-radius: 6px; cursor: pointer;
+    font-family: var(--font); font-size: 9.5pt; transition: all 0.2s;
+  }
+  .uitlog-knop:hover { background: rgba(255,255,255,0.25); }
+
+  .hoofdlayout { display: flex; min-height: calc(100vh - 60px); }
+
+  /* ===== ZIJMENU ===== */
+  .zijmenu {
+    width: 220px; min-width: 220px; background: var(--wit);
+    border-right: 1px solid var(--grijs-rand); padding: 24px 0;
+  }
+  .menu-sectie-titel {
+    font-size: 8.5pt; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 1.2px; color: var(--tekst-licht); padding: 0 20px 8px;
+  }
+  .menu-item {
+    display: flex; align-items: center; gap: 10px; padding: 10px 20px;
+    cursor: pointer; font-size: 10.5pt; color: var(--tekst); border-left: 3px solid transparent;
+    transition: all 0.15s ease; text-decoration: none;
+  }
+  .menu-item:hover { background: var(--blauw-licht); color: var(--blauw); }
+  .menu-item.actief { background: var(--blauw-licht); color: var(--blauw); border-left-color: var(--blauw); font-weight: 700; }
+  .menu-item .menu-icoon { font-size: 15px; width: 20px; text-align: center; }
+  .menu-scheiding { height: 1px; background: var(--grijs-rand); margin: 12px 20px; }
+
+  /* ===== HOOFDINHOUD ===== */
+  .hoofdinhoud { flex: 1; padding: 32px; overflow-y: auto; }
+
+  .sectie { display: none; }
+  .sectie.actief { display: block; }
+
+  .pagina-titel {
+    font-size: 18pt; font-weight: 900; color: var(--blauw); margin-bottom: 6px;
+  }
+  .pagina-ondertitel { color: var(--tekst-licht); font-size: 10.5pt; margin-bottom: 28px; }
+
+  /* ===== KAARTEN ===== */
+  .kaart {
+    background: var(--wit); border-radius: 12px; padding: 24px;
+    box-shadow: var(--schaduw); margin-bottom: 24px;
+  }
+  .kaart-titel {
+    font-size: 12pt; font-weight: 700; color: var(--blauw);
+    margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid var(--grijs-rand);
+    display: flex; align-items: center; justify-content: space-between;
+  }
+
+  /* ===== FORMULIEREN ===== */
+  .formulier-rij { display: flex; gap: 16px; margin-bottom: 14px; flex-wrap: wrap; }
+  .formulier-groep { display: flex; flex-direction: column; gap: 5px; flex: 1; min-width: 160px; }
+  .formulier-groep.vol { flex: 100%; min-width: 100%; }
+  label { font-size: 9.5pt; font-weight: 700; color: var(--tekst-licht); text-transform: uppercase; letter-spacing: 0.5px; }
+  input, select, textarea {
+    padding: 9px 12px; border: 1.5px solid var(--grijs-rand); border-radius: 8px;
+    font-family: var(--font); font-size: 10.5pt; color: var(--tekst);
+    transition: border-color 0.2s; background: var(--wit);
+  }
+  input:focus, select:focus, textarea:focus {
+    outline: none; border-color: var(--blauw); box-shadow: 0 0 0 3px rgba(44,74,110,0.1);
+  }
+  textarea { resize: vertical; min-height: 80px; }
+  select { cursor: pointer; }
+
+  /* ===== KNOPPEN ===== */
+  .knop {
+    padding: 9px 20px; border-radius: 8px; border: none; cursor: pointer;
+    font-family: var(--font); font-size: 10.5pt; font-weight: 700;
+    transition: all 0.2s ease; display: inline-flex; align-items: center; gap: 8px;
+  }
+  .knop-primair { background: var(--blauw); color: white; }
+  .knop-primair:hover { background: var(--blauw-donker); transform: translateY(-1px); box-shadow: var(--schaduw-hover); }
+  .knop-secundair { background: var(--grijs); color: var(--tekst); border: 1.5px solid var(--grijs-rand); }
+  .knop-secundair:hover { background: var(--grijs-rand); }
+  .knop-gevaar { background: var(--rood); color: white; }
+  .knop-gevaar:hover { background: #a93226; }
+  .knop-klein { padding: 5px 12px; font-size: 9.5pt; }
+
+  /* ===== TABEL ===== */
+  .tabel-wrapper { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 10.5pt; }
+  th { background: var(--grijs); padding: 10px 14px; text-align: left; font-size: 9pt; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: var(--tekst-licht); border-bottom: 2px solid var(--grijs-rand); }
+  td { padding: 10px 14px; border-bottom: 1px solid var(--grijs-rand); vertical-align: top; }
+  tr:hover td { background: var(--blauw-licht); }
+  .badge {
+    display: inline-block; padding: 2px 8px; border-radius: 20px; font-size: 8.5pt; font-weight: 700;
+  }
+  .badge-bg { background: #dbeafe; color: #1e40af; }
+  .badge-basis { background: #dcfce7; color: #166534; }
+  .badge-verdieping { background: #fef9c3; color: #854d0e; }
+
+  /* ===== MELDING ===== */
+  .melding {
+    padding: 12px 16px; border-radius: 8px; font-size: 10.5pt; font-weight: 700;
+    margin-bottom: 16px; display: none;
+  }
+  .melding.succes { background: #dcfce7; color: #166534; border: 1px solid #bbf7d0; }
+  .melding.fout { background: #fee2e2; color: #991b1b; border: 1px solid #fecaca; }
+  .melding.zichtbaar { display: block; }
+
+  /* ===== LADER ===== */
+  .lader { text-align: center; padding: 40px; color: var(--tekst-licht); font-size: 10.5pt; }
+
+  /* ===== SUBDOELEN ===== */
+  .subdoel-blok { background: var(--grijs); border-radius: 8px; padding: 14px; margin-top: 8px; }
+  .subdoel-item { display: flex; gap: 10px; margin-bottom: 10px; align-items: flex-start; }
+  .subdoel-item:last-child { margin-bottom: 0; }
+  .subdoel-verwijder { background: none; border: none; color: var(--rood); cursor: pointer; font-size: 16px; padding: 4px; line-height: 1; }
+
+  /* ===== PARAGRAFEN ===== */
+  .paragraaf-blok { background: var(--grijs); border-radius: 8px; padding: 14px; margin-top: 8px; }
+  .paragraaf-item { display: flex; gap: 10px; margin-bottom: 10px; align-items: center; }
+  .paragraaf-item:last-child { margin-bottom: 0; }
+
+  /* ===== LEEG STAAT ===== */
+  .leeg-staat { text-align: center; padding: 48px; color: var(--tekst-licht); }
+  .leeg-staat .leeg-icoon { font-size: 40px; margin-bottom: 12px; }
+  .leeg-staat p { font-size: 10.5pt; }
+
+  @media (max-width: 768px) {
+    .zijmenu { display: none; }
+    .hoofdinhoud { padding: 16px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- INLOGSCHERM -->
+<div id="inlogscherm">
+  <div class="inlog-kaart">
+    <h1>Wiskunde Lab</h1>
+    <p>Beheerpagina — Meld aan om verder te gaan</p>
+    <button class="google-knop" onclick="inloggenMetGoogle()">
+      <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google">
+      Aanmelden met Google
+    </button>
+    <div id="inlog-fout" class="melding fout" style="margin-top:16px;"></div>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app">
+  <div class="topbalk">
+    <div class="topbalk-titel">🎓 Wiskunde Lab — Beheer</div>
+    <div class="topbalk-gebruiker">
+      <img id="gebruiker-foto" src="" alt="" style="display:none">
+      <span id="gebruiker-naam"></span>
+      <button class="uitlog-knop" onclick="uitloggen()">Afmelden</button>
+    </div>
+  </div>
+
+  <div class="hoofdlayout">
+    <!-- ZIJMENU -->
+    <nav class="zijmenu">
+      <div class="menu-sectie-titel">Databank</div>
+      <div class="menu-item actief" onclick="toonSectie('leerplandoelen')" id="menu-leerplandoelen">
+        <span class="menu-icoon">📋</span> Leerplandoelen
+      </div>
+      <div class="menu-item" onclick="toonSectie('hoofdstukken')" id="menu-hoofdstukken">
+        <span class="menu-icoon">📚</span> Hoofdstukken
+      </div>
+      <div class="menu-scheiding"></div>
+      <div class="menu-sectie-titel">Binnenkort</div>
+      <div class="menu-item" style="opacity:0.4;cursor:default;">
+        <span class="menu-icoon">🎯</span> Doelen
+      </div>
+      <div class="menu-item" style="opacity:0.4;cursor:default;">
+        <span class="menu-icoon">🔗</span> Bronnen
+      </div>
+      <div class="menu-item" style="opacity:0.4;cursor:default;">
+        <span class="menu-icoon">📝</span> Templates
+      </div>
+      <div class="menu-item" style="opacity:0.4;cursor:default;">
+        <span class="menu-icoon">📅</span> Taken
+      </div>
+    </nav>
+
+    <!-- HOOFDINHOUD -->
+    <main class="hoofdinhoud">
+
+      <!-- ===== LEERPLANDOELEN ===== -->
+      <div class="sectie actief" id="sectie-leerplandoelen">
+        <div class="pagina-titel">Leerplandoelen</div>
+        <div class="pagina-ondertitel">Beheer de leerplandoelen en hun subdoelen.</div>
+
+        <div id="melding-leerplandoelen" class="melding"></div>
+
+        <!-- Formulier nieuw doel -->
+        <div class="kaart">
+          <div class="kaart-titel">
+            <span id="formulier-leerplandoel-titel">Nieuw leerplandoel toevoegen</span>
+            <button class="knop knop-secundair knop-klein" onclick="annuleerLeerplandoel()" id="annuleer-leerplandoel" style="display:none">Annuleren</button>
+          </div>
+
+          <div class="formulier-rij">
+            <div class="formulier-groep">
+              <label>Niveau</label>
+              <select id="lp-niveau" onchange="berekeningCode()">
+                <option value="basis">Basis</option>
+                <option value="basisgeletterdheid">Basisgeletterdheid</option>
+                <option value="verdieping">Verdieping</option>
+              </select>
+            </div>
+            <div class="formulier-groep">
+              <label>Nummer (bv. 6.3)</label>
+              <input type="text" id="lp-nummer" placeholder="6.3" oninput="berekeningCode()">
+            </div>
+            <div class="formulier-groep">
+              <label>Code (automatisch)</label>
+              <input type="text" id="lp-code" placeholder="6.3" readonly style="background:#f4f5f7;color:#6b7280;">
+            </div>
+          </div>
+
+          <div class="formulier-rij">
+            <div class="formulier-groep vol">
+              <label>Doel</label>
+              <textarea id="lp-doel" placeholder="Omschrijving van het leerplandoel..."></textarea>
+            </div>
+          </div>
+
+          <div class="formulier-rij">
+            <div class="formulier-groep">
+              <label>Beheersingsniveau</label>
+              <input type="text" id="lp-beheersingsniveau" placeholder="bv. Reproductie">
+            </div>
+            <div class="formulier-groep">
+              <label>Afbakening</label>
+              <input type="text" id="lp-afbakening" placeholder="bv. Enkel positieve getallen">
+            </div>
+          </div>
+
+          <!-- Subdoelen -->
+          <div style="margin-top: 8px;">
+            <label>Subdoelen</label>
+            <div class="subdoel-blok" id="subdoel-container">
+              <div class="lader" id="geen-subdoelen" style="padding:12px;font-size:9.5pt;">Nog geen subdoelen toegevoegd.</div>
+            </div>
+            <button class="knop knop-secundair knop-klein" style="margin-top:8px;" onclick="voegSubdoelToe()">+ Subdoel toevoegen</button>
+          </div>
+
+          <div style="margin-top: 20px; display: flex; gap: 10px;">
+            <button class="knop knop-primair" onclick="slaLeerplandoelOp()">
+              💾 Opslaan
+            </button>
+          </div>
+        </div>
+
+        <!-- Lijst leerplandoelen -->
+        <div class="kaart">
+          <div class="kaart-titel">
+            <span>Overzicht leerplandoelen</span>
+            <div style="display:flex;gap:8px;align-items:center;">
+              <select id="filter-niveau" onchange="laadLeerplandoelen()" style="font-size:9.5pt;padding:5px 10px;">
+                <option value="">Alle niveaus</option>
+                <option value="basisgeletterdheid">Basisgeletterdheid</option>
+                <option value="basis">Basis</option>
+                <option value="verdieping">Verdieping</option>
+              </select>
+            </div>
+          </div>
+          <div id="leerplandoelen-lader" class="lader">Laden...</div>
+          <div class="tabel-wrapper" id="leerplandoelen-tabel" style="display:none;">
+            <table>
+              <thead>
+                <tr>
+                  <th>Code</th>
+                  <th>Niveau</th>
+                  <th>Doel</th>
+                  <th>Subdoelen</th>
+                  <th>Acties</th>
+                </tr>
+              </thead>
+              <tbody id="leerplandoelen-tbody"></tbody>
+            </table>
+          </div>
+          <div class="leeg-staat" id="leerplandoelen-leeg" style="display:none;">
+            <div class="leeg-icoon">📋</div>
+            <p>Nog geen leerplandoelen ingegeven.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== HOOFDSTUKKEN ===== -->
+      <div class="sectie" id="sectie-hoofdstukken">
+        <div class="pagina-titel">Hoofdstukken</div>
+        <div class="pagina-ondertitel">Beheer de hoofdstukken en hun paragrafen.</div>
+
+        <div id="melding-hoofdstukken" class="melding"></div>
+
+        <!-- Formulier nieuw hoofdstuk -->
+        <div class="kaart">
+          <div class="kaart-titel">
+            <span id="formulier-hoofdstuk-titel">Nieuw hoofdstuk toevoegen</span>
+            <button class="knop knop-secundair knop-klein" onclick="annuleerHoofdstuk()" id="annuleer-hoofdstuk" style="display:none">Annuleren</button>
+          </div>
+
+          <div class="formulier-rij">
+            <div class="formulier-groep">
+              <label>Nummer</label>
+              <input type="number" id="hst-nummer" placeholder="6" min="1">
+            </div>
+            <div class="formulier-groep">
+              <label>Titel</label>
+              <input type="text" id="hst-titel" placeholder="Breuken">
+            </div>
+          </div>
+
+          <!-- Paragrafen -->
+          <div style="margin-top: 8px;">
+            <label>Paragrafen</label>
+            <div class="paragraaf-blok" id="paragraaf-container">
+              <div class="lader" id="geen-paragrafen" style="padding:12px;font-size:9.5pt;">Nog geen paragrafen toegevoegd.</div>
+            </div>
+            <button class="knop knop-secundair knop-klein" style="margin-top:8px;" onclick="voegParagraafToe()">+ Paragraaf toevoegen</button>
+          </div>
+
+          <div style="margin-top: 20px; display: flex; gap: 10px;">
+            <button class="knop knop-primair" onclick="slaHoofdstukOp()">
+              💾 Opslaan
+            </button>
+          </div>
+        </div>
+
+        <!-- Lijst hoofdstukken -->
+        <div class="kaart">
+          <div class="kaart-titel">Overzicht hoofdstukken</div>
+          <div id="hoofdstukken-lader" class="lader">Laden...</div>
+          <div class="tabel-wrapper" id="hoofdstukken-tabel" style="display:none;">
+            <table>
+              <thead>
+                <tr>
+                  <th>Nr.</th>
+                  <th>Titel</th>
+                  <th>Paragrafen</th>
+                  <th>Acties</th>
+                </tr>
+              </thead>
+              <tbody id="hoofdstukken-tbody"></tbody>
+            </table>
+          </div>
+          <div class="leeg-staat" id="hoofdstukken-leeg" style="display:none;">
+            <div class="leeg-icoon">📚</div>
+            <p>Nog geen hoofdstukken ingegeven.</p>
+          </div>
+        </div>
+      </div>
+
+    </main>
+  </div>
+</div>
+
+<!-- Firebase -->
+<script type="module">
+  import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+  import { getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged }
+    from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
+  import { getFirestore, collection, doc, setDoc, getDoc, getDocs, deleteDoc, query, where, orderBy }
+    from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyCe-t-qqWtlBeYOwG_ZdwpQD6bfhjII_rQ",
+    authDomain: "wiskunde-lab.firebaseapp.com",
+    projectId: "wiskunde-lab",
+    storageBucket: "wiskunde-lab.firebasestorage.app",
+    messagingSenderId: "342551199574",
+    appId: "1:342551199574:web:00dc6da4ba8e849075e0f7"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  const db = getFirestore(app);
+  const provider = new GoogleAuthProvider();
+
+  // Cache voor Firestore data
+  const cache = { leerplandoelen: null, hoofdstukken: null };
+
+  // Bewerkings-ID bijhouden
+  let bewerkLeerplandoelId = null;
+  let bewerkHoofdstukId = null;
+
+  // ===== AUTHENTICATIE =====
+
+  window.inloggenMetGoogle = async () => {
+    try {
+      await signInWithPopup(auth, provider);
+    } catch (e) {
+      const fout = document.getElementById('inlog-fout');
+      fout.textContent = 'Aanmelden mislukt. Probeer opnieuw.';
+      fout.classList.add('zichtbaar');
+    }
+  };
+
+  window.uitloggen = async () => {
+    await signOut(auth);
+  };
+
+  onAuthStateChanged(auth, gebruiker => {
+    if (gebruiker) {
+      document.getElementById('inlogscherm').style.display = 'none';
+      document.getElementById('app').style.display = 'block';
+      document.getElementById('gebruiker-naam').textContent = gebruiker.displayName || gebruiker.email;
+      if (gebruiker.photoURL) {
+        const foto = document.getElementById('gebruiker-foto');
+        foto.src = gebruiker.photoURL;
+        foto.style.display = 'block';
+      }
+      // Sla UID op in console zodat gebruiker die kan kopiëren voor Firestore regels
+      console.log('Jouw UID (kopieer dit voor Firestore regels):', gebruiker.uid);
+      laadLeerplandoelen();
+      laadHoofdstukken();
+    } else {
+      document.getElementById('inlogscherm').style.display = 'flex';
+      document.getElementById('app').style.display = 'none';
+    }
+  });
+
+  // ===== NAVIGATIE =====
+
+  window.toonSectie = (naam) => {
+    document.querySelectorAll('.sectie').forEach(s => s.classList.remove('actief'));
+    document.querySelectorAll('.menu-item').forEach(m => m.classList.remove('actief'));
+    document.getElementById('sectie-' + naam).classList.add('actief');
+    document.getElementById('menu-' + naam).classList.add('actief');
+  };
+
+  // ===== HULPFUNCTIES =====
+
+  function toonMelding(sectie, tekst, type) {
+    const el = document.getElementById('melding-' + sectie);
+    el.textContent = tekst;
+    el.className = 'melding ' + type + ' zichtbaar';
+    setTimeout(() => el.classList.remove('zichtbaar'), 4000);
+  }
+
+  function niveauBadge(niveau) {
+    const klassen = { basisgeletterdheid: 'badge-bg', basis: 'badge-basis', verdieping: 'badge-verdieping' };
+    const labels = { basisgeletterdheid: 'Basisgel.', basis: 'Basis', verdieping: 'Verdieping' };
+    return `<span class="badge ${klassen[niveau] || 'badge-basis'}">${labels[niveau] || niveau}</span>`;
+  }
+
+  // ===== CODE BEREKENING LEERPLANDOEL =====
+
+  window.berekeningCode = () => {
+    const niveau = document.getElementById('lp-niveau').value;
+    const nummer = document.getElementById('lp-nummer').value.trim();
+    if (!nummer) { document.getElementById('lp-code').value = ''; return; }
+    let code = niveau === 'basisgeletterdheid' ? 'BG' : niveau === 'verdieping' ? 'V' : '';
+    document.getElementById('lp-code').value = code + nummer;
+  };
+
+  // ===== SUBDOELEN =====
+
+  let subdoelTeller = 0;
+
+  window.voegSubdoelToe = (data = {}) => {
+    const container = document.getElementById('subdoel-container');
+    document.getElementById('geen-subdoelen').style.display = 'none';
+    subdoelTeller++;
+    const id = 'subdoel-' + subdoelTeller;
+    const div = document.createElement('div');
+    div.className = 'subdoel-item';
+    div.id = id;
+    div.innerHTML = `
+      <div style="flex:0 0 100px;">
+        <input type="text" placeholder="Nr. (6.3.1)" value="${data.nummer || ''}"
+          style="width:100%;" class="subdoel-nummer">
+      </div>
+      <div style="flex:1;">
+        <input type="text" placeholder="Omschrijving subdoel" value="${data.doel || ''}"
+          style="width:100%;" class="subdoel-doel">
+      </div>
+      <div style="flex:0 0 130px;">
+        <input type="text" placeholder="Beheersingsniveau" value="${data.beheersingsniveau || ''}"
+          style="width:100%;" class="subdoel-beheersingsniveau">
+      </div>
+      <div style="flex:0 0 130px;">
+        <input type="text" placeholder="Afbakening" value="${data.afbakening || ''}"
+          style="width:100%;" class="subdoel-afbakening">
+      </div>
+      <button class="subdoel-verwijder" onclick="verwijderSubdoel('${id}')">✕</button>
+    `;
+    container.appendChild(div);
+  };
+
+  window.verwijderSubdoel = (id) => {
+    document.getElementById(id).remove();
+    if (document.querySelectorAll('.subdoel-item').length === 0) {
+      document.getElementById('geen-subdoelen').style.display = 'block';
+    }
+  };
+
+  function haalSubdoelen() {
+    return Array.from(document.querySelectorAll('.subdoel-item')).map(item => ({
+      nummer: item.querySelector('.subdoel-nummer').value.trim(),
+      doel: item.querySelector('.subdoel-doel').value.trim(),
+      beheersingsniveau: item.querySelector('.subdoel-beheersingsniveau').value.trim(),
+      afbakening: item.querySelector('.subdoel-afbakening').value.trim(),
+    })).filter(s => s.nummer && s.doel);
+  }
+
+  function resetLeerplandoelFormulier() {
+    document.getElementById('lp-niveau').value = 'basis';
+    document.getElementById('lp-nummer').value = '';
+    document.getElementById('lp-code').value = '';
+    document.getElementById('lp-doel').value = '';
+    document.getElementById('lp-beheersingsniveau').value = '';
+    document.getElementById('lp-afbakening').value = '';
+    document.getElementById('subdoel-container').querySelectorAll('.subdoel-item').forEach(e => e.remove());
+    document.getElementById('geen-subdoelen').style.display = 'block';
+    document.getElementById('formulier-leerplandoel-titel').textContent = 'Nieuw leerplandoel toevoegen';
+    document.getElementById('annuleer-leerplandoel').style.display = 'none';
+    bewerkLeerplandoelId = null;
+  }
+
+  window.annuleerLeerplandoel = resetLeerplandoelFormulier;
+
+  // ===== LEERPLANDOELEN OPSLAAN =====
+
+  window.slaLeerplandoelOp = async () => {
+    const code = document.getElementById('lp-code').value.trim();
+    const doel = document.getElementById('lp-doel').value.trim();
+    if (!code || !doel) {
+      toonMelding('leerplandoelen', 'Vul minstens een nummer en een doel in.', 'fout');
+      return;
+    }
+    const data = {
+      code,
+      niveau: document.getElementById('lp-niveau').value,
+      nummer: document.getElementById('lp-nummer').value.trim(),
+      doel,
+      beheersingsniveau: document.getElementById('lp-beheersingsniveau').value.trim(),
+      afbakening: document.getElementById('lp-afbakening').value.trim(),
+      subdoelen: haalSubdoelen(),
+      aangepastOp: new Date().toISOString(),
+    };
+    try {
+      const docId = bewerkLeerplandoelId || code;
+      await setDoc(doc(db, 'leerplandoelen', docId), data);
+      cache.leerplandoelen = null;
+      toonMelding('leerplandoelen', `Leerplandoel ${code} succesvol opgeslagen.`, 'succes');
+      resetLeerplandoelFormulier();
+      laadLeerplandoelen();
+    } catch (e) {
+      toonMelding('leerplandoelen', 'Fout bij opslaan: ' + e.message, 'fout');
+    }
+  };
+
+  // ===== LEERPLANDOELEN LADEN =====
+
+  window.laadLeerplandoelen = async () => {
+    const filterNiveau = document.getElementById('filter-niveau').value;
+    document.getElementById('leerplandoelen-lader').style.display = 'block';
+    document.getElementById('leerplandoelen-tabel').style.display = 'none';
+    document.getElementById('leerplandoelen-leeg').style.display = 'none';
+
+    try {
+      // Gebruik cache tenzij gefilterd
+      let doelen;
+      if (!filterNiveau && cache.leerplandoelen) {
+        doelen = cache.leerplandoelen;
+      } else {
+        let q = filterNiveau
+          ? query(collection(db, 'leerplandoelen'), where('niveau', '==', filterNiveau))
+          : collection(db, 'leerplandoelen');
+        const snap = await getDocs(q);
+        doelen = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        doelen.sort((a, b) => a.code.localeCompare(b.code, 'nl', { numeric: true }));
+        if (!filterNiveau) cache.leerplandoelen = doelen;
+      }
+
+      document.getElementById('leerplandoelen-lader').style.display = 'none';
+      if (doelen.length === 0) {
+        document.getElementById('leerplandoelen-leeg').style.display = 'block';
+        return;
+      }
+      const tbody = document.getElementById('leerplandoelen-tbody');
+      tbody.innerHTML = doelen.map(d => `
+        <tr>
+          <td><strong>${d.code}</strong></td>
+          <td>${niveauBadge(d.niveau)}</td>
+          <td style="max-width:320px;">${d.doel}</td>
+          <td>${d.subdoelen?.length || 0}</td>
+          <td>
+            <button class="knop knop-secundair knop-klein" onclick="bewerkLeerplandoel('${d.id}')">✏️ Bewerken</button>
+            <button class="knop knop-gevaar knop-klein" onclick="verwijderLeerplandoel('${d.id}', '${d.code}')">🗑️</button>
+          </td>
+        </tr>
+      `).join('');
+      document.getElementById('leerplandoelen-tabel').style.display = 'block';
+    } catch (e) {
+      toonMelding('leerplandoelen', 'Fout bij laden: ' + e.message, 'fout');
+      document.getElementById('leerplandoelen-lader').style.display = 'none';
+    }
+  };
+
+  // ===== LEERPLANDOEL BEWERKEN =====
+
+  window.bewerkLeerplandoel = async (id) => {
+    try {
+      const snap = await getDoc(doc(db, 'leerplandoelen', id));
+      if (!snap.exists()) return;
+      const d = snap.data();
+      document.getElementById('lp-niveau').value = d.niveau;
+      document.getElementById('lp-nummer').value = d.nummer;
+      document.getElementById('lp-code').value = d.code;
+      document.getElementById('lp-doel').value = d.doel;
+      document.getElementById('lp-beheersingsniveau').value = d.beheersingsniveau || '';
+      document.getElementById('lp-afbakening').value = d.afbakening || '';
+      document.getElementById('subdoel-container').querySelectorAll('.subdoel-item').forEach(e => e.remove());
+      document.getElementById('geen-subdoelen').style.display = d.subdoelen?.length ? 'none' : 'block';
+      (d.subdoelen || []).forEach(s => voegSubdoelToe(s));
+      document.getElementById('formulier-leerplandoel-titel').textContent = `Leerplandoel ${d.code} bewerken`;
+      document.getElementById('annuleer-leerplandoel').style.display = 'inline-flex';
+      bewerkLeerplandoelId = id;
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    } catch (e) {
+      toonMelding('leerplandoelen', 'Fout bij laden: ' + e.message, 'fout');
+    }
+  };
+
+  // ===== LEERPLANDOEL VERWIJDEREN =====
+
+  window.verwijderLeerplandoel = async (id, code) => {
+    if (!confirm(`Ben je zeker dat je leerplandoel ${code} wil verwijderen?`)) return;
+    try {
+      await deleteDoc(doc(db, 'leerplandoelen', id));
+      cache.leerplandoelen = null;
+      toonMelding('leerplandoelen', `Leerplandoel ${code} verwijderd.`, 'succes');
+      laadLeerplandoelen();
+    } catch (e) {
+      toonMelding('leerplandoelen', 'Fout bij verwijderen: ' + e.message, 'fout');
+    }
+  };
+
+  // ===== PARAGRAFEN =====
+
+  let paragraafTeller = 0;
+
+  window.voegParagraafToe = (data = {}) => {
+    const container = document.getElementById('paragraaf-container');
+    document.getElementById('geen-paragrafen').style.display = 'none';
+    paragraafTeller++;
+    const id = 'paragraaf-' + paragraafTeller;
+    const div = document.createElement('div');
+    div.className = 'paragraaf-item';
+    div.id = id;
+    div.innerHTML = `
+      <div style="flex:0 0 80px;">
+        <input type="text" placeholder="Nr. (6.1)" value="${data.nummer || ''}"
+          style="width:100%;" class="paragraaf-nummer">
+      </div>
+      <div style="flex:1;">
+        <input type="text" placeholder="Titel paragraaf" value="${data.titel || ''}"
+          style="width:100%;" class="paragraaf-titel">
+      </div>
+      <button class="subdoel-verwijder" onclick="verwijderParagraaf('${id}')">✕</button>
+    `;
+    container.appendChild(div);
+  };
+
+  window.verwijderParagraaf = (id) => {
+    document.getElementById(id).remove();
+    if (document.querySelectorAll('.paragraaf-item').length === 0) {
+      document.getElementById('geen-paragrafen').style.display = 'block';
+    }
+  };
+
+  function haalParagrafen() {
+    return Array.from(document.querySelectorAll('.paragraaf-item')).map(item => ({
+      nummer: item.querySelector('.paragraaf-nummer').value.trim(),
+      titel: item.querySelector('.paragraaf-titel').value.trim(),
+    })).filter(p => p.nummer && p.titel);
+  }
+
+  function resetHoofdstukFormulier() {
+    document.getElementById('hst-nummer').value = '';
+    document.getElementById('hst-titel').value = '';
+    document.getElementById('paragraaf-container').querySelectorAll('.paragraaf-item').forEach(e => e.remove());
+    document.getElementById('geen-paragrafen').style.display = 'block';
+    document.getElementById('formulier-hoofdstuk-titel').textContent = 'Nieuw hoofdstuk toevoegen';
+    document.getElementById('annuleer-hoofdstuk').style.display = 'none';
+    bewerkHoofdstukId = null;
+  }
+
+  window.annuleerHoofdstuk = resetHoofdstukFormulier;
+
+  // ===== HOOFDSTUK OPSLAAN =====
+
+  window.slaHoofdstukOp = async () => {
+    const nummer = parseInt(document.getElementById('hst-nummer').value);
+    const titel = document.getElementById('hst-titel').value.trim();
+    if (!nummer || !titel) {
+      toonMelding('hoofdstukken', 'Vul minstens een nummer en een titel in.', 'fout');
+      return;
+    }
+    const data = {
+      nummer,
+      titel,
+      paragrafen: haalParagrafen(),
+      aangepastOp: new Date().toISOString(),
+    };
+    try {
+      const docId = bewerkHoofdstukId || 'H' + nummer;
+      await setDoc(doc(db, 'hoofdstukken', docId), data);
+      cache.hoofdstukken = null;
+      toonMelding('hoofdstukken', `Hoofdstuk ${nummer} succesvol opgeslagen.`, 'succes');
+      resetHoofdstukFormulier();
+      laadHoofdstukken();
+    } catch (e) {
+      toonMelding('hoofdstukken', 'Fout bij opslaan: ' + e.message, 'fout');
+    }
+  };
+
+  // ===== HOOFDSTUKKEN LADEN =====
+
+  window.laadHoofdstukken = async () => {
+    document.getElementById('hoofdstukken-lader').style.display = 'block';
+    document.getElementById('hoofdstukken-tabel').style.display = 'none';
+    document.getElementById('hoofdstukken-leeg').style.display = 'none';
+
+    try {
+      let hfst;
+      if (cache.hoofdstukken) {
+        hfst = cache.hoofdstukken;
+      } else {
+        const snap = await getDocs(collection(db, 'hoofdstukken'));
+        hfst = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        hfst.sort((a, b) => a.nummer - b.nummer);
+        cache.hoofdstukken = hfst;
+      }
+
+      document.getElementById('hoofdstukken-lader').style.display = 'none';
+      if (hfst.length === 0) {
+        document.getElementById('hoofdstukken-leeg').style.display = 'block';
+        return;
+      }
+      const tbody = document.getElementById('hoofdstukken-tbody');
+      tbody.innerHTML = hfst.map(h => `
+        <tr>
+          <td><strong>${h.nummer}</strong></td>
+          <td>${h.titel}</td>
+          <td style="font-size:9.5pt;color:var(--tekst-licht);">
+            ${(h.paragrafen || []).map(p => `${p.nummer} ${p.titel}`).join('<br>') || '—'}
+          </td>
+          <td>
+            <button class="knop knop-secundair knop-klein" onclick="bewerkHoofdstuk('${h.id}')">✏️ Bewerken</button>
+            <button class="knop knop-gevaar knop-klein" onclick="verwijderHoofdstuk('${h.id}', ${h.nummer})">🗑️</button>
+          </td>
+        </tr>
+      `).join('');
+      document.getElementById('hoofdstukken-tabel').style.display = 'block';
+    } catch (e) {
+      toonMelding('hoofdstukken', 'Fout bij laden: ' + e.message, 'fout');
+      document.getElementById('hoofdstukken-lader').style.display = 'none';
+    }
+  };
+
+  // ===== HOOFDSTUK BEWERKEN =====
+
+  window.bewerkHoofdstuk = async (id) => {
+    try {
+      const snap = await getDoc(doc(db, 'hoofdstukken', id));
+      if (!snap.exists()) return;
+      const h = snap.data();
+      document.getElementById('hst-nummer').value = h.nummer;
+      document.getElementById('hst-titel').value = h.titel;
+      document.getElementById('paragraaf-container').querySelectorAll('.paragraaf-item').forEach(e => e.remove());
+      document.getElementById('geen-paragrafen').style.display = h.paragrafen?.length ? 'none' : 'block';
+      (h.paragrafen || []).forEach(p => voegParagraafToe(p));
+      document.getElementById('formulier-hoofdstuk-titel').textContent = `Hoofdstuk ${h.nummer} bewerken`;
+      document.getElementById('annuleer-hoofdstuk').style.display = 'inline-flex';
+      bewerkHoofdstukId = id;
+      toonSectie('hoofdstukken');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    } catch (e) {
+      toonMelding('hoofdstukken', 'Fout bij laden: ' + e.message, 'fout');
+    }
+  };
+
+  // ===== HOOFDSTUK VERWIJDEREN =====
+
+  window.verwijderHoofdstuk = async (id, nummer) => {
+    if (!confirm(`Ben je zeker dat je hoofdstuk ${nummer} wil verwijderen?`)) return;
+    try {
+      await deleteDoc(doc(db, 'hoofdstukken', id));
+      cache.hoofdstukken = null;
+      toonMelding('hoofdstukken', `Hoofdstuk ${nummer} verwijderd.`, 'succes');
+      laadHoofdstukken();
+    } catch (e) {
+      toonMelding('hoofdstukken', 'Fout bij verwijderen: ' + e.message, 'fout');
+    }
+  };
+
+</script>
+</body>
+</html>
