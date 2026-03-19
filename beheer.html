@@ -178,6 +178,14 @@
   .paragraaf-item:last-child { margin-bottom: 0; }
 
 
+
+  /* ===== DATALIST INVOER ===== */
+  .datalist-wrapper { position: relative; width: 100%; }
+  .datalist-wrapper input { width: 100%; }
+  .datalist-wrapper .waarschuwing {
+    font-size: 8.5pt; color: var(--oranje); margin-top: 3px; display: none;
+  }
+
   /* ===== TOOLTIP ===== */
   .tooltip-wrapper { position: relative; display: inline-block; width: 100%; }
   .tooltip-wrapper input, .tooltip-wrapper textarea { width: 100%; }
@@ -489,9 +497,13 @@
                 <option value="voorkennis">Voorkennis</option>
               </select>
             </div>
-            <div class="formulier-groep">
-              <label>Leerplandoel-code</label>
-              <input type="text" id="doel-leerplan" placeholder="bv. 6.1">
+            <div class="formulier-groep" style="flex:100%;min-width:100%;">
+              <label>Leerplandoel-codes</label>
+              <datalist id="datalist-leerplancodes"></datalist>
+              <div class="subdoel-blok" id="leerplan-container">
+                <div id="geen-leerplancodes" style="padding:12px;font-size:9.5pt;color:var(--tekst-licht);">Nog geen leerplandoel-codes toegevoegd.</div>
+              </div>
+              <button class="knop knop-secundair knop-klein" style="margin-top:8px;" onclick="voegLeerplancodeToe()">+ Code toevoegen</button>
             </div>
             <div class="formulier-groep">
               <label>Evalueerbaar</label>
@@ -505,6 +517,7 @@
           <!-- Referenties -->
           <div style="margin-top: 8px; margin-bottom: 14px;">
             <label>Referenties (hoofdstuk.paragraaf)</label>
+            <datalist id="datalist-referenties"></datalist>
             <div class="subdoel-blok" id="referentie-container">
               <div id="geen-referenties" style="padding:12px;font-size:9.5pt;color:var(--tekst-licht);">Nog geen referenties toegevoegd.</div>
             </div>
@@ -632,6 +645,7 @@
       document.querySelectorAll('.menu-item').forEach(m => m.classList.remove('actief'));
       document.getElementById('sectie-' + naam).classList.add('actief');
       item.classList.add('actief');
+      if (naam === 'doelen') vulDatalijsten();
     });
   });
     // Tooltip afbakening bijwerken bij invoer
@@ -664,6 +678,7 @@
       laadLeerplandoelen();
       laadHoofdstukken();
       laadDoelen();
+      vulDatalijsten();
     } else {
       document.getElementById('inlogscherm').style.display = 'flex';
       document.getElementById('app').style.display = 'none';
@@ -1181,6 +1196,98 @@
   };
 
 
+
+  // ===== DATALISTS VULLEN =====
+
+  let alleLeerplancodes = [];
+  let alleReferentieCodes = [];
+
+  async function vulDatalijsten() {
+    try {
+      // Leerplancodes uit Firebase
+      if (alleLeerplancodes.length === 0) {
+        const snap = await getDocs(collection(db, 'leerplandoelen'));
+        alleLeerplancodes = snap.docs.map(d => d.data().code).filter(Boolean).sort((a,b) => a.localeCompare(b,'nl',{numeric:true}));
+      }
+      const dlLeerplan = document.getElementById('datalist-leerplancodes');
+      if (dlLeerplan) dlLeerplan.innerHTML = alleLeerplancodes.map(c => `<option value="${c}">`).join('');
+
+      // Referenties uit hoofdstukken
+      if (alleReferentieCodes.length === 0) {
+        const snap = await getDocs(collection(db, 'hoofdstukken'));
+        const refs = [];
+        snap.docs.forEach(d => {
+          const h = d.data();
+          refs.push(h.nummer + '.0'); // volledig hoofdstuk
+          (h.paragrafen || []).forEach(p => refs.push(p.nummer));
+        });
+        alleReferentieCodes = [...new Set(refs)].sort((a,b) => a.localeCompare(b,'nl',{numeric:true}));
+      }
+      const dlRef = document.getElementById('datalist-referenties');
+      if (dlRef) dlRef.innerHTML = alleReferentieCodes.map(r => `<option value="${r}">`).join('');
+    } catch(e) {
+      console.error('Fout bij vullen datalists:', e);
+    }
+  }
+
+  // Controleer of een referentie bestaat
+  window.controleerReferentie = (input) => {
+    const waarde = input.value.trim();
+    const waarschuwing = input.closest('.datalist-wrapper').querySelector('.referentie-waarschuwing');
+    if (waarde && !alleReferentieCodes.includes(waarde)) {
+      waarschuwing.style.display = 'block';
+    } else {
+      waarschuwing.style.display = 'none';
+    }
+  };
+
+  // Controleer of een leerplancode bestaat
+  window.controleerLeerplancode = (input) => {
+    const waarde = input.value.trim();
+    const waarschuwing = input.closest('.datalist-wrapper').querySelector('.leerplan-waarschuwing');
+    if (waarde && !alleLeerplancodes.includes(waarde)) {
+      waarschuwing.style.display = 'block';
+    } else {
+      waarschuwing.style.display = 'none';
+    }
+  };
+
+  // ===== LEERPLANDOEL-CODES (meerdere mogelijk) =====
+
+  let leerplanTeller = 0;
+
+  window.voegLeerplancodeToe = (waarde = '') => {
+    const container = document.getElementById('leerplan-container');
+    document.getElementById('geen-leerplancodes').style.display = 'none';
+    leerplanTeller++;
+    const id = 'lp-code-' + leerplanTeller;
+    const div = document.createElement('div');
+    div.className = 'subdoel-item';
+    div.id = id;
+    div.innerHTML = `
+      <div class="datalist-wrapper" style="flex:1;">
+        <input type="text" list="datalist-leerplancodes" placeholder="bv. 6.1" value="${waarde}"
+          class="leerplancode-waarde" oninput="controleerLeerplancode(this)">
+        <div class="waarschuwing leerplan-waarschuwing">⚠ Deze code bestaat nog niet in de databank.</div>
+      </div>
+      <button class="subdoel-verwijder" onclick="verwijderLeerplancode('${id}')">✕</button>
+    `;
+    container.appendChild(div);
+  };
+
+  window.verwijderLeerplancode = (id) => {
+    document.getElementById(id).remove();
+    if (document.querySelectorAll('.leerplancode-waarde').length === 0) {
+      document.getElementById('geen-leerplancodes').style.display = 'block';
+    }
+  };
+
+  function haalLeerplancodes() {
+    return Array.from(document.querySelectorAll('.leerplancode-waarde'))
+      .map(i => i.value.trim()).filter(v => v);
+  }
+
+
   // ===== DOELEN =====
 
   let bewerkDoelId = null;
@@ -1203,8 +1310,11 @@
     div.className = 'subdoel-item';
     div.id = id;
     div.innerHTML = `
-      <input type="text" placeholder="bv. 7.1" value="${waarde}"
-        style="width:120px;" class="referentie-waarde">
+      <div class="datalist-wrapper" style="flex:1;">
+        <input type="text" list="datalist-referenties" placeholder="bv. 7.1" value="${waarde}"
+          class="referentie-waarde" oninput="controleerReferentie(this)">
+        <div class="waarschuwing referentie-waarschuwing">⚠ Deze referentie bestaat nog niet in de databank.</div>
+      </div>
       <button class="subdoel-verwijder" onclick="verwijderReferentie('${id}')">✕</button>
     `;
     container.appendChild(div);
@@ -1225,7 +1335,8 @@
   function resetDoelFormulier() {
     document.getElementById('doel-tekst').value = '';
     document.getElementById('doel-type').value = 'succescriterium';
-    document.getElementById('doel-leerplan').value = '';
+    document.getElementById('leerplan-container').querySelectorAll('.subdoel-item').forEach(e => e.remove());
+    document.getElementById('geen-leerplancodes').style.display = 'block';
     document.getElementById('doel-evalueerbaar').value = 'nee';
     document.getElementById('doel-scores').value = '';
     document.getElementById('doel-notities').value = '';
@@ -1251,7 +1362,7 @@
     const data = {
       tekst,
       type: document.getElementById('doel-type').value,
-      leerplandoel_code: document.getElementById('doel-leerplan').value.trim(),
+      leerplandoel_codes: haalLeerplancodes(),
       referenties: haalReferenties(),
       evalueerbaar,
       scores: scores || '',
@@ -1284,7 +1395,7 @@
       let doelen = cacheDoelen.alle;
 
       // Filteropties bijwerken
-      const leerplanSet = [...new Set(doelen.map(d => d.leerplandoel_code).filter(Boolean))].sort((a,b) => a.localeCompare(b, 'nl', {numeric:true}));
+      const leerplanSet = [...new Set(doelen.flatMap(d => d.leerplandoel_codes || (d.leerplandoel_code ? [d.leerplandoel_code] : [])).filter(Boolean))].sort((a,b) => a.localeCompare(b, 'nl', {numeric:true}));
       const refSet = [...new Set(doelen.flatMap(d => d.referenties || []))].sort((a,b) => a.localeCompare(b, 'nl', {numeric:true}));
 
       const leerplanFilter = document.getElementById('filter-doel-leerplan');
@@ -1302,7 +1413,7 @@
       const filterLeerplan = leerplanFilter.value;
       const filterRef = refFilter.value;
       if (filterType) doelen = doelen.filter(d => d.type === filterType);
-      if (filterLeerplan) doelen = doelen.filter(d => d.leerplandoel_code === filterLeerplan);
+      if (filterLeerplan) doelen = doelen.filter(d => (d.leerplandoel_codes || (d.leerplandoel_code ? [d.leerplandoel_code] : [])).includes(filterLeerplan));
       if (filterRef) doelen = doelen.filter(d => (d.referenties || []).includes(filterRef));
 
       doelen.sort((a, b) => a.tekst.localeCompare(b.tekst, 'nl'));
@@ -1317,7 +1428,7 @@
         <tr>
           <td style="max-width:300px;">${d.tekst}</td>
           <td><span class="badge ${d.type === 'succescriterium' ? 'badge-basis' : 'badge-bg'}">${d.type === 'succescriterium' ? 'SC' : 'VK'}</span></td>
-          <td>${d.leerplandoel_code || '—'}</td>
+          <td style="font-size:9.5pt;">${(d.leerplandoel_codes || (d.leerplandoel_code ? [d.leerplandoel_code] : [])).join(', ') || '—'}</td>
           <td style="font-size:9.5pt;">${(d.referenties || []).join(', ') || '—'}</td>
           <td>${d.evalueerbaar === 'ja' ? '✓' : '—'}</td>
           <td>
@@ -1341,7 +1452,9 @@
       const d = snap.data();
       document.getElementById('doel-tekst').value = d.tekst || '';
       document.getElementById('doel-type').value = d.type || 'succescriterium';
-      document.getElementById('doel-leerplan').value = d.leerplandoel_code || '';
+      document.getElementById('leerplan-container').querySelectorAll('.subdoel-item').forEach(e => e.remove());
+      document.getElementById('geen-leerplancodes').style.display = (d.leerplandoel_codes?.length) ? 'none' : 'block';
+      (d.leerplandoel_codes || (d.leerplandoel_code ? [d.leerplandoel_code] : [])).forEach(c => voegLeerplancodeToe(c));
       document.getElementById('doel-evalueerbaar').value = d.evalueerbaar || 'nee';
       document.getElementById('doel-scores').value = d.scores || '';
       document.getElementById('doel-notities').value = d.notities || '';
