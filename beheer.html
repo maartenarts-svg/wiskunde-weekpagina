@@ -1228,7 +1228,15 @@
         alleLeerplancodes = snap.docs
           .map(d => ({ code: d.data().code, omschrijving: d.data().doel || '' }))
           .filter(d => d.code)
-          .sort((a,b) => a.code.localeCompare(b.code,'nl',{numeric:true}));
+          .sort((a,b) => {
+            // Sorteer op het numerieke deel, dan op niveau (BG < basis < V)
+            const numA = a.code.replace(/^(BG|V)/, '');
+            const numB = b.code.replace(/^(BG|V)/, '');
+            const numVgl = numA.localeCompare(numB, 'nl', {numeric:true});
+            if (numVgl !== 0) return numVgl;
+            const volgorde = (c) => c.startsWith('BG') ? 0 : c.startsWith('V') ? 2 : 1;
+            return volgorde(a.code) - volgorde(b.code);
+          });
       }
       if (alleReferentieCodes.length === 0) {
         const snap = await getDocs(collection(db, 'hoofdstukken'));
@@ -1261,7 +1269,7 @@
     if (gefilterd.length === 0) {
       lijst.innerHTML = '<div class="cd-geen">Geen resultaten — eigen invoer wordt bewaard.</div>';
     } else {
-      lijst.innerHTML = gefilterd.slice(0, 20).map(d => `
+      lijst.innerHTML = gefilterd.slice(0, 50).map(d => `
         <div class="cd-item" onmousedown="cdKies(event, '${lijstId}', '${d.code.replace(/'/g,"\\'")}')">
           <span class="cd-code">${d.code}</span>
           <span class="cd-omschrijving">${d.omschrijving.length > 60 ? d.omschrijving.slice(0,60)+'…' : d.omschrijving}</span>
