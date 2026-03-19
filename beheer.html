@@ -672,7 +672,7 @@
     // Voortgangsbalk tonen
     const voortgang = document.getElementById('import-voortgang');
     const balk = document.getElementById('import-balk');
-    const tekst = document.getElementById('import-tekst');
+    const importTekst = document.getElementById('import-tekst');
     voortgang.style.display = 'block';
 
     let opgeslagen = 0;
@@ -680,7 +680,7 @@
 
     for (let i = 0; i < doelen.length; i++) {
       const d = doelen[i];
-      tekst.textContent = `Bezig met importeren... ${i + 1} van ${doelen.length} (${d.code})`;
+      importTekst.textContent = `Bezig met importeren... ${i + 1} van ${doelen.length} (${d.code})`;
       balk.style.width = ((i + 1) / doelen.length * 100) + '%';
       try {
         await setDoc(doc(db, 'leerplandoelen', d.code), d);
