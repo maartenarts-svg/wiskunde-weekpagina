@@ -457,7 +457,8 @@
 
   // ===== AUTHENTICATIE =====
 
-  // Event listeners koppelen
+  // Event listeners koppelen — wacht tot DOM klaar is
+  document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('google-knop').addEventListener('click', async () => {
     try {
       await signInWithPopup(auth, provider);
@@ -481,6 +482,7 @@
       item.classList.add('actief');
     });
   });
+  }); // einde DOMContentLoaded
 
   onAuthStateChanged(auth, gebruiker => {
     if (gebruiker) {
