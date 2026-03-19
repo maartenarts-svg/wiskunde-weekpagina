@@ -195,7 +195,7 @@
   <div class="inlog-kaart">
     <h1>Wiskunde Lab</h1>
     <p>Beheerpagina — Meld aan om verder te gaan</p>
-    <button class="google-knop" onclick="inloggenMetGoogle()">
+    <button class="google-knop" id="google-knop">
       <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google">
       Aanmelden met Google
     </button>
@@ -210,7 +210,7 @@
     <div class="topbalk-gebruiker">
       <img id="gebruiker-foto" src="" alt="" style="display:none">
       <span id="gebruiker-naam"></span>
-      <button class="uitlog-knop" onclick="uitloggen()">Afmelden</button>
+      <button class="uitlog-knop" id="uitlog-knop">Afmelden</button>
     </div>
   </div>
 
@@ -218,10 +218,10 @@
     <!-- ZIJMENU -->
     <nav class="zijmenu">
       <div class="menu-sectie-titel">Databank</div>
-      <div class="menu-item actief" onclick="toonSectie('leerplandoelen')" id="menu-leerplandoelen">
+      <div class="menu-item actief" id="menu-leerplandoelen" data-sectie="leerplandoelen">
         <span class="menu-icoon">📋</span> Leerplandoelen
       </div>
-      <div class="menu-item" onclick="toonSectie('hoofdstukken')" id="menu-hoofdstukken">
+      <div class="menu-item" id="menu-hoofdstukken" data-sectie="hoofdstukken">
         <span class="menu-icoon">📚</span> Hoofdstukken
       </div>
       <div class="menu-scheiding"></div>
@@ -457,19 +457,30 @@
 
   // ===== AUTHENTICATIE =====
 
-  window.inloggenMetGoogle = async () => {
+  // Event listeners koppelen
+  document.getElementById('google-knop').addEventListener('click', async () => {
     try {
       await signInWithPopup(auth, provider);
     } catch (e) {
       const fout = document.getElementById('inlog-fout');
-      fout.textContent = 'Aanmelden mislukt. Probeer opnieuw.';
+      fout.textContent = 'Aanmelden mislukt: ' + e.message;
       fout.classList.add('zichtbaar');
     }
-  };
+  });
 
-  window.uitloggen = async () => {
+  document.getElementById('uitlog-knop').addEventListener('click', async () => {
     await signOut(auth);
-  };
+  });
+
+  document.querySelectorAll('[data-sectie]').forEach(item => {
+    item.addEventListener('click', () => {
+      const naam = item.dataset.sectie;
+      document.querySelectorAll('.sectie').forEach(s => s.classList.remove('actief'));
+      document.querySelectorAll('.menu-item').forEach(m => m.classList.remove('actief'));
+      document.getElementById('sectie-' + naam).classList.add('actief');
+      item.classList.add('actief');
+    });
+  });
 
   onAuthStateChanged(auth, gebruiker => {
     if (gebruiker) {
