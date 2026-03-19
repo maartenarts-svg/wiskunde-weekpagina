@@ -177,6 +177,26 @@
   .paragraaf-item { display: flex; gap: 10px; margin-bottom: 10px; align-items: center; }
   .paragraaf-item:last-child { margin-bottom: 0; }
 
+
+  /* ===== TOOLTIP ===== */
+  .tooltip-wrapper { position: relative; display: inline-block; width: 100%; }
+  .tooltip-wrapper input, .tooltip-wrapper textarea { width: 100%; }
+  .tooltip-icoon {
+    position: absolute; right: 8px; top: 50%; transform: translateY(-50%);
+    width: 18px; height: 18px; background: var(--blauw); color: white;
+    border-radius: 50%; font-size: 10px; font-weight: 700;
+    display: flex; align-items: center; justify-content: center;
+    cursor: help; flex-shrink: 0;
+  }
+  .tooltip-tekst {
+    display: none; position: absolute; right: 0; top: calc(100% + 6px);
+    background: var(--tekst); color: white; padding: 10px 14px;
+    border-radius: 8px; font-size: 9.5pt; line-height: 1.6;
+    white-space: pre-wrap; max-width: 360px; min-width: 200px;
+    z-index: 999; box-shadow: 0 4px 16px rgba(0,0,0,0.25);
+  }
+  .tooltip-wrapper:hover .tooltip-tekst { display: block; }
+
   /* ===== LEEG STAAT ===== */
   .leeg-staat { text-align: center; padding: 48px; color: var(--tekst-licht); }
   .leeg-staat .leeg-icoon { font-size: 40px; margin-bottom: 12px; }
@@ -302,7 +322,11 @@
             </div>
             <div class="formulier-groep">
               <label>Afbakening</label>
-              <input type="text" id="lp-afbakening" placeholder="bv. Enkel positieve getallen">
+              <div class="tooltip-wrapper">
+                <input type="text" id="lp-afbakening" placeholder="bv. Enkel positieve getallen" style="padding-right:30px;">
+                <div class="tooltip-icoon" id="afbakening-tooltip-icoon" style="display:none;">i</div>
+                <div class="tooltip-tekst" id="afbakening-tooltip-tekst"></div>
+              </div>
             </div>
           </div>
 
@@ -482,6 +506,19 @@
       item.classList.add('actief');
     });
   });
+    // Tooltip afbakening bijwerken bij invoer
+    document.getElementById('lp-afbakening').addEventListener('input', function() {
+      const waarde = this.value.replace(/###/g, '\n');
+      const icoon = document.getElementById('afbakening-tooltip-icoon');
+      const tooltipTekst = document.getElementById('afbakening-tooltip-tekst');
+      if (waarde.includes('\n') || waarde.length > 60) {
+        icoon.style.display = 'flex';
+        tooltipTekst.textContent = waarde;
+      } else {
+        icoon.style.display = 'none';
+        tooltipTekst.textContent = '';
+      }
+    });
   }); // einde DOMContentLoaded
 
   onAuthStateChanged(auth, gebruiker => {
@@ -673,7 +710,7 @@
       const code = rij[0].trim();
       const doel = rij[1].trim();
       const beheersingsniveau = (rij[2] || '').trim();
-      const afbakening = (rij[3] || '').trim();
+      const afbakening = (rij[3] || '').trim().replace(/###/g, '\n');
 
       const { niveau, cijferDeel } = bepaalNiveau(code);
       const isSubdoel = cijferDeel.split('.').length >= 3;
@@ -819,7 +856,16 @@
       document.getElementById('lp-code').value = d.code;
       document.getElementById('lp-doel').value = d.doel;
       document.getElementById('lp-beheersingsniveau').value = d.beheersingsniveau || '';
-      document.getElementById('lp-afbakening').value = d.afbakening || '';
+      const afbakeningWaarde = d.afbakening || '';
+      document.getElementById('lp-afbakening').value = afbakeningWaarde;
+      const icoon = document.getElementById('afbakening-tooltip-icoon');
+      const tooltipTekst = document.getElementById('afbakening-tooltip-tekst');
+      if (afbakeningWaarde.includes('\n') || afbakeningWaarde.length > 60) {
+        icoon.style.display = 'flex';
+        tooltipTekst.textContent = afbakeningWaarde;
+      } else {
+        icoon.style.display = 'none';
+      }
       document.getElementById('subdoel-container').querySelectorAll('.subdoel-item').forEach(e => e.remove());
       document.getElementById('geen-subdoelen').style.display = d.subdoelen?.length ? 'none' : 'block';
       (d.subdoelen || []).forEach(s => voegSubdoelToe(s));
