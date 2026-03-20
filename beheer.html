@@ -234,17 +234,17 @@
   .editor-textarea {
     font-family: 'Courier New', monospace; font-size: 10.5pt; line-height: 1.7;
     border: 1.5px solid var(--grijs-rand); border-radius: 8px; padding: 12px;
-    min-height: 320px; resize: vertical; width: 100%;
+    min-height: 320px; resize: none; width: 100%; overflow-y: hidden;
     transition: border-color 0.2s;
   }
   .editor-textarea:focus { outline: none; border-color: var(--blauw); box-shadow: 0 0 0 3px rgba(44,74,110,0.1); }
   .preview-vak {
     border: 1.5px solid var(--grijs-rand); border-radius: 8px; padding: 16px;
     min-height: 320px; background: var(--grijs); font-size: 11pt;
-    line-height: 1.7; overflow-y: auto;
+    line-height: 1.7;
   }
-  .preview-stap { margin-bottom: 6px; }
-  .preview-nr { font-weight: 700; margin-right: 2px; flex-shrink: 0; }
+  .preview-stap { display: flex; gap: 0; margin-bottom: 6px; align-items: flex-start; }
+  .preview-nr { font-weight: 700; min-width: 36px; padding-right: 8px; flex-shrink: 0; text-align: right; }
   .preview-tekst { flex: 1; }
   .preview-opsomming { display: flex; gap: 8px; margin-bottom: 4px; padding-left: 16px; }
   .preview-bullet { color: var(--blauw); flex-shrink: 0; }
@@ -262,7 +262,7 @@
   /* Syntaxhulp */
   .syntax-hulp {
     position: sticky;
-    top: 70px;
+    top: 20px;
     align-self: flex-start;
     background: var(--wit); border: 1.5px solid var(--blauw); border-radius: 12px;
     box-shadow: 0 4px 16px rgba(0,0,0,0.12); z-index: 10; display: none; padding: 16px;
@@ -2152,6 +2152,13 @@
         continue;
       }
 
+      // Zachte enter op eigen regel: voeg <br> toe aan vorig element
+      if (getrimmed.startsWith('++')) {
+        const rest = inline(getrimmed.slice(2).trim());
+        html += `<div style="padding-left:44px;">${rest}</div>`;
+        continue;
+      }
+
       // Subtitel
       if (getrimmed.startsWith('## ')) {
         numTeller = 0;
@@ -2203,8 +2210,12 @@
   // ===== PREVIEW =====
 
   window.updatePreview = () => {
-    const inhoud = document.getElementById('tmpl-inhoud').value;
-    document.getElementById('tmpl-preview').innerHTML = parseMarkdown(inhoud);
+    const ta = document.getElementById('tmpl-inhoud');
+    const tekst = ta.value;
+    document.getElementById('tmpl-preview').innerHTML = parseMarkdown(tekst);
+    // Auto-resize textarea
+    ta.style.height = 'auto';
+    ta.style.height = Math.max(320, ta.scrollHeight) + 'px';
   };
 
   // ===== PARAMETERS DETECTEREN =====
