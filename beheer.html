@@ -243,8 +243,8 @@
     min-height: 320px; background: var(--grijs); font-size: 11pt;
     line-height: 1.7; overflow-y: auto;
   }
-  .preview-stap { display: flex; gap: 10px; margin-bottom: 6px; align-items: flex-start; }
-  .preview-nr { font-weight: 700; color: var(--blauw); border-right: 2.5px solid var(--blauw); padding-right: 8px; min-width: 22px; text-align: right; flex-shrink: 0; font-size: 11pt; }
+  .preview-stap { margin-bottom: 6px; }
+  .preview-nr { font-weight: 700; margin-right: 2px; flex-shrink: 0; }
   .preview-tekst { flex: 1; }
   .preview-opsomming { display: flex; gap: 8px; margin-bottom: 4px; padding-left: 16px; }
   .preview-bullet { color: var(--blauw); flex-shrink: 0; }
@@ -261,10 +261,12 @@
 
   /* Syntaxhulp */
   .syntax-hulp {
-    position: fixed; right: 20px; top: 80px; width: 320px;
+    position: sticky;
+    top: 70px;
+    align-self: flex-start;
     background: var(--wit); border: 1.5px solid var(--blauw); border-radius: 12px;
-    box-shadow: 0 8px 32px rgba(0,0,0,0.18); z-index: 200; display: none; padding: 16px;
-    max-height: calc(100vh - 100px); overflow-y: auto;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.12); z-index: 10; display: none; padding: 16px;
+    max-height: calc(100vh - 90px); overflow-y: auto; width: 100%;
   }
   .syntax-hulp.zichtbaar { display: block; }
   .syntax-hulp-titel { font-size: 11pt; font-weight: 700; color: var(--blauw); margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; }
@@ -791,55 +793,6 @@
 
         <div id="melding-templates" class="melding"></div>
 
-        <!-- Syntaxhulp zweefpaneel -->
-        <div class="syntax-hulp" id="syntax-hulp">
-          <div class="syntax-hulp-titel">
-            Syntaxhulp
-            <button onclick="toggleSyntax()" style="background:none;border:none;cursor:pointer;font-size:16px;color:var(--tekst-licht);">✕</button>
-          </div>
-          <div style="font-size:9pt;color:var(--tekst-licht);margin-bottom:10px;">Klik op een element om in te voegen.</div>
-
-          <div style="font-size:9pt;font-weight:700;color:var(--tekst);margin:8px 0 4px;">Structuur</div>
-          <div class="syntax-rij" onclick="voegSyntaxIn('1| ')"><span class="syntax-code">1| </span><span class="syntax-omschrijving">Genummerde stap</span></div>
-          <div class="syntax-rij" onclick="voegSyntaxIn('- ')"><span class="syntax-code">- </span><span class="syntax-omschrijving">Opsomming</span></div>
-          <div class="syntax-rij" onclick="voegSyntaxIn('  1| ')"><span class="syntax-code">  1| </span><span class="syntax-omschrijving">Geneste nummering</span></div>
-          <div class="syntax-rij" onclick="voegSyntaxIn('  - ')"><span class="syntax-code">  - </span><span class="syntax-omschrijving">Geneste opsomming</span></div>
-          <div class="syntax-rij" onclick="voegSyntaxIn('## ')"><span class="syntax-code">## </span><span class="syntax-omschrijving">Subtitel</span></div>
-          <div class="syntax-rij" onclick="voegSyntaxIn('++')"><span class="syntax-code">tekst++</span><span class="syntax-omschrijving">Zachte enter (zelfde insprong)</span></div>
-
-          <div style="font-size:9pt;font-weight:700;color:var(--tekst);margin:8px 0 4px;">Tekstopmaak</div>
-          <div class="syntax-rij" onclick="voegSyntaxIn('**tekst**')"><span class="syntax-code">**tekst**</span><span class="syntax-omschrijving">Vet</span></div>
-          <div class="syntax-rij" onclick="voegSyntaxIn('*tekst*')"><span class="syntax-code">*tekst*</span><span class="syntax-omschrijving">Cursief</span></div>
-          <div class="syntax-rij" onclick="voegSyntaxIn('__tekst__')"><span class="syntax-code">__tekst__</span><span class="syntax-omschrijving">Onderstrepen</span></div>
-          <div class="syntax-rij" onclick="voegSyntaxIn('~tekst~')"><span class="syntax-code">~tekst~</span><span class="syntax-omschrijving">Kleiner</span></div>
-          <div class="syntax-rij" onclick="voegSyntaxIn('^^tekst^^')"><span class="syntax-code">^^tekst^^</span><span class="syntax-omschrijving">Groter</span></div>
-
-          <div style="font-size:9pt;font-weight:700;color:var(--tekst);margin:8px 0 4px;">Tekstopmaak (vervolg)</div>
-          <div class="syntax-rij" onclick="voegSyntaxIn('[rood]tekst[/rood]')"><span class="syntax-code">[rood]tekst[/rood]</span><span class="syntax-omschrijving">Tekstkleur</span></div>
-          <div style="font-size:8.5pt;color:var(--tekst-licht);padding:4px 8px;">Kleuren: rood, blauw, groen, oranje, grijs, of #hexcode</div>
-
-          <div style="font-size:9pt;font-weight:700;color:var(--tekst);margin:8px 0 4px;">Tekstopmaak (vervolg)</div>
-          <div class="syntax-rij" onclick="voegSyntaxIn('[tekst]{rood}')"><span class="syntax-code">[tekst]{kleur}</span><span class="syntax-omschrijving">Kleur (rood/blauw/groen/oranje/paars/roze/geel/grijs)</span></div>
-          <div class="syntax-rij" onclick="voegSyntaxIn('tekst  ')"><span class="syntax-code">tekst··</span><span class="syntax-omschrijving">Zachte enter (2 spaties op einde)</span></div>
-
-          <div style="font-size:9pt;font-weight:700;color:var(--tekst);margin:8px 0 4px;">Tekstopmaak (vervolg)</div>
-          <div class="syntax-rij" onclick="voegSyntaxIn('[kleur:rood]tekst[/kleur]')"><span class="syntax-code">[kleur:rood]tekst[/kleur]</span><span class="syntax-omschrijving">Gekleurde tekst</span></div>
-          <div class="syntax-rij" onclick="voegSyntaxIn('[kleur:groen]tekst[/kleur]')"><span class="syntax-code">[kleur:groen]</span><span class="syntax-omschrijving" style="color:green;">Groen</span></div>
-          <div class="syntax-rij" onclick="voegSyntaxIn('[kleur:blauw]tekst[/kleur]')"><span class="syntax-code">[kleur:blauw]</span><span class="syntax-omschrijving" style="color:blue;">Blauw</span></div>
-          <div class="syntax-rij" onclick="voegSyntaxIn('[kleur:oranje]tekst[/kleur]')"><span class="syntax-code">[kleur:oranje]</span><span class="syntax-omschrijving" style="color:orange;">Oranje</span></div>
-
-          <div style="font-size:9pt;font-weight:700;color:var(--tekst);margin:8px 0 4px;">Media & links</div>
-          <div class="syntax-rij" onclick="voegSyntaxIn('[label](url)')"><span class="syntax-code">[label](url)</span><span class="syntax-omschrijving">Link</span></div>
-          <div class="syntax-rij" onclick="voegSyntaxIn('![naam](./pictures/naam.png)')"><span class="syntax-code">![naam](./pictures/...)</span><span class="syntax-omschrijving">Afbeelding</span></div>
-          <div class="syntax-rij" onclick="voegSyntaxIn('![video-thumb](url)')"><span class="syntax-code">![video-thumb](url)</span><span class="syntax-omschrijving">Video thumbnail</span></div>
-          <div class="syntax-rij" onclick="voegSyntaxIn('![video-embed](url)')"><span class="syntax-code">![video-embed](url)</span><span class="syntax-omschrijving">Video ingesloten</span></div>
-
-          <div style="font-size:9pt;font-weight:700;color:var(--tekst);margin:8px 0 4px;">Overige</div>
-          <div class="syntax-rij" onclick="voegSyntaxIn('\\n')"><span class="syntax-code">\n</span><span class="syntax-omschrijving">Zachte enter (zelfde insprong)</span></div>
-
-          <div style="font-size:9pt;font-weight:700;color:var(--tekst);margin:8px 0 4px;">Parameters</div>
-          <div class="syntax-rij" onclick="voegSyntaxIn('{parameternaam}')"><span class="syntax-code">{parameternaam}</span><span class="syntax-omschrijving">Variabele waarde</span></div>
-        </div>
 
         <!-- Formulier -->
         <div class="kaart">
@@ -872,7 +825,7 @@
           </div>
 
           <!-- Editor + preview -->
-          <div class="editor-layout" style="margin-top:12px;">
+          <div id="editor-wrapper" style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-top:12px;">
             <div class="editor-panel">
               <div class="editor-label">Instructies <span style="font-weight:400;text-transform:none;font-size:9pt;">(gebruik syntaxhulp voor opmaak)</span></div>
               <textarea class="editor-textarea" id="tmpl-inhoud"
@@ -882,6 +835,40 @@
             <div class="editor-panel">
               <div class="editor-label">Preview</div>
               <div class="preview-vak" id="tmpl-preview"></div>
+            </div>
+            <div class="editor-panel" id="syntax-kolom" style="display:none;">
+              <div class="syntax-hulp zichtbaar" id="syntax-hulp" style="position:static;display:block;max-height:400px;">
+                <div class="syntax-hulp-titel">
+                  Syntaxhulp
+                  <button onclick="toggleSyntax()" style="background:none;border:none;cursor:pointer;font-size:16px;color:var(--tekst-licht);">✕</button>
+                </div>
+                <div style="font-size:9pt;color:var(--tekst-licht);margin-bottom:10px;">Klik om in te voegen op cursorpositie.</div>
+
+                <div style="font-size:9pt;font-weight:700;color:var(--tekst);margin:6px 0 3px;">Structuur</div>
+                <div class="syntax-rij" onclick="voegSyntaxIn('1| ')"><span class="syntax-code">1| </span><span class="syntax-omschrijving">Genummerde stap</span></div>
+                <div class="syntax-rij" onclick="voegSyntaxIn('- ')"><span class="syntax-code">- </span><span class="syntax-omschrijving">Opsomming</span></div>
+                <div class="syntax-rij" onclick="voegSyntaxIn('  1| ')"><span class="syntax-code">··1| </span><span class="syntax-omschrijving">Geneste nummering</span></div>
+                <div class="syntax-rij" onclick="voegSyntaxIn('  - ')"><span class="syntax-code">··- </span><span class="syntax-omschrijving">Geneste opsomming</span></div>
+                <div class="syntax-rij" onclick="voegSyntaxIn('## ')"><span class="syntax-code">## </span><span class="syntax-omschrijving">Subtitel</span></div>
+                <div class="syntax-rij" onclick="voegSyntaxIn('++')"><span class="syntax-code">tekst++</span><span class="syntax-omschrijving">Zachte enter</span></div>
+
+                <div style="font-size:9pt;font-weight:700;color:var(--tekst);margin:6px 0 3px;">Tekstopmaak</div>
+                <div class="syntax-rij" onclick="voegSyntaxIn('**tekst**')"><span class="syntax-code">**tekst**</span><span class="syntax-omschrijving"><strong>Vet</strong></span></div>
+                <div class="syntax-rij" onclick="voegSyntaxIn('*tekst*')"><span class="syntax-code">*tekst*</span><span class="syntax-omschrijving"><em>Cursief</em></span></div>
+                <div class="syntax-rij" onclick="voegSyntaxIn('__tekst__')"><span class="syntax-code">__tekst__</span><span class="syntax-omschrijving"><u>Onderstrepen</u></span></div>
+                <div class="syntax-rij" onclick="voegSyntaxIn('~tekst~')"><span class="syntax-code">~tekst~</span><span class="syntax-omschrijving" style="font-size:8pt;">Kleiner</span></div>
+                <div class="syntax-rij" onclick="voegSyntaxIn('^^tekst^^')"><span class="syntax-code">^^tekst^^</span><span class="syntax-omschrijving" style="font-size:11pt;">Groter</span></div>
+                <div class="syntax-rij" onclick="voegSyntaxIn('[kleur:rood]tekst[/kleur]')"><span class="syntax-code">[kleur:rood]</span><span class="syntax-omschrijving" style="color:#c0392b;">Kleur</span></div>
+
+                <div style="font-size:9pt;font-weight:700;color:var(--tekst);margin:6px 0 3px;">Media & links</div>
+                <div class="syntax-rij" onclick="voegSyntaxIn('[label](url)')"><span class="syntax-code">[label](url)</span><span class="syntax-omschrijving">Link</span></div>
+                <div class="syntax-rij" onclick="voegSyntaxIn('![naam](./pictures/naam.png)')"><span class="syntax-code">![naam](./pictures/...)</span><span class="syntax-omschrijving">Afbeelding</span></div>
+                <div class="syntax-rij" onclick="voegSyntaxIn('![video-thumb](url)')"><span class="syntax-code">![video-thumb](url)</span><span class="syntax-omschrijving">Video thumbnail</span></div>
+                <div class="syntax-rij" onclick="voegSyntaxIn('![video-embed](url)')"><span class="syntax-code">![video-embed](url)</span><span class="syntax-omschrijving">Video ingesloten</span></div>
+
+                <div style="font-size:9pt;font-weight:700;color:var(--tekst);margin:6px 0 3px;">Parameters</div>
+                <div class="syntax-rij" onclick="voegSyntaxIn('{parameternaam}')"><span class="syntax-code">{parameternaam}</span><span class="syntax-omschrijving">Variabele</span></div>
+              </div>
             </div>
           </div>
 
@@ -2155,7 +2142,7 @@
             const kleurWaarde = kleurMap[kleur] || kleur;
             return `<span style="color:${kleurWaarde};">${tekst}</span>`;
           })
-          .replace(/\\+\\+/g, '<br>');
+          .replace(/\+\+/g, '<br>');
       }
 
       if (!getrimmed) {
@@ -2176,7 +2163,7 @@
       if (isGenest && getrimmed.match(/^\d+\|\s*/)) {
         genestNumTeller++;
         const inhoud = getrimmed.replace(/^\d+\|\s*/, '');
-        html += `<div class="preview-stap preview-genest"><div class="preview-nr">${genestNumTeller}</div><div class="preview-tekst">${inline(inhoud)}</div></div>`;
+        html += `<div class="preview-stap preview-genest"><span class="preview-nr">${genestNumTeller}|</span><span class="preview-tekst">${inline(inhoud)}</span></div>`;
         continue;
       }
 
@@ -2197,7 +2184,7 @@
         numTeller++;
         genestNumTeller = 0;
         const inhoud = getrimmed.replace(/^\d+\|\s*/, '');
-        html += `<div class="preview-stap"><div class="preview-nr">${numTeller}</div><div class="preview-tekst">${inline(inhoud)}</div></div>`;
+        html += `<div class="preview-stap"><span class="preview-nr">${numTeller}|</span><span class="preview-tekst">${inline(inhoud)}</span></div>`;
         continue;
       }
 
@@ -2253,7 +2240,11 @@
   // ===== SYNTAXHULP =====
 
   window.toggleSyntax = () => {
-    document.getElementById('syntax-hulp').classList.toggle('zichtbaar');
+    const kolom = document.getElementById('syntax-kolom');
+    const wrapper = document.getElementById('editor-wrapper');
+    const zichtbaar = kolom.style.display !== 'none';
+    kolom.style.display = zichtbaar ? 'none' : 'block';
+    wrapper.style.gridTemplateColumns = zichtbaar ? '1fr 1fr' : '1fr 1fr 280px';
     actievEditor = document.getElementById('tmpl-inhoud');
   };
 
