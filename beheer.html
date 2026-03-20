@@ -290,6 +290,61 @@
     .editor-layout { grid-template-columns: 1fr; }
   }
 
+
+  /* ===== TAKEN ===== */
+  .tabbladen { display: flex; gap: 0; border-bottom: 2px solid var(--grijs-rand); margin-bottom: 20px; }
+  .tabblad-knop {
+    padding: 10px 20px; cursor: pointer; font-family: var(--font); font-size: 10.5pt;
+    font-weight: 700; color: var(--tekst-licht); background: none; border: none;
+    border-bottom: 3px solid transparent; margin-bottom: -2px; transition: all 0.15s;
+  }
+  .tabblad-knop:hover { color: var(--blauw); }
+  .tabblad-knop.actief { color: var(--blauw); border-bottom-color: var(--blauw); }
+  .tabblad-inhoud { display: none; }
+  .tabblad-inhoud.actief { display: block; }
+
+  .doel-zoek-blok { background: var(--grijs); border-radius: 8px; padding: 14px; margin-bottom: 12px; }
+  .doel-zoek-rij { display: flex; gap: 8px; margin-bottom: 10px; flex-wrap: wrap; }
+  .doel-lijst-container { max-height: 280px; overflow-y: auto; border: 1.5px solid var(--grijs-rand); border-radius: 8px; background: white; }
+  .doel-keuze-item { display: flex; align-items: flex-start; gap: 10px; padding: 10px 12px; border-bottom: 1px solid var(--grijs-rand); cursor: pointer; transition: background 0.15s; }
+  .doel-keuze-item:last-child { border-bottom: none; }
+  .doel-keuze-item:hover { background: var(--blauw-licht); }
+  .doel-keuze-item.geselecteerd { background: #dcfce7; }
+  .doel-keuze-tekst { font-size: 10.5pt; flex: 1; line-height: 1.5; }
+  .doel-keuze-meta { font-size: 8.5pt; color: var(--tekst-licht); margin-top: 2px; }
+
+  .geselecteerde-doelen { margin-top: 10px; }
+  .geselecteerd-doel-item { display: flex; align-items: center; gap: 8px; padding: 8px 10px; background: var(--grijs); border-radius: 6px; margin-bottom: 4px; font-size: 10.5pt; }
+  .geselecteerd-doel-item .verwijder-doel { background: none; border: none; color: var(--rood); cursor: pointer; font-size: 14px; margin-left: auto; }
+
+  .indienen-optie { display: flex; align-items: flex-start; gap: 10px; padding: 12px; background: var(--grijs); border-radius: 8px; margin-bottom: 8px; }
+  .indienen-optie input[type="checkbox"] { margin-top: 3px; width: 16px; height: 16px; cursor: pointer; flex-shrink: 0; }
+  .indienen-optie-inhoud { flex: 1; }
+  .indienen-optie-label { font-weight: 700; font-size: 10.5pt; }
+  .indienen-optie-extra { margin-top: 8px; display: none; }
+  .indienen-optie-extra.zichtbaar { display: block; }
+
+  .sc-titel-keuze { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 12px; }
+  .sc-titel-optie { display: flex; align-items: center; gap: 6px; font-size: 10.5pt; cursor: pointer; }
+
+  .taken-kaart-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 14px; margin-top: 14px; }
+  .taak-kaart {
+    background: var(--wit); border: 1.5px solid var(--grijs-rand); border-radius: 10px;
+    padding: 14px; cursor: grab; transition: all 0.2s; position: relative;
+  }
+  .taak-kaart:hover { box-shadow: var(--schaduw-hover); border-color: var(--blauw); }
+  .taak-kaart.sleep { opacity: 0.5; border: 2px dashed var(--blauw); }
+  .taak-kaart.sleep-over { border: 2px solid var(--oranje); background: #fff8f0; }
+  .taak-kaart-titel { font-weight: 700; font-size: 11pt; margin-bottom: 4px; }
+  .taak-kaart-meta { font-size: 9pt; color: var(--tekst-licht); }
+  .taak-kaart-routes { display: flex; gap: 4px; margin-top: 6px; }
+  .route-badge { padding: 2px 8px; border-radius: 12px; font-size: 8.5pt; font-weight: 700; }
+  .route-G { background: #d4edda; color: #1a6b2f; }
+  .route-B { background: #cce5ff; color: #0d47a1; }
+  .route-Z { background: #f8d7da; color: #8b1a1a; }
+  .taak-kaart-nr { position: absolute; top: 10px; right: 10px; background: var(--blauw); color: white; width: 24px; height: 24px; border-radius: 50%; font-size: 9pt; font-weight: 700; display: flex; align-items: center; justify-content: center; }
+  .volgtijdelijk-badge { background: #fee2e2; color: var(--rood); font-size: 8.5pt; padding: 2px 8px; border-radius: 12px; margin-top: 4px; display: inline-block; }
+
   /* ===== LEEG STAAT ===== */
   .leeg-staat { text-align: center; padding: 48px; color: var(--tekst-licht); }
   .leeg-staat .leeg-icoon { font-size: 40px; margin-bottom: 12px; }
@@ -338,7 +393,6 @@
         <span class="menu-icoon">📚</span> Hoofdstukken
       </div>
       <div class="menu-scheiding"></div>
-      <div class="menu-sectie-titel">Binnenkort</div>
       <div class="menu-item" onclick="toonSectie('doelen')" id="menu-doelen" data-sectie="doelen">
         <span class="menu-icoon">🎯</span> Doelen
       </div>
@@ -348,8 +402,11 @@
       <div class="menu-item" id="menu-templates" data-sectie="templates">
         <span class="menu-icoon">📝</span> Templates
       </div>
-      <div class="menu-item" style="opacity:0.4;cursor:default;">
+      <div class="menu-item" id="menu-taken" data-sectie="taken">
         <span class="menu-icoon">📅</span> Taken
+      </div>
+      <div class="menu-item" id="menu-weekoverzicht" data-sectie="weekoverzicht">
+        <span class="menu-icoon">🗓️</span> Weekoverzicht
       </div>
     </nav>
 
@@ -916,6 +973,457 @@
         </div>
       </div>
 
+
+      <!-- ===== TAKEN ===== -->
+      <div class="sectie" id="sectie-taken">
+        <div class="pagina-titel">Taken & Lessen</div>
+        <div class="pagina-ondertitel">Stel taken en lessen samen. Gebruik tabbladen voor overzicht.</div>
+
+        <div id="melding-taken" class="melding"></div>
+
+        <!-- Filter + acties bovenaan -->
+        <div class="kaart" style="padding:16px 24px;">
+          <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;">
+            <select id="filter-taak-schooljaar" onchange="laadTaken()" style="font-size:9.5pt;padding:5px 10px;">
+              <option value="2025-2026">2025-2026</option>
+              <option value="2024-2025">2024-2025</option>
+            </select>
+            <select id="filter-taak-week" onchange="laadTaken()" style="font-size:9.5pt;padding:5px 10px;">
+              <option value="">Alle weken</option>
+            </select>
+            <select id="filter-taak-status" onchange="laadTaken()" style="font-size:9.5pt;padding:5px 10px;">
+              <option value="">Alle statussen</option>
+              <option value="concept">Concept</option>
+              <option value="actief">Actief</option>
+              <option value="archief">Archief</option>
+            </select>
+            <button class="knop knop-primair" onclick="nieuweTaak()">+ Nieuwe taak</button>
+          </div>
+        </div>
+
+        <!-- Formulier (verborgen tot nieuweTaak() of bewerkTaak() aangeroepen wordt) -->
+        <div class="kaart" id="taak-formulier" style="display:none;">
+          <div class="kaart-titel">
+            <span id="formulier-taak-titel">Nieuwe taak</span>
+            <div style="display:flex;gap:8px;">
+              <button class="knop knop-secundair knop-klein" onclick="previewTaak()">👁 Preview</button>
+              <button class="knop knop-secundair knop-klein" onclick="annuleerTaak()" id="annuleer-taak">Annuleren</button>
+            </div>
+          </div>
+
+          <!-- Tabbladen -->
+          <div class="tabbladen">
+            <button class="tabblad-knop actief" onclick="toonTabblad('tb-algemeen', this)">1. Algemeen</button>
+            <button class="tabblad-knop" onclick="toonTabblad('tb-inhoud', this)">2. Inhoud</button>
+            <button class="tabblad-knop" onclick="toonTabblad('tb-indienen', this)">3. Indienen</button>
+          </div>
+
+          <!-- TABBLAD 1: ALGEMEEN -->
+          <div class="tabblad-inhoud actief" id="tb-algemeen">
+            <div class="formulier-rij">
+              <div class="formulier-groep">
+                <label>Code <span style="color:var(--rood);">*</span></label>
+                <input type="text" id="taak-code" placeholder="bv. WI T6.1">
+              </div>
+              <div class="formulier-groep">
+                <label>Titel <span style="color:var(--rood);">*</span></label>
+                <input type="text" id="taak-titel" placeholder="bv. Breuken">
+              </div>
+              <div class="formulier-groep">
+                <label>Tijd (minuten) <span style="color:var(--rood);">*</span></label>
+                <input type="number" id="taak-tijd" placeholder="50" min="1">
+              </div>
+            </div>
+
+            <div class="formulier-rij">
+              <div class="formulier-groep">
+                <label>Vak <span style="color:var(--rood);">*</span></label>
+                <input type="text" id="taak-vak" value="Wiskunde" readonly style="background:#f4f5f7;">
+              </div>
+              <div class="formulier-groep">
+                <label>Klas <span style="color:var(--rood);">*</span></label>
+                <select id="taak-klas">
+                  <option value="">Kies klas...</option>
+                  <option value="1a">1a</option>
+                  <option value="1b">1b</option>
+                </select>
+              </div>
+              <div class="formulier-groep">
+                <label>Schooljaar <span style="color:var(--rood);">*</span></label>
+                <input type="text" id="taak-schooljaar" value="2025-2026">
+              </div>
+              <div class="formulier-groep">
+                <label>Lesweek <span style="color:var(--rood);">*</span></label>
+                <input type="number" id="taak-lesweek" placeholder="1" min="1" max="38">
+              </div>
+            </div>
+
+            <div class="formulier-rij">
+              <div class="formulier-groep vol">
+                <label>Korte omschrijving</label>
+                <textarea id="taak-omschrijving" placeholder="Korte omschrijving van de taak..." style="min-height:60px;"></textarea>
+              </div>
+            </div>
+
+            <div class="formulier-rij">
+              <div class="formulier-groep">
+                <label>Routes</label>
+                <div style="display:flex;gap:12px;margin-top:4px;">
+                  <label style="display:flex;align-items:center;gap:6px;font-size:10.5pt;text-transform:none;letter-spacing:0;font-weight:400;cursor:pointer;">
+                    <input type="checkbox" id="route-G" value="G"> G-route
+                  </label>
+                  <label style="display:flex;align-items:center;gap:6px;font-size:10.5pt;text-transform:none;letter-spacing:0;font-weight:400;cursor:pointer;">
+                    <input type="checkbox" id="route-B" value="B"> B-route
+                  </label>
+                  <label style="display:flex;align-items:center;gap:6px;font-size:10.5pt;text-transform:none;letter-spacing:0;font-weight:400;cursor:pointer;">
+                    <input type="checkbox" id="route-Z" value="Z"> Z-route
+                  </label>
+                </div>
+              </div>
+              <div class="formulier-groep">
+                <label>Status</label>
+                <select id="taak-status">
+                  <option value="concept">Concept</option>
+                  <option value="actief">Actief</option>
+                  <option value="archief">Archief</option>
+                </select>
+              </div>
+              <div class="formulier-groep">
+                <label>Leerprocesfase</label>
+                <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:4px;">
+                  <label style="display:flex;align-items:center;gap:4px;font-size:9.5pt;text-transform:none;letter-spacing:0;font-weight:400;cursor:pointer;"><input type="checkbox" value="verkennen"> Verkennen</label>
+                  <label style="display:flex;align-items:center;gap:4px;font-size:9.5pt;text-transform:none;letter-spacing:0;font-weight:400;cursor:pointer;"><input type="checkbox" value="verwerken"> Verwerken</label>
+                  <label style="display:flex;align-items:center;gap:4px;font-size:9.5pt;text-transform:none;letter-spacing:0;font-weight:400;cursor:pointer;"><input type="checkbox" value="inprenten"> Inprenten</label>
+                  <label style="display:flex;align-items:center;gap:4px;font-size:9.5pt;text-transform:none;letter-spacing:0;font-weight:400;cursor:pointer;"><input type="checkbox" value="evalueren"> Evalueren</label>
+                  <label style="display:flex;align-items:center;gap:4px;font-size:9.5pt;text-transform:none;letter-spacing:0;font-weight:400;cursor:pointer;"><input type="checkbox" value="herhalen"> Herhalen</label>
+                </div>
+              </div>
+            </div>
+
+            <div class="formulier-rij">
+              <div class="formulier-groep">
+                <label>Referenties</label>
+                <datalist id="datalist-taak-ref"></datalist>
+                <div class="subdoel-blok" id="taak-ref-container">
+                  <div id="geen-taak-refs" style="padding:8px;font-size:9.5pt;color:var(--tekst-licht);">Nog geen referenties.</div>
+                </div>
+                <button class="knop knop-secundair knop-klein" style="margin-top:8px;" onclick="voegTaakRefToe()">+ Referentie</button>
+              </div>
+              <div class="formulier-groep">
+                <label>Volgtijdelijkheid</label>
+                <input type="text" id="taak-volgtijdelijkheid" placeholder="bv. 1.1 (groep.positie)">
+                <div style="font-size:8.5pt;color:var(--tekst-licht);margin-top:3px;">0.0 = geen volgtijdelijkheid</div>
+              </div>
+              <div class="formulier-groep">
+                <label>Extra papier uit vakje</label>
+                <select id="taak-papier">
+                  <option value="nee">Nee</option>
+                  <option value="ja">Ja</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="formulier-rij">
+              <div class="formulier-groep vol">
+                <label>Tags <span style="font-weight:400;text-transform:none;">(gescheiden door komma)</span></label>
+                <input type="text" id="taak-tags" placeholder="bv. breuken, herhaling">
+              </div>
+            </div>
+
+            <div class="formulier-rij">
+              <div class="formulier-groep vol">
+                <label>Notities</label>
+                <input type="text" id="taak-notities" placeholder="Persoonlijke notitie...">
+              </div>
+            </div>
+          </div>
+
+          <!-- TABBLAD 2: INHOUD -->
+          <div class="tabblad-inhoud" id="tb-inhoud">
+
+            <!-- VOORKENNIS -->
+            <div style="margin-bottom:24px;">
+              <div class="sectie-titel" style="margin-bottom:12px;">Voorkennis</div>
+              <div class="doel-zoek-blok">
+                <div class="doel-zoek-rij">
+                  <input type="text" id="zoek-vk" placeholder="Zoek op tekst..." style="flex:1;" oninput="filterDoelKeuzes('vk')">
+                  <select id="filter-vk-leerplan" onchange="filterDoelKeuzes('vk')" style="font-size:9.5pt;padding:5px 10px;">
+                    <option value="">Alle leerplandoelen</option>
+                  </select>
+                  <select id="filter-vk-ref" onchange="filterDoelKeuzes('vk')" style="font-size:9.5pt;padding:5px 10px;">
+                    <option value="">Alle referenties</option>
+                  </select>
+                </div>
+                <div class="doel-lijst-container" id="doel-lijst-vk"></div>
+                <button class="knop knop-secundair knop-klein" style="margin-top:8px;" onclick="nieuwDoelInline('vk')">+ Nieuw doel toevoegen</button>
+              </div>
+              <div class="geselecteerde-doelen" id="geselecteerde-vk">
+                <div style="font-size:9.5pt;color:var(--tekst-licht);font-style:italic;" id="geen-vk">Nog geen voorkennis geselecteerd.</div>
+              </div>
+            </div>
+
+            <!-- SUCCESCRITERIA -->
+            <div style="margin-bottom:24px;">
+              <div class="sectie-titel" style="margin-bottom:8px;">Succescriteria</div>
+              <div style="margin-bottom:12px;">
+                <label style="font-size:9.5pt;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--tekst-licht);">Subtitels tonen</label>
+                <div class="sc-titel-keuze" style="margin-top:6px;">
+                  <label class="sc-titel-optie"><input type="checkbox" id="sc-titel-leren" checked> Wat leer je met deze taak?</label>
+                  <label class="sc-titel-optie"><input type="checkbox" id="sc-titel-eval"> Waarop word je geëvalueerd?</label>
+                </div>
+              </div>
+              <div class="doel-zoek-blok">
+                <div class="doel-zoek-rij">
+                  <input type="text" id="zoek-sc" placeholder="Zoek op tekst..." style="flex:1;" oninput="filterDoelKeuzes('sc')">
+                  <select id="filter-sc-leerplan" onchange="filterDoelKeuzes('sc')" style="font-size:9.5pt;padding:5px 10px;">
+                    <option value="">Alle leerplandoelen</option>
+                  </select>
+                  <select id="filter-sc-ref" onchange="filterDoelKeuzes('sc')" style="font-size:9.5pt;padding:5px 10px;">
+                    <option value="">Alle referenties</option>
+                  </select>
+                </div>
+                <div class="doel-lijst-container" id="doel-lijst-sc"></div>
+                <button class="knop knop-secundair knop-klein" style="margin-top:8px;" onclick="nieuwDoelInline('sc')">+ Nieuw doel toevoegen</button>
+              </div>
+              <div class="geselecteerde-doelen" id="geselecteerde-sc">
+                <div style="font-size:9.5pt;color:var(--tekst-licht);font-style:italic;" id="geen-sc">Nog geen succescriteria geselecteerd.</div>
+              </div>
+            </div>
+
+            <!-- INSTRUCTIES -->
+            <div style="margin-bottom:24px;">
+              <div class="sectie-titel" style="margin-bottom:12px;">Instructies</div>
+              <div style="display:flex;gap:12px;margin-bottom:12px;align-items:center;">
+                <label style="display:flex;align-items:center;gap:6px;font-size:10.5pt;cursor:pointer;text-transform:none;letter-spacing:0;font-weight:400;">
+                  <input type="radio" name="instructie-type" value="template" id="instr-template" checked onchange="toggleInstructieType()"> Gebruik template
+                </label>
+                <label style="display:flex;align-items:center;gap:6px;font-size:10.5pt;cursor:pointer;text-transform:none;letter-spacing:0;font-weight:400;">
+                  <input type="radio" name="instructie-type" value="vrij" id="instr-vrij" onchange="toggleInstructieType()"> Zelf schrijven
+                </label>
+              </div>
+
+              <!-- Template keuze -->
+              <div id="instr-template-blok">
+                <div class="formulier-rij">
+                  <div class="formulier-groep">
+                    <label>Template</label>
+                    <select id="taak-template-id" onchange="laadTemplateParams()">
+                      <option value="">Kies template...</option>
+                    </select>
+                  </div>
+                </div>
+                <div id="template-params-blok" style="display:none;" class="param-blok">
+                  <div class="param-blok-titel">🔧 Parameters invullen</div>
+                  <div id="template-params-lijst"></div>
+                </div>
+              </div>
+
+              <!-- Vrije invoer -->
+              <div id="instr-vrij-blok" style="display:none;">
+                <div id="editor-wrapper-taak" style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
+                  <div class="editor-panel">
+                    <div class="editor-label">Instructies</div>
+                    <textarea class="editor-textarea" id="taak-instructies-vrij"
+                      oninput="updatePreviewTaak(); detecteerParametersTaak()"
+                      placeholder="Schrijf hier de instructies..."></textarea>
+                  </div>
+                  <div class="editor-panel">
+                    <div class="editor-label">Preview</div>
+                    <div class="preview-vak" id="taak-instructies-preview"></div>
+                  </div>
+                </div>
+                <div style="margin-top:8px;display:flex;gap:8px;">
+                  <button class="knop knop-secundair knop-klein" onclick="toggleSyntaxTaak()">❓ Syntaxhulp</button>
+                  <button class="knop knop-secundair knop-klein" onclick="slaInstructiesAlsTemplateOp()">💾 Opslaan als template</button>
+                </div>
+                <div id="param-container-taak" style="display:none;" class="param-blok">
+                  <div class="param-blok-titel">🔧 Parameters</div>
+                  <div id="param-lijst-taak"></div>
+                </div>
+              </div>
+            </div>
+
+            <!-- BRONNEN -->
+            <div style="margin-bottom:24px;">
+              <div class="sectie-titel" style="margin-bottom:12px;">Bronnen</div>
+              <div class="doel-zoek-blok">
+                <div class="doel-zoek-rij">
+                  <input type="text" id="zoek-bron" placeholder="Zoek op label..." style="flex:1;" oninput="filterBronKeuzes()">
+                  <select id="filter-bron-keuze-type" onchange="filterBronKeuzes()" style="font-size:9.5pt;padding:5px 10px;">
+                    <option value="">Alle types</option>
+                    <option value="website">Website</option>
+                    <option value="video">Video</option>
+                    <option value="classroom">Google Classroom</option>
+                    <option value="bestand">PDF/Bestand</option>
+                    <option value="andere">Andere</option>
+                  </select>
+                </div>
+                <div class="doel-lijst-container" id="bron-keuze-lijst"></div>
+              </div>
+              <div class="geselecteerde-doelen" id="geselecteerde-bronnen">
+                <div style="font-size:9.5pt;color:var(--tekst-licht);font-style:italic;" id="geen-bronnen-sel">Nog geen bronnen geselecteerd.</div>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- TABBLAD 3: INDIENEN -->
+          <div class="tabblad-inhoud" id="tb-indienen">
+            <div style="margin-bottom:20px;">
+              <div class="sectie-titel" style="margin-bottom:12px;">Indienwijze</div>
+
+              <div class="indienen-optie">
+                <input type="checkbox" id="ind-map" onchange="toggleIndienenExtra('ind-map-extra')">
+                <div class="indienen-optie-inhoud">
+                  <div class="indienen-optie-label">📁 Bewaar in je map</div>
+                  <div class="indienen-optie-extra" id="ind-map-extra">
+                    <input type="text" placeholder="Aanvullende info (optioneel)..." id="ind-map-info">
+                  </div>
+                </div>
+              </div>
+
+              <div class="indienen-optie">
+                <input type="checkbox" id="ind-digitaal" onchange="toggleIndienenExtra('ind-digitaal-extra')">
+                <div class="indienen-optie-inhoud">
+                  <div class="indienen-optie-label">🎓 Digitaal (Google Classroom)</div>
+                  <div class="indienen-optie-extra" id="ind-digitaal-extra">
+                    <div class="formulier-rij" style="margin:0;">
+                      <div class="formulier-groep">
+                        <label>Link naar taak</label>
+                        <input type="url" id="ind-digitaal-link" placeholder="https://classroom.google.com/...">
+                      </div>
+                      <div class="formulier-groep">
+                        <label>Deadline</label>
+                        <input type="text" id="ind-digitaal-deadline" placeholder="zondag, 21u00">
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="indienen-optie">
+                <input type="checkbox" id="ind-vakje" onchange="toggleIndienenExtra('ind-vakje-extra')">
+                <div class="indienen-optie-inhoud">
+                  <div class="indienen-optie-label">📥 In het vakje van wiskunde</div>
+                  <div class="indienen-optie-extra" id="ind-vakje-extra">
+                    <div class="formulier-groep" style="margin:0;">
+                      <label>Deadline</label>
+                      <input type="text" id="ind-vakje-deadline" placeholder="maandag, 8u50">
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="indienen-optie">
+                <input type="checkbox" id="ind-uitzondering" onchange="toggleIndienenExtra('ind-uitzondering-extra')">
+                <div class="indienen-optie-inhoud">
+                  <div class="indienen-optie-label">⚠️ Uitzondering</div>
+                  <div class="indienen-optie-extra" id="ind-uitzondering-extra">
+                    <div class="formulier-groep" style="margin:0;">
+                      <label>Omschrijving</label>
+                      <textarea id="ind-uitzondering-info" placeholder="Beschrijf de uitzonderlijke indienwijze..." style="min-height:60px;"></textarea>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div style="margin-bottom:20px;">
+              <div class="sectie-titel" style="margin-bottom:12px;">Evaluatievorm</div>
+              <div style="display:flex;flex-wrap:wrap;gap:10px;margin-bottom:10px;">
+                <label style="display:flex;align-items:center;gap:6px;font-size:10.5pt;cursor:pointer;text-transform:none;letter-spacing:0;font-weight:400;"><input type="checkbox" value="formatief"> Formatief</label>
+                <label style="display:flex;align-items:center;gap:6px;font-size:10.5pt;cursor:pointer;text-transform:none;letter-spacing:0;font-weight:400;"><input type="checkbox" value="summatief"> Summatief</label>
+                <label style="display:flex;align-items:center;gap:6px;font-size:10.5pt;cursor:pointer;text-transform:none;letter-spacing:0;font-weight:400;"><input type="checkbox" value="zelfbeoordeling"> Zelfbeoordeling</label>
+              </div>
+              <div style="display:flex;gap:8px;align-items:center;">
+                <input type="text" id="eval-extra" placeholder="Andere evaluatievorm..." style="flex:1;">
+                <button class="knop knop-secundair knop-klein" onclick="voegEvalToe()">+ Toevoegen</button>
+              </div>
+              <div id="eval-extra-lijst" style="margin-top:8px;"></div>
+            </div>
+
+          </div>
+
+          <!-- Opslaan knoppen -->
+          <div style="padding-top:16px;border-top:1px solid var(--grijs-rand);display:flex;gap:10px;flex-wrap:wrap;">
+            <button class="knop knop-primair" onclick="slaaTaakOp()">💾 Opslaan</button>
+            <button class="knop knop-secundair" onclick="previewTaak()">👁 Preview taak</button>
+            <button class="knop knop-secundair" onclick="annuleerTaak()">Annuleren</button>
+          </div>
+        </div>
+
+        <!-- Overzicht taken -->
+        <div class="kaart" id="taken-overzicht">
+          <div class="kaart-titel">Overzicht taken</div>
+          <div id="taken-lader" class="lader">Laden...</div>
+          <div class="tabel-wrapper" id="taken-tabel" style="display:none;">
+            <table>
+              <thead>
+                <tr>
+                  <th>Code</th>
+                  <th>Titel</th>
+                  <th>Week</th>
+                  <th>Routes</th>
+                  <th>Status</th>
+                  <th>Acties</th>
+                </tr>
+              </thead>
+              <tbody id="taken-tbody"></tbody>
+            </table>
+          </div>
+          <div class="leeg-staat" id="taken-leeg" style="display:none;">
+            <div class="leeg-icoon">📅</div>
+            <p>Nog geen taken ingegeven.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== WEEKOVERZICHT ===== -->
+      <div class="sectie" id="sectie-weekoverzicht">
+        <div class="pagina-titel">Weekoverzicht</div>
+        <div class="pagina-ondertitel">Plaats taken in de juiste volgorde en exporteer de weekpagina.</div>
+
+        <div id="melding-weekoverzicht" class="melding"></div>
+
+        <div class="kaart" style="padding:16px 24px;">
+          <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;">
+            <select id="week-schooljaar" onchange="laadWeekOverzicht()" style="font-size:9.5pt;padding:5px 10px;">
+              <option value="2025-2026">2025-2026</option>
+            </select>
+            <select id="week-nr" onchange="laadWeekOverzicht()" style="font-size:9.5pt;padding:5px 10px;">
+              <option value="">Kies week...</option>
+            </select>
+            <select id="week-klas" onchange="laadWeekOverzicht()" style="font-size:9.5pt;padding:5px 10px;">
+              <option value="">Alle klassen</option>
+              <option value="1a">1a</option>
+              <option value="1b">1b</option>
+            </select>
+            <button class="knop knop-primair" onclick="exporteerWeekpagina()">⬇️ Exporteer HTML</button>
+            <button class="knop knop-secundair" onclick="previewWeekpagina()">👁 Preview week</button>
+          </div>
+        </div>
+
+        <div class="kaart" id="week-kaarten-blok" style="display:none;">
+          <div class="kaart-titel">
+            <span id="week-kaarten-titel">Taken deze week</span>
+            <span style="font-size:9.5pt;color:var(--tekst-licht);">Sleep om volgorde aan te passen</span>
+          </div>
+          <div class="taken-kaart-grid" id="week-kaarten-container"></div>
+          <div style="margin-top:16px;display:flex;gap:10px;">
+            <button class="knop knop-primair" onclick="slaVolgordeOp()">💾 Volgorde opslaan</button>
+          </div>
+        </div>
+
+        <!-- Preview venster -->
+        <div class="kaart" id="week-preview-blok" style="display:none;">
+          <div class="kaart-titel">
+            <span>Preview weekpagina</span>
+            <button class="knop knop-secundair knop-klein" onclick="document.getElementById('week-preview-blok').style.display='none'">Sluiten</button>
+          </div>
+          <div id="week-preview-inhoud" style="border:1px solid var(--grijs-rand);border-radius:8px;overflow:hidden;"></div>
+        </div>
+      </div>
+
     </main>
   </div>
 </div>
@@ -1009,7 +1517,9 @@
       laadDoelen();
       laadBronnen();
       laadTemplates();
+      laadTaken();
       vulDatalijsten();
+      vulWeekDropdowns();
     } else {
       document.getElementById('inlogscherm').style.display = 'flex';
       document.getElementById('app').style.display = 'none';
@@ -2152,10 +2662,10 @@
         continue;
       }
 
-      // Zachte enter op eigen regel: voeg <br> toe aan vorig element
+      // Zachte enter op eigen regel
       if (getrimmed.startsWith('++')) {
         const rest = inline(getrimmed.slice(2).trim());
-        html += `<div style="margin-left:0;margin-bottom:2px;">${rest}</div>`;
+        html += `<div style="margin-bottom:2px;">${rest ? rest : ''}</div>`;
         continue;
       }
 
@@ -2412,6 +2922,765 @@
     } catch(e) {
       toonMelding('templates', 'Fout bij verwijderen: ' + e.message, 'fout');
     }
+  };
+
+
+
+  // ===== TAKEN =====
+
+  let bewerkTaakId = null;
+  let taakRefTeller = 0;
+  let geselecteerdeVK = {}; // id -> data
+  let geselecteerdeSC = {}; // id -> data
+  let geselecteerdeBronnen = {}; // id -> data
+  let extraEvalForms = [];
+  let cacheTaken = { alle: null };
+  let alleDoelen = null;
+  let alleBronnenCache = null;
+  let alleTemplatesCache = null;
+
+  // Huidig schooljaar berekenen
+  function huidigSchooljaar() {
+    const nu = new Date();
+    const jaar = nu.getFullYear();
+    const maand = nu.getMonth() + 1;
+    return maand >= 9 ? `${jaar}-${jaar+1}` : `${jaar-1}-${jaar}`;
+  }
+
+  // Weekfilter vullen
+  function vulWeekDropdowns() {
+    const opties = Array.from({length: 38}, (_, i) => `<option value="${i+1}">Week ${i+1}</option>`).join('');
+    ['filter-taak-week', 'week-nr'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.innerHTML = (id === 'filter-taak-week' ? '<option value="">Alle weken</option>' : '<option value="">Kies week...</option>') + opties;
+    });
+  }
+
+  // Tabbladen
+  window.toonTabblad = (id, knop) => {
+    document.querySelectorAll('.tabblad-inhoud').forEach(t => t.classList.remove('actief'));
+    document.querySelectorAll('.tabblad-knop').forEach(k => k.classList.remove('actief'));
+    document.getElementById(id).classList.add('actief');
+    knop.classList.add('actief');
+    if (id === 'tb-inhoud') {
+      laadDoelKeuzes();
+      laadBronKeuzes();
+      laadTemplateDropdown();
+    }
+  };
+
+  // Taak referenties
+  window.voegTaakRefToe = (waarde = '') => {
+    const container = document.getElementById('taak-ref-container');
+    document.getElementById('geen-taak-refs').style.display = 'none';
+    taakRefTeller++;
+    const id = 'taak-ref-' + taakRefTeller;
+    const div = document.createElement('div');
+    div.className = 'subdoel-item';
+    div.id = id;
+    div.innerHTML = `
+      <div class="cd-wrapper" style="flex:1;">
+        <input type="text" class="cd-input taak-ref-waarde" placeholder="bv. 7.1" value="${waarde}"
+          autocomplete="off" data-type="referentie"
+          oninput="cdFilter(this)" onfocus="cdFilter(this)" onblur="cdVerberg(this)">
+        <div class="cd-lijst" id="cd-lijst-taakref-${id}"></div>
+        <div class="cd-waarschuwing">⚠ Onbekende referentie.</div>
+      </div>
+      <button class="subdoel-verwijder" onclick="verwijderTaakRef('${id}')">✕</button>
+    `;
+    container.appendChild(div);
+  };
+
+  window.verwijderTaakRef = (id) => {
+    document.getElementById(id).remove();
+    if (!document.querySelectorAll('.taak-ref-waarde').length)
+      document.getElementById('geen-taak-refs').style.display = 'block';
+  };
+
+  function haalTaakRefs() {
+    return Array.from(document.querySelectorAll('.taak-ref-waarde')).map(i => i.value.trim()).filter(v => v);
+  }
+
+  // Indienen toggle
+  window.toggleIndienenExtra = (id) => {
+    const el = document.getElementById(id);
+    const checkbox = document.getElementById(id.replace('-extra', ''));
+    el.classList.toggle('zichtbaar', checkbox.checked);
+  };
+
+  // Evaluatievorm extra
+  window.voegEvalToe = () => {
+    const input = document.getElementById('eval-extra');
+    const waarde = input.value.trim();
+    if (!waarde) return;
+    extraEvalForms.push(waarde);
+    input.value = '';
+    renderEvalExtra();
+  };
+
+  function renderEvalExtra() {
+    document.getElementById('eval-extra-lijst').innerHTML = extraEvalForms.map((e, i) =>
+      `<span class="badge badge-basis" style="margin-right:6px;cursor:pointer;" onclick="verwijderEval(${i})">${e} ✕</span>`
+    ).join('');
+  }
+
+  window.verwijderEval = (i) => {
+    extraEvalForms.splice(i, 1);
+    renderEvalExtra();
+  };
+
+  // Instructie type toggle
+  window.toggleInstructieType = () => {
+    const isTemplate = document.getElementById('instr-template').checked;
+    document.getElementById('instr-template-blok').style.display = isTemplate ? 'block' : 'none';
+    document.getElementById('instr-vrij-blok').style.display = isTemplate ? 'none' : 'block';
+  };
+
+  window.updatePreviewTaak = () => {
+    const ta = document.getElementById('taak-instructies-vrij');
+    document.getElementById('taak-instructies-preview').innerHTML = parseMarkdown(ta.value);
+    ta.style.height = 'auto';
+    ta.style.height = Math.max(320, ta.scrollHeight) + 'px';
+  };
+
+  window.detecteerParametersTaak = () => {
+    const inhoud = document.getElementById('taak-instructies-vrij').value;
+    const gevonden = [...new Set([...inhoud.matchAll(/\{(\w+)\}/g)].map(m => m[1]))];
+    const container = document.getElementById('param-container-taak');
+    const lijst = document.getElementById('param-lijst-taak');
+    if (!gevonden.length) { container.style.display = 'none'; return; }
+    container.style.display = 'block';
+    const bestaande = {};
+    lijst.querySelectorAll('.param-input').forEach(inp => { bestaande[inp.dataset.param] = inp.value; });
+    lijst.innerHTML = gevonden.map(p => `
+      <div class="param-rij">
+        <div class="param-naam">{${p}}</div>
+        <input type="text" class="param-input" data-param="${p}" placeholder="Standaardwaarde..." value="${bestaande[p] || ''}">
+      </div>
+    `).join('');
+  };
+
+  window.toggleSyntaxTaak = () => {
+    actievEditor = document.getElementById('taak-instructies-vrij');
+    toggleSyntax();
+  };
+
+  window.slaInstructiesAlsTemplateOp = async () => {
+    const inhoud = document.getElementById('taak-instructies-vrij').value.trim();
+    if (!inhoud) { alert('Geen instructies om op te slaan.'); return; }
+    const naam = prompt('Naam voor de template:');
+    if (!naam) return;
+    const type = prompt('Type (les/taak/rekenvaardigheden/andere):', 'les');
+    const parameters = {};
+    document.querySelectorAll('#param-lijst-taak .param-input').forEach(inp => {
+      parameters[inp.dataset.param] = inp.value.trim();
+    });
+    try {
+      await setDoc(doc(collection(db, 'templates')), { naam, type: type || 'les', inhoud, parameters, aangepastOp: new Date().toISOString() });
+      cacheTemplates.alle = null;
+      alert(`Template "${naam}" opgeslagen!`);
+    } catch(e) { alert('Fout: ' + e.message); }
+  };
+
+  // Template dropdown laden
+  async function laadTemplateDropdown() {
+    if (!alleTemplatesCache) {
+      const snap = await getDocs(collection(db, 'templates'));
+      alleTemplatesCache = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      alleTemplatesCache.sort((a,b) => a.naam.localeCompare(b.naam, 'nl'));
+    }
+    const sel = document.getElementById('taak-template-id');
+    const huidig = sel.value;
+    sel.innerHTML = '<option value="">Kies template...</option>' +
+      alleTemplatesCache.map(t => `<option value="${t.id}" ${t.id === huidig ? 'selected' : ''}>${t.naam}</option>`).join('');
+  }
+
+  window.laadTemplateParams = () => {
+    const id = document.getElementById('taak-template-id').value;
+    const blok = document.getElementById('template-params-blok');
+    const lijst = document.getElementById('template-params-lijst');
+    if (!id || !alleTemplatesCache) { blok.style.display = 'none'; return; }
+    const tmpl = alleTemplatesCache.find(t => t.id === id);
+    if (!tmpl) { blok.style.display = 'none'; return; }
+    const params = tmpl.parameters || {};
+    if (!Object.keys(params).length) { blok.style.display = 'none'; return; }
+    blok.style.display = 'block';
+    lijst.innerHTML = Object.entries(params).map(([naam, std]) => `
+      <div class="param-rij">
+        <div class="param-naam">{${naam}}</div>
+        <input type="text" class="param-input" data-param="${naam}" placeholder="Standaardwaarde..." value="${std}">
+      </div>
+    `).join('');
+  };
+
+  // Doelen laden voor keuze
+  async function laadDoelKeuzes() {
+    if (!alleDoelen) {
+      const snap = await getDocs(collection(db, 'doelen'));
+      alleDoelen = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    }
+    // Vul filteropties
+    const leerplanSet = [...new Set(alleDoelen.flatMap(d => d.leerplandoel_codes || [d.leerplandoel_code].filter(Boolean)))].sort((a,b) => a.localeCompare(b,'nl',{numeric:true}));
+    const refSet = [...new Set(alleDoelen.flatMap(d => d.referenties || []))].sort((a,b) => a.localeCompare(b,'nl',{numeric:true}));
+    ['vk','sc'].forEach(type => {
+      const lp = document.getElementById(`filter-${type}-leerplan`);
+      const rf = document.getElementById(`filter-${type}-ref`);
+      if (lp) lp.innerHTML = '<option value="">Alle leerplandoelen</option>' + leerplanSet.map(c => `<option value="${c}">${c}</option>`).join('');
+      if (rf) rf.innerHTML = '<option value="">Alle referenties</option>' + refSet.map(r => `<option value="${r}">${r}</option>`).join('');
+    });
+    filterDoelKeuzes('vk');
+    filterDoelKeuzes('sc');
+  }
+
+  window.filterDoelKeuzes = (soort) => {
+    if (!alleDoelen) return;
+    const zoek = document.getElementById(`zoek-${soort}`)?.value.toLowerCase() || '';
+    const lp = document.getElementById(`filter-${soort}-leerplan`)?.value || '';
+    const ref = document.getElementById(`filter-${soort}-ref`)?.value || '';
+    const typeFilter = soort === 'vk' ? 'voorkennis' : 'succescriterium';
+
+    let gefilterd = alleDoelen.filter(d => d.type === typeFilter);
+    if (zoek) gefilterd = gefilterd.filter(d => d.tekst.toLowerCase().includes(zoek));
+    if (lp) gefilterd = gefilterd.filter(d => (d.leerplandoel_codes || [d.leerplandoel_code].filter(Boolean)).includes(lp));
+    if (ref) gefilterd = gefilterd.filter(d => (d.referenties || []).includes(ref));
+
+    const geselecteerd = soort === 'vk' ? geselecteerdeVK : geselecteerdeSC;
+    const container = document.getElementById(`doel-lijst-${soort}`);
+    if (!gefilterd.length) {
+      container.innerHTML = '<div style="padding:12px;font-size:9.5pt;color:var(--tekst-licht);">Geen doelen gevonden.</div>';
+      return;
+    }
+    container.innerHTML = gefilterd.map(d => `
+      <div class="doel-keuze-item ${geselecteerd[d.id] ? 'geselecteerd' : ''}" onclick="toggleDoel('${soort}', '${d.id}')">
+        <div style="font-size:16px;">${geselecteerd[d.id] ? '✓' : '○'}</div>
+        <div>
+          <div class="doel-keuze-tekst">${d.tekst}</div>
+          <div class="doel-keuze-meta">${(d.leerplandoel_codes || [d.leerplandoel_code].filter(Boolean)).join(', ')} · ${(d.referenties || []).join(', ')}</div>
+        </div>
+      </div>
+    `).join('');
+  };
+
+  window.toggleDoel = (soort, id) => {
+    const geselecteerd = soort === 'vk' ? geselecteerdeVK : geselecteerdeSC;
+    const doel = alleDoelen.find(d => d.id === id);
+    if (!doel) return;
+    if (geselecteerd[id]) delete geselecteerd[id];
+    else geselecteerd[id] = doel;
+    filterDoelKeuzes(soort);
+    renderGeselecteerdeDoelen(soort);
+  };
+
+  function renderGeselecteerdeDoelen(soort) {
+    const geselecteerd = soort === 'vk' ? geselecteerdeVK : geselecteerdeSC;
+    const container = document.getElementById(`geselecteerde-${soort}`);
+    const geenEl = document.getElementById(`geen-${soort}`);
+    const items = Object.values(geselecteerd);
+    if (!items.length) {
+      geenEl.style.display = 'block';
+      container.querySelectorAll('.geselecteerd-doel-item').forEach(e => e.remove());
+      return;
+    }
+    geenEl.style.display = 'none';
+    container.querySelectorAll('.geselecteerd-doel-item').forEach(e => e.remove());
+    items.forEach(d => {
+      const div = document.createElement('div');
+      div.className = 'geselecteerd-doel-item';
+      div.innerHTML = `<span style="flex:1;">${d.tekst}</span><button class="verwijder-doel" onclick="toggleDoel('${soort}', '${d.id}')">✕</button>`;
+      container.appendChild(div);
+    });
+  }
+
+  window.nieuwDoelInline = async (soort) => {
+    const tekst = prompt('Tekst van het nieuwe doel:');
+    if (!tekst) return;
+    const type = soort === 'vk' ? 'voorkennis' : 'succescriterium';
+    const data = { tekst, type, leerplandoel_codes: [], referenties: [], evalueerbaar: 'nee', scores: '', notities: '', aangepastOp: new Date().toISOString() };
+    try {
+      const ref = doc(collection(db, 'doelen'));
+      await setDoc(ref, data);
+      alleDoelen = null;
+      cacheDoelen.alle = null;
+      await laadDoelKeuzes();
+      const nieuw = { id: ref.id, ...data };
+      const geselecteerd = soort === 'vk' ? geselecteerdeVK : geselecteerdeSC;
+      geselecteerd[ref.id] = nieuw;
+      filterDoelKeuzes(soort);
+      renderGeselecteerdeDoelen(soort);
+    } catch(e) { alert('Fout: ' + e.message); }
+  };
+
+  // Bronnen laden
+  async function laadBronKeuzes() {
+    if (!alleBronnenCache) {
+      const snap = await getDocs(collection(db, 'bronnen'));
+      alleBronnenCache = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    }
+    filterBronKeuzes();
+  }
+
+  window.filterBronKeuzes = () => {
+    if (!alleBronnenCache) return;
+    const zoek = document.getElementById('zoek-bron')?.value.toLowerCase() || '';
+    const type = document.getElementById('filter-bron-keuze-type')?.value || '';
+    let gefilterd = alleBronnenCache;
+    if (zoek) gefilterd = gefilterd.filter(b => b.label.toLowerCase().includes(zoek));
+    if (type) gefilterd = gefilterd.filter(b => b.type === type);
+    const container = document.getElementById('bron-keuze-lijst');
+    if (!gefilterd.length) {
+      container.innerHTML = '<div style="padding:12px;font-size:9.5pt;color:var(--tekst-licht);">Geen bronnen gevonden.</div>';
+      return;
+    }
+    const iconen = { website:'🌐', video:'▶️', classroom:'🎓', bestand:'📄', andere:'📎' };
+    container.innerHTML = gefilterd.map(b => `
+      <div class="doel-keuze-item ${geselecteerdeBronnen[b.id] ? 'geselecteerd' : ''}" onclick="toggleBron('${b.id}')">
+        <div style="font-size:16px;">${geselecteerdeBronnen[b.id] ? '✓' : '○'}</div>
+        <div>
+          <div class="doel-keuze-tekst">${iconen[b.type] || '📎'} ${b.label}</div>
+          <div class="doel-keuze-meta">${b.type} ${b.referentie ? '· ' + b.referentie : ''}</div>
+        </div>
+      </div>
+    `).join('');
+  };
+
+  window.toggleBron = (id) => {
+    const bron = alleBronnenCache.find(b => b.id === id);
+    if (!bron) return;
+    if (geselecteerdeBronnen[id]) delete geselecteerdeBronnen[id];
+    else geselecteerdeBronnen[id] = bron;
+    filterBronKeuzes();
+    renderGeselecteerdeBronnen();
+  };
+
+  function renderGeselecteerdeBronnen() {
+    const container = document.getElementById('geselecteerde-bronnen');
+    const geenEl = document.getElementById('geen-bronnen-sel');
+    const items = Object.values(geselecteerdeBronnen);
+    if (!items.length) {
+      geenEl.style.display = 'block';
+      container.querySelectorAll('.geselecteerd-doel-item').forEach(e => e.remove());
+      return;
+    }
+    geenEl.style.display = 'none';
+    container.querySelectorAll('.geselecteerd-doel-item').forEach(e => e.remove());
+    items.forEach(b => {
+      const div = document.createElement('div');
+      div.className = 'geselecteerd-doel-item';
+      div.innerHTML = `<span style="flex:1;">${b.label}</span><button class="verwijder-doel" onclick="toggleBron('${b.id}')">✕</button>`;
+      container.appendChild(div);
+    });
+  }
+
+  // ===== NIEUWE TAAK / BEWERKEN =====
+
+  window.nieuweTaak = () => {
+    bewerkTaakId = null;
+    resetTaakFormulier();
+    document.getElementById('taak-formulier').style.display = 'block';
+    document.getElementById('formulier-taak-titel').textContent = 'Nieuwe taak';
+    document.getElementById('taak-schooljaar').value = huidigSchooljaar();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  function resetTaakFormulier() {
+    ['taak-code','taak-titel','taak-omschrijving','taak-volgtijdelijkheid','taak-tags','taak-notities','ind-map-info','ind-digitaal-link','ind-digitaal-deadline','ind-vakje-deadline','ind-uitzondering-info','eval-extra'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.value = '';
+    });
+    document.getElementById('taak-tijd').value = '';
+    document.getElementById('taak-vak').value = 'Wiskunde';
+    document.getElementById('taak-klas').value = '';
+    document.getElementById('taak-schooljaar').value = huidigSchooljaar();
+    document.getElementById('taak-lesweek').value = '';
+    document.getElementById('taak-status').value = 'concept';
+    document.getElementById('taak-papier').value = 'nee';
+    ['route-G','route-B','route-Z'].forEach(id => document.getElementById(id).checked = false);
+    document.querySelectorAll('#tb-algemeen input[type="checkbox"][value]').forEach(cb => cb.checked = false);
+    document.querySelectorAll('#tb-indienen input[type="checkbox"]').forEach(cb => {
+      cb.checked = false;
+      const extra = document.getElementById(cb.id + '-extra');
+      if (extra) extra.classList.remove('zichtbaar');
+    });
+    document.querySelectorAll('#tb-indienen input[type="checkbox"][value]').forEach(cb => cb.checked = false);
+    document.getElementById('taak-ref-container').querySelectorAll('.subdoel-item').forEach(e => e.remove());
+    document.getElementById('geen-taak-refs').style.display = 'block';
+    document.getElementById('sc-titel-leren').checked = true;
+    document.getElementById('sc-titel-eval').checked = false;
+    document.getElementById('instr-template').checked = true;
+    toggleInstructieType();
+    document.getElementById('taak-template-id').value = '';
+    document.getElementById('template-params-blok').style.display = 'none';
+    document.getElementById('taak-instructies-vrij').value = '';
+    document.getElementById('taak-instructies-preview').innerHTML = '';
+    geselecteerdeVK = {};
+    geselecteerdeSC = {};
+    geselecteerdeBronnen = {};
+    extraEvalForms = [];
+    renderEvalExtra();
+    document.getElementById('geen-vk').style.display = 'block';
+    document.getElementById('geen-sc').style.display = 'block';
+    document.getElementById('geen-bronnen-sel').style.display = 'block';
+    document.querySelectorAll('#geselecteerde-vk .geselecteerd-doel-item, #geselecteerde-sc .geselecteerd-doel-item, #geselecteerde-bronnen .geselecteerd-doel-item').forEach(e => e.remove());
+    toonTabblad('tb-algemeen', document.querySelector('.tabblad-knop'));
+    bewerkTaakId = null;
+  }
+
+  window.annuleerTaak = () => {
+    document.getElementById('taak-formulier').style.display = 'none';
+    resetTaakFormulier();
+  };
+
+  // ===== OPSLAAN =====
+
+  window.slaaTaakOp = async () => {
+    const verplicht = { 'taak-code': 'Code', 'taak-titel': 'Titel', 'taak-tijd': 'Tijd', 'taak-klas': 'Klas', 'taak-lesweek': 'Lesweek' };
+    for (const [id, naam] of Object.entries(verplicht)) {
+      if (!document.getElementById(id).value.trim()) {
+        toonMelding('taken', `${naam} is verplicht.`, 'fout');
+        return;
+      }
+    }
+
+    const routes = ['G','B','Z'].filter(r => document.getElementById('route-' + r).checked);
+    const fases = [...document.querySelectorAll('#tb-algemeen input[type="checkbox"][value]:checked')].map(cb => cb.value);
+    const evalVormen = [...document.querySelectorAll('#tb-indienen input[type="checkbox"][value]:checked')].map(cb => cb.value).concat(extraEvalForms);
+
+    const indienwijze = {
+      map: document.getElementById('ind-map').checked ? { actief: true, info: document.getElementById('ind-map-info').value.trim() } : null,
+      digitaal: document.getElementById('ind-digitaal').checked ? { actief: true, link: document.getElementById('ind-digitaal-link').value.trim(), deadline: document.getElementById('ind-digitaal-deadline').value.trim() } : null,
+      vakje: document.getElementById('ind-vakje').checked ? { actief: true, deadline: document.getElementById('ind-vakje-deadline').value.trim() } : null,
+      uitzondering: document.getElementById('ind-uitzondering').checked ? { actief: true, info: document.getElementById('ind-uitzondering-info').value.trim() } : null,
+    };
+
+    const isTemplate = document.getElementById('instr-template').checked;
+    const templateId = isTemplate ? document.getElementById('taak-template-id').value : null;
+    const templateParams = {};
+    if (isTemplate) {
+      document.querySelectorAll('#template-params-lijst .param-input').forEach(inp => { templateParams[inp.dataset.param] = inp.value.trim(); });
+    }
+    const vrijevInstructies = isTemplate ? null : document.getElementById('taak-instructies-vrij').value;
+
+    const data = {
+      code: document.getElementById('taak-code').value.trim(),
+      titel: document.getElementById('taak-titel').value.trim(),
+      tijd: parseInt(document.getElementById('taak-tijd').value),
+      vak: 'Wiskunde',
+      klas: document.getElementById('taak-klas').value,
+      schooljaar: document.getElementById('taak-schooljaar').value,
+      lesweek: parseInt(document.getElementById('taak-lesweek').value),
+      omschrijving: document.getElementById('taak-omschrijving').value.trim(),
+      routes,
+      referenties: haalTaakRefs(),
+      volgtijdelijkheid: document.getElementById('taak-volgtijdelijkheid').value.trim() || '0.0',
+      volgorde: 0,
+      fases,
+      extraPapier: document.getElementById('taak-papier').value,
+      voorkennis: Object.keys(geselecteerdeVK),
+      succescriteria: Object.keys(geselecteerdeSC),
+      scTitelLeren: document.getElementById('sc-titel-leren').checked,
+      scTitelEval: document.getElementById('sc-titel-eval').checked,
+      bronnen: Object.keys(geselecteerdeBronnen),
+      instructieType: isTemplate ? 'template' : 'vrij',
+      templateId,
+      templateParams,
+      vrijevInstructies,
+      indienwijze,
+      evaluatievorm: evalVormen,
+      status: document.getElementById('taak-status').value,
+      versienummer: 1,
+      tags: document.getElementById('taak-tags').value.split(',').map(t => t.trim()).filter(Boolean),
+      notities: document.getElementById('taak-notities').value.trim(),
+      aangepastOp: new Date().toISOString(),
+    };
+
+    try {
+      const docRef = bewerkTaakId ? doc(db, 'taken', bewerkTaakId) : doc(collection(db, 'taken'));
+      await setDoc(docRef, data);
+      cacheTaken.alle = null;
+      toonMelding('taken', `Taak "${data.titel}" opgeslagen.`, 'succes');
+      document.getElementById('taak-formulier').style.display = 'none';
+      resetTaakFormulier();
+      laadTaken();
+    } catch(e) {
+      toonMelding('taken', 'Fout bij opslaan: ' + e.message, 'fout');
+    }
+  };
+
+  // ===== LADEN =====
+
+  window.laadTaken = async () => {
+    document.getElementById('taken-lader').style.display = 'block';
+    document.getElementById('taken-tabel').style.display = 'none';
+    document.getElementById('taken-leeg').style.display = 'none';
+    try {
+      if (!cacheTaken.alle) {
+        const snap = await getDocs(collection(db, 'taken'));
+        cacheTaken.alle = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      }
+      let taken = cacheTaken.alle;
+      const sj = document.getElementById('filter-taak-schooljaar').value;
+      const week = document.getElementById('filter-taak-week').value;
+      const status = document.getElementById('filter-taak-status').value;
+      if (sj) taken = taken.filter(t => t.schooljaar === sj);
+      if (week) taken = taken.filter(t => t.lesweek === parseInt(week));
+      if (status) taken = taken.filter(t => t.status === status);
+      taken.sort((a,b) => (a.lesweek - b.lesweek) || a.code.localeCompare(b.code));
+
+      document.getElementById('taken-lader').style.display = 'none';
+      if (!taken.length) { document.getElementById('taken-leeg').style.display = 'block'; return; }
+
+      const statusKleur = { concept: 'badge-bg', actief: 'badge-basis', archief: '' };
+      const tbody = document.getElementById('taken-tbody');
+      tbody.innerHTML = taken.map(t => `
+        <tr>
+          <td><strong>${t.code}</strong></td>
+          <td>${t.titel}</td>
+          <td>W${t.lesweek}</td>
+          <td>${(t.routes || []).map(r => `<span class="badge route-${r}">${r}</span>`).join(' ')}</td>
+          <td><span class="badge ${statusKleur[t.status] || ''}">${t.status}</span></td>
+          <td style="white-space:nowrap;">
+            <button class="knop knop-secundair knop-klein" onclick="bewerkTaak('${t.id}')">✏️</button>
+            <button class="knop knop-secundair knop-klein" onclick="kopieerTaak('${t.id}')">📋</button>
+            <button class="knop knop-gevaar knop-klein" onclick="verwijderTaak('${t.id}')">🗑️</button>
+          </td>
+        </tr>
+      `).join('');
+      document.getElementById('taken-tabel').style.display = 'block';
+    } catch(e) {
+      toonMelding('taken', 'Fout bij laden: ' + e.message, 'fout');
+      document.getElementById('taken-lader').style.display = 'none';
+    }
+  };
+
+  // ===== BEWERKEN =====
+
+  window.bewerkTaak = async (id) => {
+    try {
+      const snap = await getDoc(doc(db, 'taken', id));
+      if (!snap.exists()) return;
+      const t = snap.data();
+      bewerkTaakId = id;
+      resetTaakFormulier();
+      document.getElementById('formulier-taak-titel').textContent = `Taak "${t.titel}" bewerken`;
+
+      document.getElementById('taak-code').value = t.code || '';
+      document.getElementById('taak-titel').value = t.titel || '';
+      document.getElementById('taak-tijd').value = t.tijd || '';
+      document.getElementById('taak-klas').value = t.klas || '';
+      document.getElementById('taak-schooljaar').value = t.schooljaar || huidigSchooljaar();
+      document.getElementById('taak-lesweek').value = t.lesweek || '';
+      document.getElementById('taak-omschrijving').value = t.omschrijving || '';
+      document.getElementById('taak-volgtijdelijkheid').value = t.volgtijdelijkheid || '';
+      document.getElementById('taak-tags').value = (t.tags || []).join(', ');
+      document.getElementById('taak-notities').value = t.notities || '';
+      document.getElementById('taak-status').value = t.status || 'concept';
+      document.getElementById('taak-papier').value = t.extraPapier || 'nee';
+      document.getElementById('sc-titel-leren').checked = t.scTitelLeren !== false;
+      document.getElementById('sc-titel-eval').checked = t.scTitelEval || false;
+
+      (t.routes || []).forEach(r => { const el = document.getElementById('route-' + r); if (el) el.checked = true; });
+      (t.fases || []).forEach(f => {
+        const cb = document.querySelector(`#tb-algemeen input[value="${f}"]`);
+        if (cb) cb.checked = true;
+      });
+      (t.referenties || []).forEach(r => voegTaakRefToe(r));
+
+      if (t.instructieType === 'vrij') {
+        document.getElementById('instr-vrij').checked = true;
+        toggleInstructieType();
+        document.getElementById('taak-instructies-vrij').value = t.vrijevInstructies || '';
+        updatePreviewTaak();
+      } else {
+        document.getElementById('instr-template').checked = true;
+        toggleInstructieType();
+        await laadTemplateDropdown();
+        document.getElementById('taak-template-id').value = t.templateId || '';
+        laadTemplateParams();
+        if (t.templateParams) {
+          setTimeout(() => {
+            document.querySelectorAll('#template-params-lijst .param-input').forEach(inp => {
+              if (t.templateParams[inp.dataset.param] !== undefined) inp.value = t.templateParams[inp.dataset.param];
+            });
+          }, 100);
+        }
+      }
+
+      // Indienwijze
+      if (t.indienwijze?.map?.actief) { document.getElementById('ind-map').checked = true; toggleIndienenExtra('ind-map-extra'); document.getElementById('ind-map-info').value = t.indienwijze.map.info || ''; }
+      if (t.indienwijze?.digitaal?.actief) { document.getElementById('ind-digitaal').checked = true; toggleIndienenExtra('ind-digitaal-extra'); document.getElementById('ind-digitaal-link').value = t.indienwijze.digitaal.link || ''; document.getElementById('ind-digitaal-deadline').value = t.indienwijze.digitaal.deadline || ''; }
+      if (t.indienwijze?.vakje?.actief) { document.getElementById('ind-vakje').checked = true; toggleIndienenExtra('ind-vakje-extra'); document.getElementById('ind-vakje-deadline').value = t.indienwijze.vakje.deadline || ''; }
+      if (t.indienwijze?.uitzondering?.actief) { document.getElementById('ind-uitzondering').checked = true; toggleIndienenExtra('ind-uitzondering-extra'); document.getElementById('ind-uitzondering-info').value = t.indienwijze.uitzondering.info || ''; }
+
+      // Evaluatievorm
+      (t.evaluatievorm || []).forEach(ev => {
+        const cb = document.querySelector(`#tb-indienen input[value="${ev}"]`);
+        if (cb) cb.checked = true;
+        else if (!['formatief','summatief','zelfbeoordeling'].includes(ev)) { extraEvalForms.push(ev); }
+      });
+      renderEvalExtra();
+
+      // Doelen laden en selecteren
+      await laadDoelKeuzes();
+      (t.voorkennis || []).forEach(id => {
+        const d = alleDoelen?.find(d => d.id === id);
+        if (d) { geselecteerdeVK[id] = d; }
+      });
+      (t.succescriteria || []).forEach(id => {
+        const d = alleDoelen?.find(d => d.id === id);
+        if (d) { geselecteerdeSC[id] = d; }
+      });
+      filterDoelKeuzes('vk'); renderGeselecteerdeDoelen('vk');
+      filterDoelKeuzes('sc'); renderGeselecteerdeDoelen('sc');
+
+      // Bronnen laden en selecteren
+      await laadBronKeuzes();
+      (t.bronnen || []).forEach(id => {
+        const b = alleBronnenCache?.find(b => b.id === id);
+        if (b) geselecteerdeBronnen[id] = b;
+      });
+      filterBronKeuzes(); renderGeselecteerdeBronnen();
+
+      document.getElementById('taak-formulier').style.display = 'block';
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    } catch(e) {
+      toonMelding('taken', 'Fout bij laden: ' + e.message, 'fout');
+    }
+  };
+
+  // ===== KOPIËREN =====
+
+  window.kopieerTaak = async (id) => {
+    await bewerkTaak(id);
+    bewerkTaakId = null;
+    document.getElementById('taak-code').value = '';
+    document.getElementById('formulier-taak-titel').textContent = 'Nieuwe taak (kopie)';
+    toonMelding('taken', 'Formulier ingevuld op basis van bestaande taak. Pas de code aan en sla op.', 'succes');
+  };
+
+  // ===== VERWIJDEREN =====
+
+  window.verwijderTaak = async (id) => {
+    const taak = cacheTaken.alle?.find(t => t.id === id);
+    if (!confirm(`Ben je zeker dat je taak "${taak?.titel || id}" wil verwijderen?`)) return;
+    try {
+      await deleteDoc(doc(db, 'taken', id));
+      cacheTaken.alle = null;
+      toonMelding('taken', 'Taak verwijderd.', 'succes');
+      laadTaken();
+    } catch(e) {
+      toonMelding('taken', 'Fout: ' + e.message, 'fout');
+    }
+  };
+
+  // ===== PREVIEW TAAK =====
+
+  window.previewTaak = async () => {
+    toonMelding('taken', 'Preview komt binnenkort beschikbaar bij de weekpagina export.', 'succes');
+  };
+
+  // ===== WEEKOVERZICHT =====
+
+  window.laadWeekOverzicht = async () => {
+    const sj = document.getElementById('week-schooljaar').value;
+    const week = document.getElementById('week-nr').value;
+    if (!week) { document.getElementById('week-kaarten-blok').style.display = 'none'; return; }
+
+    try {
+      if (!cacheTaken.alle) {
+        const snap = await getDocs(collection(db, 'taken'));
+        cacheTaken.alle = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      }
+      let taken = cacheTaken.alle.filter(t => t.schooljaar === sj && t.lesweek === parseInt(week));
+      const klas = document.getElementById('week-klas').value;
+      if (klas) taken = taken.filter(t => t.klas === klas);
+      taken.sort((a,b) => (a.volgorde || 0) - (b.volgorde || 0) || a.code.localeCompare(b.code));
+
+      document.getElementById('week-kaarten-titel').textContent = `Week ${week} — ${taken.length} taken`;
+      document.getElementById('week-kaarten-blok').style.display = 'block';
+
+      const container = document.getElementById('week-kaarten-container');
+      container.innerHTML = taken.map((t, i) => `
+        <div class="taak-kaart" draggable="true" data-id="${t.id}"
+          ondragstart="sleepStart(event)" ondragover="sleepOver(event)"
+          ondrop="sleepDrop(event)" ondragleave="sleepLeave(event)">
+          <div class="taak-kaart-nr">${i+1}</div>
+          <div class="taak-kaart-titel">${t.code}: ${t.titel}</div>
+          <div class="taak-kaart-meta">${t.tijd}' · ${t.fases?.join(', ') || ''}</div>
+          <div class="taak-kaart-routes">
+            ${(t.routes || []).map(r => `<span class="badge route-${r}">${r}</span>`).join('')}
+          </div>
+          ${t.volgtijdelijkheid && t.volgtijdelijkheid !== '0.0' ? `<div class="volgtijdelijk-badge">⚠ ${t.volgtijdelijkheid}</div>` : ''}
+          <div style="margin-top:8px;display:flex;gap:6px;">
+            <input type="number" value="${t.volgorde || i+1}" min="1"
+              style="width:50px;padding:4px;font-size:9.5pt;"
+              onchange="updateVolgorde('${t.id}', this.value)"
+              title="Volgorde handmatig aanpassen">
+          </div>
+        </div>
+      `).join('');
+    } catch(e) {
+      toonMelding('weekoverzicht', 'Fout: ' + e.message, 'fout');
+    }
+  };
+
+  // Slepen
+  let sleepElement = null;
+  window.sleepStart = (e) => { sleepElement = e.currentTarget; e.currentTarget.classList.add('sleep'); };
+  window.sleepOver = (e) => { e.preventDefault(); e.currentTarget.classList.add('sleep-over'); };
+  window.sleepLeave = (e) => { e.currentTarget.classList.remove('sleep-over'); };
+  window.sleepDrop = (e) => {
+    e.preventDefault();
+    const doel = e.currentTarget;
+    doel.classList.remove('sleep-over');
+    if (!sleepElement || sleepElement === doel) return;
+    const container = document.getElementById('week-kaarten-container');
+    const kaarten = [...container.querySelectorAll('.taak-kaart')];
+    const vanIdx = kaarten.indexOf(sleepElement);
+    const naarIdx = kaarten.indexOf(doel);
+    if (vanIdx < naarIdx) container.insertBefore(sleepElement, doel.nextSibling);
+    else container.insertBefore(sleepElement, doel);
+    sleepElement.classList.remove('sleep');
+    // Update nummers
+    container.querySelectorAll('.taak-kaart').forEach((k, i) => {
+      k.querySelector('.taak-kaart-nr').textContent = i+1;
+      const inp = k.querySelector('input[type="number"]');
+      if (inp) inp.value = i+1;
+    });
+  };
+
+  window.updateVolgorde = (id, waarde) => {
+    // Herorden kaarten op basis van ingevoerd getal
+    const container = document.getElementById('week-kaarten-container');
+    const kaarten = [...container.querySelectorAll('.taak-kaart')];
+    const kaart = kaarten.find(k => k.dataset.id === id);
+    if (kaart) {
+      const nr = parseInt(waarde) - 1;
+      const ref = kaarten[nr];
+      if (ref && ref !== kaart) container.insertBefore(kaart, ref);
+      kaarten.forEach((k, i) => { k.querySelector('.taak-kaart-nr').textContent = i+1; });
+    }
+  };
+
+  window.slaVolgordeOp = async () => {
+    const kaarten = [...document.getElementById('week-kaarten-container').querySelectorAll('.taak-kaart')];
+    try {
+      for (let i = 0; i < kaarten.length; i++) {
+        const id = kaarten[i].dataset.id;
+        await setDoc(doc(db, 'taken', id), { volgorde: i+1 }, { merge: true });
+      }
+      cacheTaken.alle = null;
+      toonMelding('weekoverzicht', 'Volgorde opgeslagen!', 'succes');
+    } catch(e) {
+      toonMelding('weekoverzicht', 'Fout: ' + e.message, 'fout');
+    }
+  };
+
+  window.exporteerWeekpagina = () => {
+    toonMelding('weekoverzicht', 'Export komt binnenkort beschikbaar.', 'succes');
+  };
+
+  window.previewWeekpagina = () => {
+    toonMelding('weekoverzicht', 'Preview komt binnenkort beschikbaar.', 'succes');
   };
 
 
