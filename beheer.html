@@ -226,6 +226,68 @@
   }
   .tooltip-wrapper:hover .tooltip-tekst { display: block; }
 
+
+  /* ===== TEMPLATE EDITOR ===== */
+  .editor-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  .editor-panel { display: flex; flex-direction: column; }
+  .editor-label { font-size: 9.5pt; font-weight: 700; color: var(--tekst-licht); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; }
+  .editor-textarea {
+    font-family: 'Courier New', monospace; font-size: 10.5pt; line-height: 1.7;
+    border: 1.5px solid var(--grijs-rand); border-radius: 8px; padding: 12px;
+    min-height: 320px; resize: vertical; width: 100%;
+    transition: border-color 0.2s;
+  }
+  .editor-textarea:focus { outline: none; border-color: var(--blauw); box-shadow: 0 0 0 3px rgba(44,74,110,0.1); }
+  .preview-vak {
+    border: 1.5px solid var(--grijs-rand); border-radius: 8px; padding: 16px;
+    min-height: 320px; background: var(--grijs); font-size: 11pt;
+    line-height: 1.7; overflow-y: auto;
+  }
+  .preview-stap { display: flex; gap: 10px; margin-bottom: 6px; align-items: flex-start; }
+  .preview-nr { font-weight: 700; color: var(--blauw); border-right: 2.5px solid var(--blauw); padding-right: 10px; min-width: 28px; text-align: right; flex-shrink: 0; }
+  .preview-tekst { flex: 1; }
+  .preview-opsomming { display: flex; gap: 8px; margin-bottom: 4px; padding-left: 16px; }
+  .preview-bullet { color: var(--blauw); flex-shrink: 0; }
+  .preview-subtitel { font-weight: 700; font-size: 12pt; margin: 10px 0 4px; }
+  .preview-gewoon { margin-bottom: 4px; }
+  .preview-genest { padding-left: 32px; }
+  .preview-klein { font-size: 9pt; }
+  .preview-groot { font-size: 13pt; }
+  .preview-video-thumb { display: inline-block; margin: 6px 0; }
+  .preview-video-thumb img { width: 200px; border-radius: 6px; cursor: pointer; box-shadow: 0 2px 8px rgba(0,0,0,0.15); }
+  .preview-video-embed iframe { width: 100%; max-width: 400px; height: 225px; border-radius: 8px; border: none; margin: 6px 0; }
+  .preview-afbeelding img { max-width: 100%; border-radius: 6px; margin: 6px 0; }
+  .preview-param { background: #fef3c7; border: 1px solid #f59e0b; border-radius: 4px; padding: 1px 5px; font-size: 9.5pt; color: #92400e; }
+
+  /* Syntaxhulp */
+  .syntax-hulp {
+    position: fixed; right: 20px; top: 80px; width: 320px;
+    background: var(--wit); border: 1.5px solid var(--blauw); border-radius: 12px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.18); z-index: 200; display: none; padding: 16px;
+    max-height: calc(100vh - 100px); overflow-y: auto;
+  }
+  .syntax-hulp.zichtbaar { display: block; }
+  .syntax-hulp-titel { font-size: 11pt; font-weight: 700; color: var(--blauw); margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; }
+  .syntax-rij {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 6px 8px; border-radius: 6px; cursor: pointer; margin-bottom: 2px;
+    transition: background 0.15s;
+  }
+  .syntax-rij:hover { background: var(--blauw-licht); }
+  .syntax-code { font-family: 'Courier New', monospace; font-size: 9.5pt; color: var(--blauw); }
+  .syntax-omschrijving { font-size: 9pt; color: var(--tekst-licht); }
+
+  /* Parameters blok */
+  .param-blok { background: #fef3c7; border: 1px solid #f59e0b; border-radius: 8px; padding: 14px; margin-top: 12px; }
+  .param-blok-titel { font-size: 9.5pt; font-weight: 700; color: #92400e; margin-bottom: 10px; }
+  .param-rij { display: flex; gap: 10px; align-items: center; margin-bottom: 8px; }
+  .param-naam { font-family: 'Courier New', monospace; font-size: 9.5pt; color: #92400e; min-width: 120px; }
+  .param-input { flex: 1; padding: 6px 10px; border: 1px solid #f59e0b; border-radius: 6px; font-size: 10pt; background: white; }
+
+  @media (max-width: 900px) {
+    .editor-layout { grid-template-columns: 1fr; }
+  }
+
   /* ===== LEEG STAAT ===== */
   .leeg-staat { text-align: center; padding: 48px; color: var(--tekst-licht); }
   .leeg-staat .leeg-icoon { font-size: 40px; margin-bottom: 12px; }
@@ -281,7 +343,7 @@
       <div class="menu-item" onclick="toonSectie('bronnen')" id="menu-bronnen" data-sectie="bronnen">
         <span class="menu-icoon">🔗</span> Bronnen
       </div>
-      <div class="menu-item" style="opacity:0.4;cursor:default;">
+      <div class="menu-item" id="menu-templates" data-sectie="templates">
         <span class="menu-icoon">📝</span> Templates
       </div>
       <div class="menu-item" style="opacity:0.4;cursor:default;">
@@ -721,6 +783,134 @@
         </div>
       </div>
 
+
+      <!-- ===== TEMPLATES ===== -->
+      <div class="sectie" id="sectie-templates">
+        <div class="pagina-titel">Templates</div>
+        <div class="pagina-ondertitel">Beheer herbruikbare instructietemplates met opmaak en parameters.</div>
+
+        <div id="melding-templates" class="melding"></div>
+
+        <!-- Syntaxhulp zweefpaneel -->
+        <div class="syntax-hulp" id="syntax-hulp">
+          <div class="syntax-hulp-titel">
+            Syntaxhulp
+            <button onclick="toggleSyntax()" style="background:none;border:none;cursor:pointer;font-size:16px;color:var(--tekst-licht);">✕</button>
+          </div>
+          <div style="font-size:9pt;color:var(--tekst-licht);margin-bottom:10px;">Klik op een element om in te voegen.</div>
+
+          <div style="font-size:9pt;font-weight:700;color:var(--tekst);margin:8px 0 4px;">Structuur</div>
+          <div class="syntax-rij" onclick="voegSyntaxIn('1| ')"><span class="syntax-code">1| </span><span class="syntax-omschrijving">Genummerde stap</span></div>
+          <div class="syntax-rij" onclick="voegSyntaxIn('- ')"><span class="syntax-code">- </span><span class="syntax-omschrijving">Opsomming</span></div>
+          <div class="syntax-rij" onclick="voegSyntaxIn('  1| ')"><span class="syntax-code">  1| </span><span class="syntax-omschrijving">Geneste nummering</span></div>
+          <div class="syntax-rij" onclick="voegSyntaxIn('  - ')"><span class="syntax-code">  - </span><span class="syntax-omschrijving">Geneste opsomming</span></div>
+          <div class="syntax-rij" onclick="voegSyntaxIn('## ')"><span class="syntax-code">## </span><span class="syntax-omschrijving">Subtitel</span></div>
+
+          <div style="font-size:9pt;font-weight:700;color:var(--tekst);margin:8px 0 4px;">Tekstopmaak</div>
+          <div class="syntax-rij" onclick="voegSyntaxIn('**tekst**')"><span class="syntax-code">**tekst**</span><span class="syntax-omschrijving">Vet</span></div>
+          <div class="syntax-rij" onclick="voegSyntaxIn('*tekst*')"><span class="syntax-code">*tekst*</span><span class="syntax-omschrijving">Cursief</span></div>
+          <div class="syntax-rij" onclick="voegSyntaxIn('__tekst__')"><span class="syntax-code">__tekst__</span><span class="syntax-omschrijving">Onderstrepen</span></div>
+          <div class="syntax-rij" onclick="voegSyntaxIn('~tekst~')"><span class="syntax-code">~tekst~</span><span class="syntax-omschrijving">Kleiner</span></div>
+          <div class="syntax-rij" onclick="voegSyntaxIn('^^tekst^^')"><span class="syntax-code">^^tekst^^</span><span class="syntax-omschrijving">Groter</span></div>
+
+          <div style="font-size:9pt;font-weight:700;color:var(--tekst);margin:8px 0 4px;">Media & links</div>
+          <div class="syntax-rij" onclick="voegSyntaxIn('[label](url)')"><span class="syntax-code">[label](url)</span><span class="syntax-omschrijving">Link</span></div>
+          <div class="syntax-rij" onclick="voegSyntaxIn('![naam](./pictures/naam.png)')"><span class="syntax-code">![naam](./pictures/...)</span><span class="syntax-omschrijving">Afbeelding</span></div>
+          <div class="syntax-rij" onclick="voegSyntaxIn('![video-thumb](url)')"><span class="syntax-code">![video-thumb](url)</span><span class="syntax-omschrijving">Video thumbnail</span></div>
+          <div class="syntax-rij" onclick="voegSyntaxIn('![video-embed](url)')"><span class="syntax-code">![video-embed](url)</span><span class="syntax-omschrijving">Video ingesloten</span></div>
+
+          <div style="font-size:9pt;font-weight:700;color:var(--tekst);margin:8px 0 4px;">Parameters</div>
+          <div class="syntax-rij" onclick="voegSyntaxIn('{parameternaam}')"><span class="syntax-code">{parameternaam}</span><span class="syntax-omschrijving">Variabele waarde</span></div>
+        </div>
+
+        <!-- Formulier -->
+        <div class="kaart">
+          <div class="kaart-titel">
+            <span id="formulier-template-titel">Nieuwe template toevoegen</span>
+            <div style="display:flex;gap:8px;">
+              <button class="knop knop-secundair knop-klein" onclick="toggleSyntax()" title="Syntaxhulp">❓ Syntaxhulp</button>
+              <button class="knop knop-secundair knop-klein" onclick="annuleerTemplate()" id="annuleer-template" style="display:none">Annuleren</button>
+            </div>
+          </div>
+
+          <div class="formulier-rij">
+            <div class="formulier-groep">
+              <label>Naam</label>
+              <input type="text" id="tmpl-naam" placeholder="bv. Standaard les">
+            </div>
+            <div class="formulier-groep">
+              <label>Type</label>
+              <select id="tmpl-type">
+                <option value="les">Les</option>
+                <option value="taak">Taak</option>
+                <option value="rekenvaardigheden">Rekenvaardigheden</option>
+                <option value="andere">Andere</option>
+              </select>
+            </div>
+            <div class="formulier-groep">
+              <label>Notities</label>
+              <input type="text" id="tmpl-notities" placeholder="Optionele notitie...">
+            </div>
+          </div>
+
+          <!-- Editor + preview -->
+          <div class="editor-layout" style="margin-top:12px;">
+            <div class="editor-panel">
+              <div class="editor-label">Instructies <span style="font-weight:400;text-transform:none;font-size:9pt;">(gebruik syntaxhulp voor opmaak)</span></div>
+              <textarea class="editor-textarea" id="tmpl-inhoud"
+                oninput="updatePreview(); detecteerParameters()"
+                placeholder="## Voorbereiding&#10;Lees eerst blz. {blz_intro}.&#10;&#10;1| Maak opdracht {opdracht_nr}, cursus blz. {blz_opdracht}.&#10;   - Verbeter in __kleur__!&#10;2| Overloop de theorie bij **{sectie}**."></textarea>
+            </div>
+            <div class="editor-panel">
+              <div class="editor-label">Preview</div>
+              <div class="preview-vak" id="tmpl-preview"></div>
+            </div>
+          </div>
+
+          <!-- Parameters -->
+          <div id="param-container" style="display:none;" class="param-blok">
+            <div class="param-blok-titel">🔧 Gedetecteerde parameters — vul standaardwaarden in</div>
+            <div id="param-lijst"></div>
+          </div>
+
+          <div style="margin-top:20px;">
+            <button class="knop knop-primair" onclick="slaTemplateOp()">💾 Opslaan</button>
+          </div>
+        </div>
+
+        <!-- Overzicht -->
+        <div class="kaart">
+          <div class="kaart-titel">
+            <span>Overzicht templates</span>
+            <select id="filter-tmpl-type" onchange="laadTemplates()" style="font-size:9.5pt;padding:5px 10px;">
+              <option value="">Alle types</option>
+              <option value="les">Les</option>
+              <option value="taak">Taak</option>
+              <option value="rekenvaardigheden">Rekenvaardigheden</option>
+              <option value="andere">Andere</option>
+            </select>
+          </div>
+          <div id="templates-lader" class="lader">Laden...</div>
+          <div class="tabel-wrapper" id="templates-tabel" style="display:none;">
+            <table>
+              <thead>
+                <tr>
+                  <th>Naam</th>
+                  <th>Type</th>
+                  <th>Parameters</th>
+                  <th>Acties</th>
+                </tr>
+              </thead>
+              <tbody id="templates-tbody"></tbody>
+            </table>
+          </div>
+          <div class="leeg-staat" id="templates-leeg" style="display:none;">
+            <div class="leeg-icoon">📝</div>
+            <p>Nog geen templates ingegeven.</p>
+          </div>
+        </div>
+      </div>
+
     </main>
   </div>
 </div>
@@ -813,6 +1003,7 @@
       laadHoofdstukken();
       laadDoelen();
       laadBronnen();
+      laadTemplates();
       vulDatalijsten();
     } else {
       document.getElementById('inlogscherm').style.display = 'flex';
@@ -1886,6 +2077,305 @@
       laadBronnen();
     } catch(e) {
       toonMelding('bronnen', 'Fout bij verwijderen: ' + e.message, 'fout');
+    }
+  };
+
+
+
+  // ===== TEMPLATES =====
+
+  let bewerkTemplateId = null;
+  let actievEditor = null;
+  const cacheTemplates = { alle: null };
+
+  // ===== MARKDOWN PARSER =====
+
+  function parseMarkdown(tekst) {
+    if (!tekst) return '';
+    const regels = tekst.split('\n');
+    let html = '';
+    let numTeller = 0;
+    let genestNumTeller = 0;
+
+    for (let i = 0; i < regels.length; i++) {
+      const regel = regels[i];
+      const getrimmed = regel.trimStart();
+      const isGenest = regel.startsWith('  ') || regel.startsWith('\t');
+
+      // Inline opmaak toepassen
+      function inline(t) {
+        return t
+          .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+          .replace(/\*(.+?)\*/g, '<em>$1</em>')
+          .replace(/__(.+?)__/g, '<u>$1</u>')
+          .replace(/~~(.+?)~~/g, '<span class="preview-klein">$1</span>')
+          .replace(/\^\^(.+?)\^\^/g, '<span class="preview-groot">$1</span>')
+          .replace(/~(.+?)~/g, '<span class="preview-klein">$1</span>')
+          .replace(/\[(.+?)\]\((.+?)\)/g, '<a href="$2" target="_blank" style="color:var(--blauw);">$1</a>')
+          .replace(/\{(\w+)\}/g, '<span class="preview-param">{$1}</span>')
+          .replace(/!\[video-embed\]\((.+?)\)/g, (m, url) => {
+            const embedUrl = url.replace('/view', '/preview').replace('?usp=sharing', '');
+            return `<div class="preview-video-embed"><iframe src="${embedUrl}" allowfullscreen></iframe></div>`;
+          })
+          .replace(/!\[video-thumb\]\((.+?)\)/g, (m, url) => {
+            const fileId = url.match(/[-\w]{25,}/)?.[0] || '';
+            const thumb = fileId ? `https://drive.google.com/thumbnail?id=${fileId}&sz=w320` : '';
+            return `<div class="preview-video-thumb"><a href="${url}" target="_blank"><img src="${thumb}" alt="Video" onerror="this.src='';this.parentElement.innerHTML='▶️ Video openen';"></a></div>`;
+          })
+          .replace(/!\[(.+?)\]\((.+?)\)/g, '<div class="preview-afbeelding"><img src="$2" alt="$1"></div>');
+      }
+
+      if (!getrimmed) {
+        html += '<div style="height:6px;"></div>';
+        numTeller = 0;
+        genestNumTeller = 0;
+        continue;
+      }
+
+      // Subtitel
+      if (getrimmed.startsWith('## ')) {
+        numTeller = 0;
+        html += `<div class="preview-subtitel">${inline(getrimmed.slice(3))}</div>`;
+        continue;
+      }
+
+      // Geneste nummering
+      if (isGenest && getrimmed.match(/^\d+\|\s*/)) {
+        genestNumTeller++;
+        const inhoud = getrimmed.replace(/^\d+\|\s*/, '');
+        html += `<div class="preview-stap preview-genest"><div class="preview-nr">${genestNumTeller}</div><div class="preview-tekst">${inline(inhoud)}</div></div>`;
+        continue;
+      }
+
+      // Geneste opsomming
+      if (isGenest && getrimmed.startsWith('- ')) {
+        html += `<div class="preview-opsomming preview-genest"><div class="preview-bullet">•</div><div>${inline(getrimmed.slice(2))}</div></div>`;
+        continue;
+      }
+
+      // Geneste gewone tekst
+      if (isGenest) {
+        html += `<div class="preview-gewoon preview-genest">${inline(getrimmed)}</div>`;
+        continue;
+      }
+
+      // Nummering
+      if (getrimmed.match(/^\d+\|\s*/)) {
+        numTeller++;
+        genestNumTeller = 0;
+        const inhoud = getrimmed.replace(/^\d+\|\s*/, '');
+        html += `<div class="preview-stap"><div class="preview-nr">${numTeller}</div><div class="preview-tekst">${inline(inhoud)}</div></div>`;
+        continue;
+      }
+
+      // Opsomming
+      if (getrimmed.startsWith('- ')) {
+        html += `<div class="preview-opsomming"><div class="preview-bullet">•</div><div>${inline(getrimmed.slice(2))}</div></div>`;
+        continue;
+      }
+
+      // Gewone tekst
+      html += `<div class="preview-gewoon">${inline(getrimmed)}</div>`;
+    }
+    return html;
+  }
+
+  // ===== PREVIEW =====
+
+  window.updatePreview = () => {
+    const inhoud = document.getElementById('tmpl-inhoud').value;
+    document.getElementById('tmpl-preview').innerHTML = parseMarkdown(inhoud);
+  };
+
+  // ===== PARAMETERS DETECTEREN =====
+
+  window.detecteerParameters = () => {
+    const inhoud = document.getElementById('tmpl-inhoud').value;
+    const gevonden = [...new Set([...inhoud.matchAll(/\{(\w+)\}/g)].map(m => m[1]))];
+    const container = document.getElementById('param-container');
+    const lijst = document.getElementById('param-lijst');
+
+    if (gevonden.length === 0) {
+      container.style.display = 'none';
+      return;
+    }
+    container.style.display = 'block';
+
+    // Bewaarde waarden ophalen
+    const bestaande = {};
+    lijst.querySelectorAll('.param-input').forEach(inp => {
+      bestaande[inp.dataset.param] = inp.value;
+    });
+
+    lijst.innerHTML = gevonden.map(p => `
+      <div class="param-rij">
+        <div class="param-naam">{${p}}</div>
+        <input type="text" class="param-input" data-param="${p}"
+          placeholder="Standaardwaarde..."
+          value="${bestaande[p] || ''}">
+      </div>
+    `).join('');
+  };
+
+  // ===== SYNTAXHULP =====
+
+  window.toggleSyntax = () => {
+    document.getElementById('syntax-hulp').classList.toggle('zichtbaar');
+    actievEditor = document.getElementById('tmpl-inhoud');
+  };
+
+  window.voegSyntaxIn = (syntax) => {
+    const ta = actievEditor || document.getElementById('tmpl-inhoud');
+    const start = ta.selectionStart;
+    const einde = ta.selectionEnd;
+    const huidig = ta.value;
+    ta.value = huidig.slice(0, start) + syntax + huidig.slice(einde);
+    ta.selectionStart = ta.selectionEnd = start + syntax.length;
+    ta.focus();
+    updatePreview();
+    detecteerParameters();
+  };
+
+  // ===== OPSLAAN =====
+
+  window.slaTemplateOp = async () => {
+    const naam = document.getElementById('tmpl-naam').value.trim();
+    const inhoud = document.getElementById('tmpl-inhoud').value.trim();
+    if (!naam) { toonMelding('templates', 'Vul een naam in.', 'fout'); return; }
+    if (!inhoud) { toonMelding('templates', 'Vul de instructies in.', 'fout'); return; }
+
+    // Parameters ophalen
+    const parameters = {};
+    document.querySelectorAll('.param-input').forEach(inp => {
+      parameters[inp.dataset.param] = inp.value.trim();
+    });
+
+    const data = {
+      naam,
+      type: document.getElementById('tmpl-type').value,
+      inhoud,
+      parameters,
+      notities: document.getElementById('tmpl-notities').value.trim(),
+      aangepastOp: new Date().toISOString(),
+    };
+
+    try {
+      const docRef = bewerkTemplateId
+        ? doc(db, 'templates', bewerkTemplateId)
+        : doc(collection(db, 'templates'));
+      await setDoc(docRef, data);
+      cacheTemplates.alle = null;
+      toonMelding('templates', 'Template succesvol opgeslagen.', 'succes');
+      resetTemplateFormulier();
+      laadTemplates();
+    } catch(e) {
+      toonMelding('templates', 'Fout bij opslaan: ' + e.message, 'fout');
+    }
+  };
+
+  // ===== RESET =====
+
+  function resetTemplateFormulier() {
+    document.getElementById('tmpl-naam').value = '';
+    document.getElementById('tmpl-type').value = 'les';
+    document.getElementById('tmpl-inhoud').value = '';
+    document.getElementById('tmpl-notities').value = '';
+    document.getElementById('tmpl-preview').innerHTML = '';
+    document.getElementById('param-container').style.display = 'none';
+    document.getElementById('param-lijst').innerHTML = '';
+    document.getElementById('formulier-template-titel').textContent = 'Nieuwe template toevoegen';
+    document.getElementById('annuleer-template').style.display = 'none';
+    bewerkTemplateId = null;
+  }
+
+  window.annuleerTemplate = resetTemplateFormulier;
+
+  // ===== LADEN =====
+
+  window.laadTemplates = async () => {
+    document.getElementById('templates-lader').style.display = 'block';
+    document.getElementById('templates-tabel').style.display = 'none';
+    document.getElementById('templates-leeg').style.display = 'none';
+
+    try {
+      if (!cacheTemplates.alle) {
+        const snap = await getDocs(collection(db, 'templates'));
+        cacheTemplates.alle = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        cacheTemplates.alle.sort((a,b) => a.naam.localeCompare(b.naam, 'nl'));
+      }
+      let templates = cacheTemplates.alle;
+      const filterType = document.getElementById('filter-tmpl-type').value;
+      if (filterType) templates = templates.filter(t => t.type === filterType);
+
+      document.getElementById('templates-lader').style.display = 'none';
+      if (templates.length === 0) {
+        document.getElementById('templates-leeg').style.display = 'block'; return;
+      }
+      const typeLabelsT = { les: 'Les', taak: 'Taak', rekenvaardigheden: 'Rekenvaardigheden', andere: 'Andere' };
+      const tbody = document.getElementById('templates-tbody');
+      tbody.innerHTML = templates.map(t => {
+        const params = Object.keys(t.parameters || {});
+        return `
+          <tr>
+            <td><strong>${t.naam}</strong>${t.notities ? `<br><span style="font-size:9pt;color:var(--tekst-licht);">${t.notities}</span>` : ''}</td>
+            <td>${typeLabelsT[t.type] || t.type}</td>
+            <td style="font-size:9.5pt;">${params.length > 0 ? params.map(p => `<span class="preview-param">{${p}}</span>`).join(' ') : '—'}</td>
+            <td>
+              <button class="knop knop-secundair knop-klein" onclick="bewerkTemplate('${t.id}')">✏️</button>
+              <button class="knop knop-gevaar knop-klein" onclick="verwijderTemplate('${t.id}')">🗑️</button>
+            </td>
+          </tr>
+        `;
+      }).join('');
+      document.getElementById('templates-tabel').style.display = 'block';
+    } catch(e) {
+      toonMelding('templates', 'Fout bij laden: ' + e.message, 'fout');
+      document.getElementById('templates-lader').style.display = 'none';
+    }
+  };
+
+  // ===== BEWERKEN =====
+
+  window.bewerkTemplate = async (id) => {
+    try {
+      const snap = await getDoc(doc(db, 'templates', id));
+      if (!snap.exists()) return;
+      const t = snap.data();
+      document.getElementById('tmpl-naam').value = t.naam || '';
+      document.getElementById('tmpl-type').value = t.type || 'les';
+      document.getElementById('tmpl-inhoud').value = t.inhoud || '';
+      document.getElementById('tmpl-notities').value = t.notities || '';
+      updatePreview();
+      detecteerParameters();
+      // Standaardwaarden invullen
+      if (t.parameters) {
+        document.querySelectorAll('.param-input').forEach(inp => {
+          if (t.parameters[inp.dataset.param] !== undefined) {
+            inp.value = t.parameters[inp.dataset.param];
+          }
+        });
+      }
+      document.getElementById('formulier-template-titel').textContent = `Template "${t.naam}" bewerken`;
+      document.getElementById('annuleer-template').style.display = 'inline-flex';
+      bewerkTemplateId = id;
+      toonSectie('templates');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    } catch(e) {
+      toonMelding('templates', 'Fout bij laden: ' + e.message, 'fout');
+    }
+  };
+
+  // ===== VERWIJDEREN =====
+
+  window.verwijderTemplate = async (id) => {
+    if (!confirm('Ben je zeker dat je deze template wil verwijderen?')) return;
+    try {
+      await deleteDoc(doc(db, 'templates', id));
+      cacheTemplates.alle = null;
+      toonMelding('templates', 'Template verwijderd.', 'succes');
+      laadTemplates();
+    } catch(e) {
+      toonMelding('templates', 'Fout bij verwijderen: ' + e.message, 'fout');
     }
   };
 
