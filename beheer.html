@@ -1196,8 +1196,6 @@
                   <button class="knop knop-primair knop-klein" onclick="slaaNieuwDoelOp('vk')">Opslaan & toevoegen</button>
                   <button class="knop knop-secundair knop-klein" onclick="toggleNieuwDoelFormulier('vk')">Annuleren</button>
                 </div>
-              <div style="display:none;">
-              </div>
               <div class="geselecteerde-doelen" id="geselecteerde-vk">
                 <div style="font-size:9.5pt;color:var(--tekst-licht);font-style:italic;" id="geen-vk">Nog geen voorkennis geselecteerd.</div>
               </div>
@@ -1271,8 +1269,6 @@
                   <button class="knop knop-primair knop-klein" onclick="slaaNieuwDoelOp('sc')">Opslaan & toevoegen</button>
                   <button class="knop knop-secundair knop-klein" onclick="toggleNieuwDoelFormulier('sc')">Annuleren</button>
                 </div>
-              <div style="display:none;">
-              </div>
               <div class="geselecteerde-doelen" id="geselecteerde-sc">
                 <div style="font-size:9.5pt;color:var(--tekst-licht);font-style:italic;" id="geen-sc">Nog geen succescriteria geselecteerd.</div>
               </div>
@@ -3385,7 +3381,7 @@
 
   // ===== OPSLAAN =====
 
-  window.slaaTaakOp = async () => {
+  window.slaaTaakOp = async (nieuweVersie = false) => {
     const verplicht = { 'taak-code': 'Code', 'taak-titel': 'Titel', 'taak-tijd': 'Tijd', 'taak-klas': 'Klas', 'taak-lesweek': 'Lesweek' };
     for (const [id, naam] of Object.entries(verplicht)) {
       if (!document.getElementById(id).value.trim()) {
@@ -3441,7 +3437,7 @@
       indienwijze,
       evaluatievorm: evalVormen,
       status: document.getElementById('taak-status').value,
-      versienummer: window._nieuweVersie ? ((cacheTaken.alle?.find(t => t.id === bewerkTaakId)?.versienummer || 0) + 1) : (cacheTaken.alle?.find(t => t.id === bewerkTaakId)?.versienummer || 1),
+      versienummer: nieuweVersie ? ((cacheTaken.alle?.find(t => t.id === bewerkTaakId)?.versienummer || 0) + 1) : (cacheTaken.alle?.find(t => t.id === bewerkTaakId)?.versienummer || 1),
       tags: document.getElementById('taak-tags').value.split(',').map(t => t.trim()).filter(Boolean),
       notities: document.getElementById('taak-notities').value.trim(),
       aangepastOp: new Date().toISOString(),
@@ -3947,18 +3943,6 @@
 
   // ===== TAAK OPSLAAN MET VERSIE =====
   // Overschrijf slaaTaakOp om versie te ondersteunen
-  const origSlaaTaakOp = window.slaaTaakOp;
-  window.slaaTaakOp = async (nieuweVersie = false) => {
-    // Voeg scIndeling toe aan de geselecteerde SC data
-    const scData = Object.entries(geselecteerdeSC).map(([id, d]) => ({
-      id, scIndeling: d.scIndeling || 'leren'
-    }));
-
-    // Tijdelijk opslaan voor gebruik in origSlaaTaakOp
-    window._scData = scData;
-    window._nieuweVersie = nieuweVersie;
-    await origSlaaTaakOp();
-  };
 
 
 </script>
