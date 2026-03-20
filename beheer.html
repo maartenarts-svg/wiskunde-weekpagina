@@ -3260,44 +3260,6 @@
     renderGeselecteerdeDoelen(soort);
   };
 
-  function renderGeselecteerdeDoelen(soort) {
-    const geselecteerd = soort === 'vk' ? geselecteerdeVK : geselecteerdeSC;
-    const container = document.getElementById(`geselecteerde-${soort}`);
-    const geenEl = document.getElementById(`geen-${soort}`);
-    const items = Object.values(geselecteerd);
-    if (!items.length) {
-      geenEl.style.display = 'block';
-      container.querySelectorAll('.geselecteerd-doel-item').forEach(e => e.remove());
-      return;
-    }
-    geenEl.style.display = 'none';
-    container.querySelectorAll('.geselecteerd-doel-item').forEach(e => e.remove());
-    items.forEach(d => {
-      const div = document.createElement('div');
-      div.className = 'geselecteerd-doel-item';
-      div.innerHTML = `<span style="flex:1;">${d.tekst}</span><button class="verwijder-doel" onclick="toggleDoel('${soort}', '${d.id}')">✕</button>`;
-      container.appendChild(div);
-    });
-  }
-
-  window.nieuwDoelInline = async (soort) => {
-    const tekst = prompt('Tekst van het nieuwe doel:');
-    if (!tekst) return;
-    const type = soort === 'vk' ? 'voorkennis' : 'succescriterium';
-    const data = { tekst, type, leerplandoel_codes: [], referenties: [], evalueerbaar: 'nee', scores: '', notities: '', aangepastOp: new Date().toISOString() };
-    try {
-      const ref = doc(collection(db, 'doelen'));
-      await setDoc(ref, data);
-      alleDoelen = null;
-      cacheDoelen.alle = null;
-      await laadDoelKeuzes();
-      const nieuw = { id: ref.id, ...data };
-      const geselecteerd = soort === 'vk' ? geselecteerdeVK : geselecteerdeSC;
-      geselecteerd[ref.id] = nieuw;
-      filterDoelKeuzes(soort);
-      renderGeselecteerdeDoelen(soort);
-    } catch(e) { alert('Fout: ' + e.message); }
-  };
 
   // Bronnen laden
   async function laadBronKeuzes() {
@@ -3851,7 +3813,7 @@
 
   // ===== SC INDELING (Wat leer je / Waarop geëvalueerd) =====
   // Overschrijf renderGeselecteerdeDoelen voor sc met extra keuzeschakelaar
-  const origRenderGeselecteerdeDoelen = renderGeselecteerdeDoelen;
+
 
   function renderGeselecteerdeDoelen(soort) {
     const geselecteerd = soort === 'vk' ? geselecteerdeVK : geselecteerdeSC;
