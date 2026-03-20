@@ -2137,7 +2137,7 @@
             return `<div class="preview-video-thumb"><a href="${url}" target="_blank"><img src="${thumb}" alt="Video" onerror="this.src='';this.parentElement.innerHTML='▶️ Video openen';"></a></div>`;
           })
           .replace(/!\[(.+?)\]\((.+?)\)/g, '<div class="preview-afbeelding"><img src="$2" alt="$1"></div>')
-          .replace(/\[(rood|blauw|groen|oranje|grijs|#[0-9a-fA-F]{3,6})\](.+?)\[\/\1\]/g, (m, kleur, tekst) => {
+          .replace(/\[kleur:(\w+|#[0-9a-fA-F]{3,6})\](.+?)\[\/kleur\]/g, (m, kleur, tekst) => {
             const kleurMap = { rood: '#c0392b', blauw: '#2c4a6e', groen: '#27ae60', oranje: '#e07b00', grijs: '#6b7280' };
             const kleurWaarde = kleurMap[kleur] || kleur;
             return `<span style="color:${kleurWaarde};">${tekst}</span>`;
