@@ -1037,6 +1037,13 @@
 
             <div class="formulier-rij">
               <div class="formulier-groep">
+                <label>Type <span style="color:var(--rood);">*</span></label>
+                <select id="taak-type" onchange="toggleTaakType()">
+                  <option value="taak">Taak</option>
+                  <option value="les">Les</option>
+                </select>
+              </div>
+              <div class="formulier-groep">
                 <label>Vak <span style="color:var(--rood);">*</span></label>
                 <input type="text" id="taak-vak" value="Wiskunde" readonly style="background:#f4f5f7;">
               </div>
@@ -1155,7 +1162,41 @@
                   </select>
                 </div>
                 <div class="doel-lijst-container" id="doel-lijst-vk"></div>
-                <button class="knop knop-secundair knop-klein" style="margin-top:8px;" onclick="nieuwDoelInline('vk')">+ Nieuw doel toevoegen</button>
+                <button class="knop knop-secundair knop-klein" style="margin-top:8px;" onclick="toggleNieuwDoelFormulier('vk')">+ Nieuw doel toevoegen</button>
+              </div>
+              <div id="nieuw-doel-formulier-vk" style="display:none;margin-top:10px;background:var(--grijs);border-radius:8px;padding:14px;">
+                <div style="font-size:10pt;font-weight:700;margin-bottom:10px;color:var(--blauw);">Nieuw voorkennis-doel</div>
+                <div class="formulier-rij">
+                  <div class="formulier-groep vol">
+                    <label>Tekst</label>
+                    <textarea id="nieuw-vk-tekst" style="min-height:60px;" placeholder="Ik kan..."></textarea>
+                  </div>
+                </div>
+                <div class="formulier-rij">
+                  <div class="formulier-groep">
+                    <label>Leerplandoel-codes</label>
+                    <div class="cd-wrapper">
+                      <input type="text" class="cd-input" id="nieuw-vk-leerplan" placeholder="bv. 6.1"
+                        autocomplete="off" data-type="leerplan"
+                        oninput="cdFilter(this)" onfocus="cdFilter(this)" onblur="cdVerberg(this)">
+                      <div class="cd-lijst" id="cd-lijst-nieuw-vk-lp"></div>
+                    </div>
+                  </div>
+                  <div class="formulier-groep">
+                    <label>Referentie</label>
+                    <div class="cd-wrapper">
+                      <input type="text" class="cd-input" id="nieuw-vk-ref" placeholder="bv. 7.1"
+                        autocomplete="off" data-type="referentie"
+                        oninput="cdFilter(this)" onfocus="cdFilter(this)" onblur="cdVerberg(this)">
+                      <div class="cd-lijst" id="cd-lijst-nieuw-vk-ref"></div>
+                    </div>
+                  </div>
+                </div>
+                <div style="display:flex;gap:8px;margin-top:8px;">
+                  <button class="knop knop-primair knop-klein" onclick="slaaNieuwDoelOp('vk')">Opslaan & toevoegen</button>
+                  <button class="knop knop-secundair knop-klein" onclick="toggleNieuwDoelFormulier('vk')">Annuleren</button>
+                </div>
+              <div style="display:none;">
               </div>
               <div class="geselecteerde-doelen" id="geselecteerde-vk">
                 <div style="font-size:9.5pt;color:var(--tekst-licht);font-style:italic;" id="geen-vk">Nog geen voorkennis geselecteerd.</div>
@@ -1183,7 +1224,54 @@
                   </select>
                 </div>
                 <div class="doel-lijst-container" id="doel-lijst-sc"></div>
-                <button class="knop knop-secundair knop-klein" style="margin-top:8px;" onclick="nieuwDoelInline('sc')">+ Nieuw doel toevoegen</button>
+                <button class="knop knop-secundair knop-klein" style="margin-top:8px;" onclick="toggleNieuwDoelFormulier('sc')">+ Nieuw doel toevoegen</button>
+              </div>
+              <div id="nieuw-doel-formulier-sc" style="display:none;margin-top:10px;background:var(--grijs);border-radius:8px;padding:14px;">
+                <div style="font-size:10pt;font-weight:700;margin-bottom:10px;color:var(--blauw);">Nieuw succescriterium</div>
+                <div class="formulier-rij">
+                  <div class="formulier-groep vol">
+                    <label>Tekst</label>
+                    <textarea id="nieuw-sc-tekst" style="min-height:60px;" placeholder="Ik kan..."></textarea>
+                  </div>
+                </div>
+                <div class="formulier-rij">
+                  <div class="formulier-groep">
+                    <label>Leerplandoel-codes</label>
+                    <div class="cd-wrapper">
+                      <input type="text" class="cd-input" id="nieuw-sc-leerplan" placeholder="bv. 6.1"
+                        autocomplete="off" data-type="leerplan"
+                        oninput="cdFilter(this)" onfocus="cdFilter(this)" onblur="cdVerberg(this)">
+                      <div class="cd-lijst" id="cd-lijst-nieuw-sc-lp"></div>
+                    </div>
+                  </div>
+                  <div class="formulier-groep">
+                    <label>Referentie</label>
+                    <div class="cd-wrapper">
+                      <input type="text" class="cd-input" id="nieuw-sc-ref" placeholder="bv. 7.1"
+                        autocomplete="off" data-type="referentie"
+                        oninput="cdFilter(this)" onfocus="cdFilter(this)" onblur="cdVerberg(this)">
+                      <div class="cd-lijst" id="cd-lijst-nieuw-sc-ref"></div>
+                    </div>
+                  </div>
+                  <div class="formulier-groep">
+                    <label>Evalueerbaar</label>
+                    <select id="nieuw-sc-eval" onchange="toggleNieuwScScores()">
+                      <option value="nee">Nee</option>
+                      <option value="ja">Ja</option>
+                    </select>
+                  </div>
+                </div>
+                <div id="nieuw-sc-scores-blok" style="display:none;">
+                  <div class="formulier-groep vol" style="margin-top:8px;">
+                    <label>Scores</label>
+                    <textarea id="nieuw-sc-scores" style="min-height:60px;" placeholder="A+: ...###A: ...###B: ...###C: ..."></textarea>
+                  </div>
+                </div>
+                <div style="display:flex;gap:8px;margin-top:8px;">
+                  <button class="knop knop-primair knop-klein" onclick="slaaNieuwDoelOp('sc')">Opslaan & toevoegen</button>
+                  <button class="knop knop-secundair knop-klein" onclick="toggleNieuwDoelFormulier('sc')">Annuleren</button>
+                </div>
+              <div style="display:none;">
               </div>
               <div class="geselecteerde-doelen" id="geselecteerde-sc">
                 <div style="font-size:9.5pt;color:var(--tekst-licht);font-style:italic;" id="geen-sc">Nog geen succescriteria geselecteerd.</div>
@@ -1345,8 +1433,9 @@
           </div>
 
           <!-- Opslaan knoppen -->
-          <div style="padding-top:16px;border-top:1px solid var(--grijs-rand);display:flex;gap:10px;flex-wrap:wrap;">
-            <button class="knop knop-primair" onclick="slaaTaakOp()">💾 Opslaan</button>
+          <div style="padding-top:16px;border-top:1px solid var(--grijs-rand);display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
+            <button class="knop knop-primair" onclick="slaaTaakOp(false)">💾 Opslaan</button>
+            <button class="knop knop-primair" onclick="slaaTaakOp(true)" id="opslaan-nieuw-versie" style="display:none;background:var(--oranje);">💾 Opslaan als nieuwe versie</button>
             <button class="knop knop-secundair" onclick="previewTaak()">👁 Preview taak</button>
             <button class="knop knop-secundair" onclick="annuleerTaak()">Annuleren</button>
           </div>
@@ -3278,6 +3367,7 @@
     resetTaakFormulier();
     document.getElementById('taak-formulier').style.display = 'block';
     document.getElementById('formulier-taak-titel').textContent = 'Nieuwe taak';
+    updateVersieKnop();
     document.getElementById('taak-schooljaar').value = huidigSchooljaar();
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
@@ -3288,6 +3378,7 @@
       if (el) el.value = '';
     });
     document.getElementById('taak-tijd').value = '';
+    if (document.getElementById('taak-type')) { document.getElementById('taak-type').value = 'taak'; toggleTaakType(); }
     document.getElementById('taak-vak').value = 'Wiskunde';
     document.getElementById('taak-klas').value = '';
     document.getElementById('taak-schooljaar').value = huidigSchooljaar();
@@ -3361,6 +3452,7 @@
     const vrijevInstructies = isTemplate ? null : document.getElementById('taak-instructies-vrij').value;
 
     const data = {
+      type: document.getElementById('taak-type')?.value || 'taak',
       code: document.getElementById('taak-code').value.trim(),
       titel: document.getElementById('taak-titel').value.trim(),
       tijd: parseInt(document.getElementById('taak-tijd').value),
@@ -3376,7 +3468,7 @@
       fases,
       extraPapier: document.getElementById('taak-papier').value,
       voorkennis: Object.keys(geselecteerdeVK),
-      succescriteria: Object.keys(geselecteerdeSC),
+      succescriteria: Object.values(geselecteerdeSC).map(d => ({ id: d.id, scIndeling: d.scIndeling || 'leren' })),
       scTitelLeren: document.getElementById('sc-titel-leren').checked,
       scTitelEval: document.getElementById('sc-titel-eval').checked,
       bronnen: Object.keys(geselecteerdeBronnen),
@@ -3387,7 +3479,7 @@
       indienwijze,
       evaluatievorm: evalVormen,
       status: document.getElementById('taak-status').value,
-      versienummer: 1,
+      versienummer: window._nieuweVersie ? ((cacheTaken.alle?.find(t => t.id === bewerkTaakId)?.versienummer || 0) + 1) : (cacheTaken.alle?.find(t => t.id === bewerkTaakId)?.versienummer || 1),
       tags: document.getElementById('taak-tags').value.split(',').map(t => t.trim()).filter(Boolean),
       notities: document.getElementById('taak-notities').value.trim(),
       aangepastOp: new Date().toISOString(),
@@ -3463,6 +3555,7 @@
       resetTaakFormulier();
       document.getElementById('formulier-taak-titel').textContent = `Taak "${t.titel}" bewerken`;
 
+      if (document.getElementById('taak-type')) { document.getElementById('taak-type').value = t.type || 'taak'; toggleTaakType(); }
       document.getElementById('taak-code').value = t.code || '';
       document.getElementById('taak-titel').value = t.titel || '';
       document.getElementById('taak-tijd').value = t.tijd || '';
@@ -3541,6 +3634,7 @@
       filterBronKeuzes(); renderGeselecteerdeBronnen();
 
       document.getElementById('taak-formulier').style.display = 'block';
+      updateVersieKnop();
       window.scrollTo({ top: 0, behavior: 'smooth' });
     } catch(e) {
       toonMelding('taken', 'Fout bij laden: ' + e.message, 'fout');
@@ -3681,6 +3775,227 @@
 
   window.previewWeekpagina = () => {
     toonMelding('weekoverzicht', 'Preview komt binnenkort beschikbaar.', 'succes');
+  };
+
+
+
+  // ===== TAAK TYPE (les/taak) =====
+  window.toggleTaakType = () => {
+    const type = document.getElementById('taak-type').value;
+    const tijdVeld = document.getElementById('taak-tijd');
+    if (type === 'les') {
+      tijdVeld.value = 'rooster';
+      tijdVeld.readOnly = true;
+      tijdVeld.style.background = '#f4f5f7';
+    } else {
+      if (tijdVeld.value === 'rooster') tijdVeld.value = '';
+      tijdVeld.readOnly = false;
+      tijdVeld.style.background = '';
+    }
+  };
+
+  // ===== VERSIE KNOP =====
+  // Toon "Opslaan als nieuwe versie" knop als we een bestaande taak bewerken
+  function updateVersieKnop() {
+    const knop = document.getElementById('opslaan-nieuw-versie');
+    if (knop) knop.style.display = bewerkTaakId ? 'inline-flex' : 'none';
+  }
+
+  // ===== INLINE NIEUW DOEL FORMULIER =====
+  window.toggleNieuwDoelFormulier = (soort) => {
+    const formulier = document.getElementById(`nieuw-doel-formulier-${soort}`);
+    formulier.style.display = formulier.style.display === 'none' ? 'block' : 'none';
+    if (formulier.style.display === 'block') vulDatalijsten();
+  };
+
+  window.toggleNieuwScScores = () => {
+    const eval_ = document.getElementById('nieuw-sc-eval').value;
+    document.getElementById('nieuw-sc-scores-blok').style.display = eval_ === 'ja' ? 'block' : 'none';
+  };
+
+  window.slaaNieuwDoelOp = async (soort) => {
+    const tekst = document.getElementById(`nieuw-${soort}-tekst`).value.trim();
+    if (!tekst) { alert('Vul de tekst in.'); return; }
+    const leerplan = document.getElementById(`nieuw-${soort}-leerplan`).value.trim();
+    const ref = document.getElementById(`nieuw-${soort}-ref`).value.trim();
+    const type = soort === 'vk' ? 'voorkennis' : 'succescriterium';
+    const evalueerbaar = soort === 'sc' ? document.getElementById('nieuw-sc-eval').value : 'nee';
+    const scores = soort === 'sc' && evalueerbaar === 'ja' ? document.getElementById('nieuw-sc-scores').value.trim() : '';
+
+    const data = {
+      tekst, type,
+      leerplandoel_codes: leerplan ? [leerplan] : [],
+      referenties: ref ? [ref] : [],
+      evalueerbaar, scores,
+      notities: '', aangepastOp: new Date().toISOString()
+    };
+    try {
+      const docRef = doc(collection(db, 'doelen'));
+      await setDoc(docRef, data);
+      alleDoelen = null;
+      cacheDoelen.alle = null;
+      const nieuw = { id: docRef.id, ...data };
+      const geselecteerd = soort === 'vk' ? geselecteerdeVK : geselecteerdeSC;
+      geselecteerd[docRef.id] = { ...nieuw, scIndeling: 'leren' };
+      await laadDoelKeuzes();
+      filterDoelKeuzes(soort);
+      renderGeselecteerdeDoelen(soort);
+      // Reset formulier
+      document.getElementById(`nieuw-${soort}-tekst`).value = '';
+      document.getElementById(`nieuw-${soort}-leerplan`).value = '';
+      document.getElementById(`nieuw-${soort}-ref`).value = '';
+      if (soort === 'sc') { document.getElementById('nieuw-sc-eval').value = 'nee'; document.getElementById('nieuw-sc-scores').value = ''; document.getElementById('nieuw-sc-scores-blok').style.display = 'none'; }
+      document.getElementById(`nieuw-doel-formulier-${soort}`).style.display = 'none';
+    } catch(e) { alert('Fout: ' + e.message); }
+  };
+
+  // ===== SC INDELING (Wat leer je / Waarop geëvalueerd) =====
+  // Overschrijf renderGeselecteerdeDoelen voor sc met extra keuzeschakelaar
+  const origRenderGeselecteerdeDoelen = renderGeselecteerdeDoelen;
+
+  function renderGeselecteerdeDoelen(soort) {
+    const geselecteerd = soort === 'vk' ? geselecteerdeVK : geselecteerdeSC;
+    const container = document.getElementById(`geselecteerde-${soort}`);
+    const geenEl = document.getElementById(`geen-${soort}`);
+    const items = Object.values(geselecteerd);
+
+    container.querySelectorAll('.geselecteerd-doel-item').forEach(e => e.remove());
+    if (!items.length) { geenEl.style.display = 'block'; return; }
+    geenEl.style.display = 'none';
+
+    items.forEach((d, idx) => {
+      const div = document.createElement('div');
+      div.className = 'geselecteerd-doel-item';
+      div.dataset.id = d.id;
+      div.draggable = true;
+
+      let scKeuze = '';
+      if (soort === 'sc') {
+        const indeling = d.scIndeling || 'leren';
+        scKeuze = `
+          <select class="sc-indeling-sel" data-id="${d.id}" onchange="updateScIndeling('${d.id}', this.value)"
+            style="font-size:9pt;padding:3px 6px;border:1px solid var(--grijs-rand);border-radius:4px;margin-right:6px;">
+            <option value="leren" ${indeling==='leren'?'selected':''}>📖 Wat leer je</option>
+            <option value="eval" ${indeling==='eval'?'selected':''}>📊 Waarop geëvalueerd</option>
+            <option value="beide" ${indeling==='beide'?'selected':''}>📖📊 Beide</option>
+          </select>`;
+      }
+
+      div.innerHTML = `
+        <span style="cursor:grab;color:var(--tekst-licht);margin-right:6px;" title="Slepen om te herordenen">⠿</span>
+        <span style="flex:1;font-size:10.5pt;">${d.tekst}</span>
+        ${scKeuze}
+        <button class="verwijder-doel" onclick="toggleDoel('${soort}', '${d.id}')">✕</button>
+      `;
+
+      // Sleep events
+      div.addEventListener('dragstart', (e) => {
+        e.dataTransfer.setData('doel-id', d.id);
+        e.dataTransfer.setData('doel-soort', soort);
+        div.style.opacity = '0.5';
+      });
+      div.addEventListener('dragend', () => div.style.opacity = '1');
+      div.addEventListener('dragover', (e) => { e.preventDefault(); div.style.background = 'var(--blauw-licht)'; });
+      div.addEventListener('dragleave', () => div.style.background = '');
+      div.addEventListener('drop', (e) => {
+        e.preventDefault();
+        div.style.background = '';
+        const vanId = e.dataTransfer.getData('doel-id');
+        const vanSoort = e.dataTransfer.getData('doel-soort');
+        if (vanSoort !== soort || vanId === d.id) return;
+        const geselecteerd = soort === 'vk' ? geselecteerdeVK : geselecteerdeSC;
+        const sleutels = Object.keys(geselecteerd);
+        const vanIdx = sleutels.indexOf(vanId);
+        const naarIdx = sleutels.indexOf(d.id);
+        sleutels.splice(vanIdx, 1);
+        sleutels.splice(naarIdx, 0, vanId);
+        const nieuw = {};
+        sleutels.forEach(k => nieuw[k] = geselecteerd[k]);
+        if (soort === 'vk') Object.assign(geselecteerdeVK, nieuw);
+        else Object.assign(geselecteerdeSC, nieuw);
+        renderGeselecteerdeDoelen(soort);
+      });
+
+      container.appendChild(div);
+    });
+  }
+
+  window.updateScIndeling = (id, waarde) => {
+    if (geselecteerdeSC[id]) geselecteerdeSC[id].scIndeling = waarde;
+  };
+
+  // ===== AUTOMATISCHE BRONNEN BIJ REFERENTIE =====
+  async function checkAutoBronnenBijReferentie(refCode) {
+    if (!refCode) return;
+    // Bepaal hoofdstuknummer
+    const delen = refCode.split('.');
+    if (!delen.length) return;
+    const hstNr = parseInt(delen[0]);
+    if (!hstNr) return;
+
+    // Zoek hoofdstuk
+    if (!cache.hoofdstukken) {
+      const snap = await getDocs(collection(db, 'hoofdstukken'));
+      cache.hoofdstukken = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    }
+    const hst = cache.hoofdstukken.find(h => h.nummer === hstNr);
+    if (!hst || !hst.bronnen) return;
+
+    const beschikbaar = [];
+    if (hst.bronnen.cursus) beschikbaar.push({ label: `Cursus H${hstNr}`, type: 'bestand', link: hst.bronnen.cursus, auto: true });
+    if (hst.bronnen.theorie) beschikbaar.push({ label: `Theorie H${hstNr}`, type: 'bestand', link: hst.bronnen.theorie, auto: true });
+    if (hst.bronnen.correctiesleutel) beschikbaar.push({ label: `Correctiesleutel H${hstNr}`, type: 'bestand', link: hst.bronnen.correctiesleutel, auto: true });
+
+    if (!beschikbaar.length) return;
+
+    const namen = beschikbaar.map(b => `• ${b.label}`).join('\n');
+    if (confirm(`Wil je de volgende bronnen van Hoofdstuk ${hstNr} toevoegen?\n\n${namen}`)) {
+      beschikbaar.forEach(b => {
+        // Zoek of de bron al bestaat in de database
+        const bestaand = alleBronnenCache?.find(db => db.link === b.link);
+        if (bestaand) {
+          geselecteerdeBronnen[bestaand.id] = bestaand;
+        } else {
+          // Tijdelijke ID voor nog niet opgeslagen bronnen
+          const tempId = 'auto-' + b.label.replace(/\s/g, '-');
+          geselecteerdeBronnen[tempId] = { id: tempId, ...b };
+        }
+      });
+      renderGeselecteerdeBronnen();
+      filterBronKeuzes();
+    }
+  }
+
+  // Overschrijf voegTaakRefToe om automatische bronnen te triggeren
+  const origVoegTaakRefToe = window.voegTaakRefToe;
+  window.voegTaakRefToe = (waarde = '') => {
+    origVoegTaakRefToe(waarde);
+    if (waarde) {
+      // Kleine vertraging zodat het formulier geladen is
+      setTimeout(() => checkAutoBronnenBijReferentie(waarde), 300);
+    }
+  };
+
+  // Check bij blur van referentieveld
+  document.addEventListener('blur', (e) => {
+    if (e.target.classList.contains('taak-ref-waarde') && e.target.value) {
+      checkAutoBronnenBijReferentie(e.target.value);
+    }
+  }, true);
+
+  // ===== TAAK OPSLAAN MET VERSIE =====
+  // Overschrijf slaaTaakOp om versie te ondersteunen
+  const origSlaaTaakOp = window.slaaTaakOp;
+  window.slaaTaakOp = async (nieuweVersie = false) => {
+    // Voeg scIndeling toe aan de geselecteerde SC data
+    const scData = Object.entries(geselecteerdeSC).map(([id, d]) => ({
+      id, scIndeling: d.scIndeling || 'leren'
+    }));
+
+    // Tijdelijk opslaan voor gebruik in origSlaaTaakOp
+    window._scData = scData;
+    window._nieuweVersie = nieuweVersie;
+    await origSlaaTaakOp();
   };
 
 
