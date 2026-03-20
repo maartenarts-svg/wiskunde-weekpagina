@@ -243,9 +243,9 @@
     min-height: 320px; background: var(--grijs); font-size: 11pt;
     line-height: 1.7;
   }
-  .preview-stap { display: flex; gap: 0; margin-bottom: 6px; align-items: flex-start; }
-  .preview-nr { font-weight: 700; min-width: 36px; padding-right: 8px; flex-shrink: 0; text-align: right; }
-  .preview-tekst { flex: 1; }
+  .preview-stap { margin-bottom: 6px; }
+  .preview-nr { font-weight: 700; margin-right: 6px; }
+  .preview-tekst { display: inline; }
   .preview-opsomming { display: flex; gap: 8px; margin-bottom: 4px; padding-left: 16px; }
   .preview-bullet { color: var(--blauw); flex-shrink: 0; }
   .preview-subtitel { font-weight: 700; font-size: 12pt; margin: 10px 0 4px; }
@@ -2155,7 +2155,7 @@
       // Zachte enter op eigen regel: voeg <br> toe aan vorig element
       if (getrimmed.startsWith('++')) {
         const rest = inline(getrimmed.slice(2).trim());
-        html += `<div style="padding-left:44px;">${rest}</div>`;
+        html += `<div style="margin-left:0;margin-bottom:2px;">${rest}</div>`;
         continue;
       }
 
@@ -2170,7 +2170,7 @@
       if (isGenest && getrimmed.match(/^\d+\|\s*/)) {
         genestNumTeller++;
         const inhoud = getrimmed.replace(/^\d+\|\s*/, '');
-        html += `<div class="preview-stap preview-genest"><span class="preview-nr">${genestNumTeller}|</span><span class="preview-tekst">${inline(inhoud)}</span></div>`;
+        html += `<div class="preview-stap preview-genest"><span class="preview-nr">${genestNumTeller}|</span> ${inline(inhoud)}</div>`;
         continue;
       }
 
@@ -2191,7 +2191,7 @@
         numTeller++;
         genestNumTeller = 0;
         const inhoud = getrimmed.replace(/^\d+\|\s*/, '');
-        html += `<div class="preview-stap"><span class="preview-nr">${numTeller}|</span><span class="preview-tekst">${inline(inhoud)}</span></div>`;
+        html += `<div class="preview-stap"><span class="preview-nr">${numTeller}|</span> ${inline(inhoud)}</div>`;
         continue;
       }
 
