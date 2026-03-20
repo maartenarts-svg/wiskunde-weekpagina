@@ -244,7 +244,7 @@
     line-height: 1.7; overflow-y: auto;
   }
   .preview-stap { display: flex; gap: 10px; margin-bottom: 6px; align-items: flex-start; }
-  .preview-nr { font-weight: 700; color: var(--blauw); border-right: 2.5px solid var(--blauw); padding-right: 10px; min-width: 28px; text-align: right; flex-shrink: 0; }
+  .preview-nr { font-weight: 700; color: var(--blauw); border-right: 2.5px solid var(--blauw); padding-right: 8px; min-width: 22px; text-align: right; flex-shrink: 0; font-size: 11pt; }
   .preview-tekst { flex: 1; }
   .preview-opsomming { display: flex; gap: 8px; margin-bottom: 4px; padding-left: 16px; }
   .preview-bullet { color: var(--blauw); flex-shrink: 0; }
@@ -805,6 +805,7 @@
           <div class="syntax-rij" onclick="voegSyntaxIn('  1| ')"><span class="syntax-code">  1| </span><span class="syntax-omschrijving">Geneste nummering</span></div>
           <div class="syntax-rij" onclick="voegSyntaxIn('  - ')"><span class="syntax-code">  - </span><span class="syntax-omschrijving">Geneste opsomming</span></div>
           <div class="syntax-rij" onclick="voegSyntaxIn('## ')"><span class="syntax-code">## </span><span class="syntax-omschrijving">Subtitel</span></div>
+          <div class="syntax-rij" onclick="voegSyntaxIn('++')"><span class="syntax-code">tekst++</span><span class="syntax-omschrijving">Zachte enter (zelfde insprong)</span></div>
 
           <div style="font-size:9pt;font-weight:700;color:var(--tekst);margin:8px 0 4px;">Tekstopmaak</div>
           <div class="syntax-rij" onclick="voegSyntaxIn('**tekst**')"><span class="syntax-code">**tekst**</span><span class="syntax-omschrijving">Vet</span></div>
@@ -813,11 +814,28 @@
           <div class="syntax-rij" onclick="voegSyntaxIn('~tekst~')"><span class="syntax-code">~tekst~</span><span class="syntax-omschrijving">Kleiner</span></div>
           <div class="syntax-rij" onclick="voegSyntaxIn('^^tekst^^')"><span class="syntax-code">^^tekst^^</span><span class="syntax-omschrijving">Groter</span></div>
 
+          <div style="font-size:9pt;font-weight:700;color:var(--tekst);margin:8px 0 4px;">Tekstopmaak (vervolg)</div>
+          <div class="syntax-rij" onclick="voegSyntaxIn('[rood]tekst[/rood]')"><span class="syntax-code">[rood]tekst[/rood]</span><span class="syntax-omschrijving">Tekstkleur</span></div>
+          <div style="font-size:8.5pt;color:var(--tekst-licht);padding:4px 8px;">Kleuren: rood, blauw, groen, oranje, grijs, of #hexcode</div>
+
+          <div style="font-size:9pt;font-weight:700;color:var(--tekst);margin:8px 0 4px;">Tekstopmaak (vervolg)</div>
+          <div class="syntax-rij" onclick="voegSyntaxIn('[tekst]{rood}')"><span class="syntax-code">[tekst]{kleur}</span><span class="syntax-omschrijving">Kleur (rood/blauw/groen/oranje/paars/roze/geel/grijs)</span></div>
+          <div class="syntax-rij" onclick="voegSyntaxIn('tekst  ')"><span class="syntax-code">tekst··</span><span class="syntax-omschrijving">Zachte enter (2 spaties op einde)</span></div>
+
+          <div style="font-size:9pt;font-weight:700;color:var(--tekst);margin:8px 0 4px;">Tekstopmaak (vervolg)</div>
+          <div class="syntax-rij" onclick="voegSyntaxIn('[kleur:rood]tekst[/kleur]')"><span class="syntax-code">[kleur:rood]tekst[/kleur]</span><span class="syntax-omschrijving">Gekleurde tekst</span></div>
+          <div class="syntax-rij" onclick="voegSyntaxIn('[kleur:groen]tekst[/kleur]')"><span class="syntax-code">[kleur:groen]</span><span class="syntax-omschrijving" style="color:green;">Groen</span></div>
+          <div class="syntax-rij" onclick="voegSyntaxIn('[kleur:blauw]tekst[/kleur]')"><span class="syntax-code">[kleur:blauw]</span><span class="syntax-omschrijving" style="color:blue;">Blauw</span></div>
+          <div class="syntax-rij" onclick="voegSyntaxIn('[kleur:oranje]tekst[/kleur]')"><span class="syntax-code">[kleur:oranje]</span><span class="syntax-omschrijving" style="color:orange;">Oranje</span></div>
+
           <div style="font-size:9pt;font-weight:700;color:var(--tekst);margin:8px 0 4px;">Media & links</div>
           <div class="syntax-rij" onclick="voegSyntaxIn('[label](url)')"><span class="syntax-code">[label](url)</span><span class="syntax-omschrijving">Link</span></div>
           <div class="syntax-rij" onclick="voegSyntaxIn('![naam](./pictures/naam.png)')"><span class="syntax-code">![naam](./pictures/...)</span><span class="syntax-omschrijving">Afbeelding</span></div>
           <div class="syntax-rij" onclick="voegSyntaxIn('![video-thumb](url)')"><span class="syntax-code">![video-thumb](url)</span><span class="syntax-omschrijving">Video thumbnail</span></div>
           <div class="syntax-rij" onclick="voegSyntaxIn('![video-embed](url)')"><span class="syntax-code">![video-embed](url)</span><span class="syntax-omschrijving">Video ingesloten</span></div>
+
+          <div style="font-size:9pt;font-weight:700;color:var(--tekst);margin:8px 0 4px;">Overige</div>
+          <div class="syntax-rij" onclick="voegSyntaxIn('\\n')"><span class="syntax-code">\n</span><span class="syntax-omschrijving">Zachte enter (zelfde insprong)</span></div>
 
           <div style="font-size:9pt;font-weight:700;color:var(--tekst);margin:8px 0 4px;">Parameters</div>
           <div class="syntax-rij" onclick="voegSyntaxIn('{parameternaam}')"><span class="syntax-code">{parameternaam}</span><span class="syntax-omschrijving">Variabele waarde</span></div>
@@ -2112,6 +2130,15 @@
           .replace(/\^\^(.+?)\^\^/g, '<span class="preview-groot">$1</span>')
           .replace(/~(.+?)~/g, '<span class="preview-klein">$1</span>')
           .replace(/\[(.+?)\]\((.+?)\)/g, '<a href="$2" target="_blank" style="color:var(--blauw);">$1</a>')
+          .replace(/\[(.+?)\]\{(\w+)\}/g, (m, tekst, kleur) => {
+            const kleuren = {
+              rood: '#c0392b', blauw: '#2c4a6e', groen: '#27ae60',
+              oranje: '#e07b00', paars: '#8e44ad', grijs: '#6b7280',
+              roze: '#e91e8c', geel: '#f39c12'
+            };
+            return `<span style="color:${kleuren[kleur] || kleur};">${tekst}</span>`;
+          })
+          .replace(/  $/gm, '<br>')
           .replace(/\{(\w+)\}/g, '<span class="preview-param">{$1}</span>')
           .replace(/!\[video-embed\]\((.+?)\)/g, (m, url) => {
             const embedUrl = url.replace('/view', '/preview').replace('?usp=sharing', '');
@@ -2122,7 +2149,13 @@
             const thumb = fileId ? `https://drive.google.com/thumbnail?id=${fileId}&sz=w320` : '';
             return `<div class="preview-video-thumb"><a href="${url}" target="_blank"><img src="${thumb}" alt="Video" onerror="this.src='';this.parentElement.innerHTML='▶️ Video openen';"></a></div>`;
           })
-          .replace(/!\[(.+?)\]\((.+?)\)/g, '<div class="preview-afbeelding"><img src="$2" alt="$1"></div>');
+          .replace(/!\[(.+?)\]\((.+?)\)/g, '<div class="preview-afbeelding"><img src="$2" alt="$1"></div>')
+          .replace(/\[(rood|blauw|groen|oranje|grijs|#[0-9a-fA-F]{3,6})\](.+?)\[\/\1\]/g, (m, kleur, tekst) => {
+            const kleurMap = { rood: '#c0392b', blauw: '#2c4a6e', groen: '#27ae60', oranje: '#e07b00', grijs: '#6b7280' };
+            const kleurWaarde = kleurMap[kleur] || kleur;
+            return `<span style="color:${kleurWaarde};">${tekst}</span>`;
+          })
+          .replace(/\\+\\+/g, '<br>');
       }
 
       if (!getrimmed) {
