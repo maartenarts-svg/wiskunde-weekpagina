@@ -3,6 +3,7 @@ import {
   collection, doc, setDoc, getDoc, getDocs, updateDoc, deleteDoc
 } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
 import { toonMelding } from './ui.js';
+import { haalCache, wisCache } from './appCache.js';
 import { parseMarkdown, zorgCache as zorgTemplatesCache } from './templates.js';
 import { laadDropdownData, cdFilter, cdKies, cdVerberg } from './doelen.js';
 import { zorgCache as zorgHoofdstukkenCache } from './hoofdstukken.js';
@@ -156,18 +157,12 @@ function formatDatum(d) {
 
 // ===== DOELEN CACHE =====
 async function zorgDoelenCache() {
-  if (!alleDoelen) {
-    const snap = await getDocs(collection(db, 'doelen'));
-    alleDoelen = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-  }
+  if (!alleDoelen) alleDoelen = await haalCache('doelen', db);
   return alleDoelen;
 }
 
 async function zorgBronnenCache() {
-  if (!alleBronnen) {
-    const snap = await getDocs(collection(db, 'bronnen'));
-    alleBronnen = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-  }
+  if (!alleBronnen) alleBronnen = await haalCache('bronnen', db);
   return alleBronnen;
 }
 
@@ -379,8 +374,7 @@ async function laadBestaandeTaken() {
 
   blok.innerHTML = '<div style="color:var(--tekst-licht);font-size:9.5pt;margin-top:8px;">Laden...</div>';
 
-  const snap = await getDocs(collection(db, 'taken'));
-  alleBestaandeTaken = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  alleBestaandeTaken = await haalCache('taken', db);
   alleBestaandeTaken.sort((a, b) => {
     if (a.schooljaar !== b.schooljaar) return (b.schooljaar || '').localeCompare(a.schooljaar || '');
     if ((a.lesweek || 0) !== (b.lesweek || 0)) return (a.lesweek || 0) - (b.lesweek || 0);
@@ -791,6 +785,7 @@ export async function slaaNieuwDoelOp(prefix, typeFilter) {
     await setDoc(docRef, data);
     const nieuw = { id: docRef.id, ...data };
     if (alleDoelen) alleDoelen.push(nieuw);
+    wisCache('doelen');
 
     // Koppel meteen
     const lijst = prefix === 'vk' ? geselecteerdeVK : prefix === 'sc-leren' ? geselecteerdeSC.leren : geselecteerdeSC.eval;
@@ -1088,6 +1083,7 @@ export async function slaaNieuwBronOp() {
     await setDoc(docRef, data);
     const nieuw = { id: docRef.id, ...data };
     if (alleBronnen) alleBronnen.push(nieuw);
+    wisCache('bronnen');
     geselecteerdeBronnen.push(nieuw);
     renderGekozenBronnen();
     renderBronLijst();
@@ -1349,6 +1345,7 @@ export async function verwijderTaak(id, code) {
   try {
     const { deleteDoc } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js');
     await deleteDoc(doc(db, 'taken', id));
+    wisCache('taken');
     toonMelding('taken', `Taak ${code} verwijderd.`, 'succes');
     laadTaken();
   } catch (e) {
@@ -1368,8 +1365,8 @@ export async function laadTaken() {
   if (leeg) leeg.style.display = 'none';
 
   try {
-    const snap = await getDocs(collection(db, 'taken'));
-    let taken = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    const takenLijst = await haalCache('taken', db);
+    let taken = [...takenLijst];
 
     const filterSj = document.getElementById('filter-taak-schooljaar')?.value || '';
     const filterWeek = document.getElementById('filter-taak-week')?.value || '';
