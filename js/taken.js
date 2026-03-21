@@ -1,6 +1,6 @@
 import { db, auth } from './firebase-config.js';
 import {
-  collection, doc, setDoc, getDoc, getDocs, updateDoc
+  collection, doc, setDoc, getDoc, getDocs, updateDoc, deleteDoc
 } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
 import { toonMelding } from './ui.js';
 import { parseMarkdown, zorgCache as zorgTemplatesCache } from './templates.js';
@@ -356,14 +356,7 @@ function renderStap0() {
         </div>
       </label>
     </div>
-    <div id="bestaande-taak-keuze" style="display:none;margin-top:20px;">
-      <label class="formulier-groep" style="max-width:480px;">
-        <span style="font-size:9.5pt;font-weight:700;color:var(--tekst-licht);text-transform:uppercase;letter-spacing:0.5px;">Kies een bestaande taak</span>
-        <select id="bestaande-taak-select" style="margin-top:5px;">
-          <option value="">Laden...</option>
-        </select>
-      </label>
-    </div>
+    <div id="bestaande-taak-keuze" style="display:none;margin-top:20px;"></div>
   `;
 
   // Radio change → toon/verberg taaklijst
@@ -841,7 +834,7 @@ async function initStap4() {
   if (templateData) {
     document.getElementById('taak-instructies-inhoud').value = templateData.inhoud || '';
     updatePreviewTaak();
-    renderTemplateParams(templateData.parameters || {});
+    renderTemplateParams(templateData.parameters || {}, templateData.paramVolgorde);
   }
 }
 
@@ -1332,6 +1325,19 @@ function inlineOpmaken(t) {
 }
 
 // ===== TAKEN OVERZICHT LADEN =====
+export async function verwijderTaak(id, code) {
+  if (!confirm(`Ben je zeker dat je taak ${code} wil verwijderen?`)) return;
+  try {
+    const { deleteDoc } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js');
+    await deleteDoc(doc(db, 'taken', id));
+    toonMelding('taken', `Taak ${code} verwijderd.`, 'succes');
+    laadTaken();
+  } catch (e) {
+    console.error(e);
+    alert('Fout bij verwijderen: ' + e.message);
+  }
+}
+
 export async function laadTaken() {
   const lader = document.getElementById('taken-lader');
   const tabel = document.getElementById('taken-tabel');
@@ -1375,6 +1381,7 @@ export async function laadTaken() {
         <td>
           <button class="knop knop-secundair knop-klein" onclick="window._bewerkTaak('${t.id}')">✏️</button>
           <button class="knop knop-secundair knop-klein" onclick="window._kopieerTaak('${t.id}')">📋</button>
+          <button class="knop knop-gevaar knop-klein" onclick="window._verwijderTaak('${t.id}', '${t.code}')">🗑️</button>
         </td>
       </tr>
     `).join('');
@@ -1389,11 +1396,10 @@ export async function laadTaken() {
 export function nieuweTaak() {
   resetTaakState();
   taakRefTeller = 0;
+  alleBestaandeTaken = [];
   document.getElementById('taak-formulier').style.display = 'block';
   document.getElementById('taak-preview-wrapper').style.display = 'none';
-  // Stap 0 opnieuw renderen zodat de radio's altijd vers zijn
-  huidigStap = -1; // forceer re-render
-  renderStap0();
+  renderStap0(); // altijd opnieuw renderen zodat radio's leeg zijn
   toonStap(0);
 }
 
