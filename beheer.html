@@ -623,6 +623,7 @@
         <div class="kaart" style="padding:16px 24px;">
           <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;">
             <select id="filter-taak-schooljaar" onchange="window._laadTaken()" style="font-size:9.5pt;padding:5px 10px;">
+              <option value="">Alle schooljaren</option>
               <option value="2025-2026">2025-2026</option>
               <option value="2024-2025">2024-2025</option>
             </select>
@@ -696,7 +697,7 @@
               </div>
               <div class="formulier-rij">
                 <div class="formulier-groep"><label>Schooljaar <span style="color:var(--rood);">*</span></label>
-                  <input type="text" id="taak-schooljaar" placeholder="2025-2026" oninput="window._vulLesweekDropdown(this.value)">
+                  <input type="text" id="taak-schooljaar" placeholder="2025-2026" oninput="window._vulLesweekDropdown(this.value)" value="">
                 </div>
                 <div class="formulier-groep"><label>Lesweek <span style="color:var(--rood);">*</span></label>
                   <select id="taak-lesweek"><option value="">Kies een week...</option></select>
@@ -1019,7 +1020,7 @@
     toggleNieuwDoelFormulier, toggleNieuwDoelScores, slaaNieuwDoelOp,
     kiesTemplate, updatePreviewTaak, detecteerParametersTaak, slaInstructieOp,
     kiesBron, verwijderGekozenBron, filterBronnen, toggleNieuwBronFormulier, slaaNieuwBronOp,
-    vulLesweekDropdown
+    vulLesweekDropdown, filterBestaandeTaken, kiesBestaandeTaak
   } from './js/taken.js';
 
   window._laadLeerplandoelen = laadLeerplandoelen;
@@ -1100,6 +1101,8 @@
   window._toggleNieuwBronFormulier = toggleNieuwBronFormulier;
   window._slaaNieuwBronOp = slaaNieuwBronOp;
   window._vulLesweekDropdown = vulLesweekDropdown;
+  window._filterBestaandeTaken = filterBestaandeTaken;
+  window._kiesBestaandeTaak = kiesBestaandeTaak;
   window._toonScTabblad = (id, knop) => {
     document.querySelectorAll('#taak-stap-3 .tabblad-inhoud').forEach(t => t.classList.remove('actief'));
     document.querySelectorAll('#taak-stap-3 .tabblad-knop').forEach(k => k.classList.remove('actief'));
