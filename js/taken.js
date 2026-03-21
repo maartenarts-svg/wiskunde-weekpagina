@@ -454,7 +454,7 @@ export function vulWeekDropdowns() {
 
   // ===== LADEN =====
 
-export async function laadTaken = async () => {
+export async function laadTaken() {
     document.getElementById('taken-lader').style.display = 'block';
     document.getElementById('taken-tabel').style.display = 'none';
     document.getElementById('taken-leeg').style.display = 'none';
@@ -628,7 +628,7 @@ export async function laadTaken = async () => {
 
   // ===== WEEKOVERZICHT =====
 
-export async function laadWeekOverzicht = async () => {
+export async function laadWeekOverzicht() {
     const sj = document.getElementById('week-schooljaar').value;
     const week = document.getElementById('week-nr').value;
     if (!week) { document.getElementById('week-kaarten-blok').style.display = 'none'; return; }
@@ -939,5 +939,3 @@ export async function laadWeekOverzicht = async () => {
 
   // ===== TAAK OPSLAAN MET VERSIE =====
   // Overschrijf slaaTaakOp om versie te ondersteunen
-
-
