@@ -112,7 +112,7 @@ export function voegLeerplancodeToe(waarde = '') {
     container.appendChild(div);
   };
 
-window.verwijderLeerplancode = (id) => {
+export function verwijderLeerplancode(id) {
     document.getElementById(id).remove();
     if (document.querySelectorAll('.leerplancode-waarde').length === 0) {
       document.getElementById('geen-leerplancodes').style.display = 'block';
@@ -132,7 +132,7 @@ window.verwijderLeerplancode = (id) => {
 
 
   // Scores tonen/verbergen
-window.toggleScores = () => {
+export function toggleScores() {
     const evalueerbaar = document.getElementById('doel-evalueerbaar').value;
     document.getElementById('scores-blok').style.display = evalueerbaar === 'ja' ? 'block' : 'none';
   };
@@ -160,7 +160,7 @@ export function voegReferentieToe(waarde = '') {
     container.appendChild(div);
   };
 
-window.verwijderReferentie = (id) => {
+export function verwijderReferentie(id) {
     document.getElementById(id).remove();
     if (document.querySelectorAll('.referentie-waarde').length === 0) {
       document.getElementById('geen-referenties').style.display = 'block';
