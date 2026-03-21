@@ -1,24 +1,84 @@
 // ===== WEEKDROPDOWN VULLEN =====
+// Pasen berekening (Meeus/Jones/Butcher)
+function berekenPasenWO(jaar) {
+  const a = jaar % 19, b = Math.floor(jaar / 100), c = jaar % 100;
+  const d = Math.floor(b / 4), e = b % 4, f = Math.floor((b + 8) / 25);
+  const g = Math.floor((b - f + 1) / 3), h = (19 * a + b - d - g + 15) % 30;
+  const i = Math.floor(c / 4), k = c % 4, l = (32 + 2 * e + 2 * i - h - k) % 7;
+  const m = Math.floor((a + 11 * h + 22 * l) / 451);
+  const maand = Math.floor((h + l - 7 * m + 114) / 31);
+  const dag = ((h + l - 7 * m + 114) % 31) + 1;
+  return new Date(jaar, maand - 1, dag);
+}
+
+function maandagVan(datum) {
+  const d = new Date(datum);
+  d.setHours(0, 0, 0, 0);
+  const dag = d.getDay();
+  d.setDate(d.getDate() - (dag === 0 ? 6 : dag - 1));
+  return d;
+}
+
+function berekenVakantieWekenWO(schooljaar) {
+  const [startJaar, eindJaar] = schooljaar.split('-').map(Number);
+  const vakantie = new Set();
+  const voeg = d => vakantie.add(maandagVan(d).toISOString().slice(0, 10));
+
+  // Herfstvakantie
+  const nov1 = new Date(startJaar, 10, 1);
+  voeg(nov1.getDay() === 0 ? new Date(startJaar, 10, 2) : nov1);
+
+  // Kerstvakantie (2 weken)
+  const dec25 = new Date(startJaar, 11, 25);
+  const kerstMa = maandagVan(dec25.getDay() >= 6 ? new Date(startJaar + 1, 0, 1) : dec25);
+  voeg(kerstMa);
+  const w2 = new Date(kerstMa); w2.setDate(kerstMa.getDate() + 7); voeg(w2);
+
+  // Krokusvakantie
+  const pasen = berekenPasenWO(eindJaar);
+  const aswo = new Date(pasen); aswo.setDate(pasen.getDate() - 46); voeg(aswo);
+
+  // Paasvakantie (2 weken)
+  let paasStart;
+  if (pasen.getMonth() === 2) {
+    const ma = new Date(pasen); ma.setDate(pasen.getDate() + 1); paasStart = maandagVan(ma);
+  } else if (pasen.getDate() > 15) {
+    paasStart = maandagVan(pasen); paasStart.setDate(paasStart.getDate() - 7);
+  } else {
+    const apr1 = new Date(eindJaar, 3, 1); paasStart = maandagVan(apr1);
+    if (paasStart < apr1) paasStart.setDate(paasStart.getDate() + 7);
+  }
+  voeg(paasStart);
+  const pw2 = new Date(paasStart); pw2.setDate(paasStart.getDate() + 7); voeg(pw2);
+
+  // Zomervakantie
+  let zomer = new Date(eindJaar, 6, 1);
+  const zomerEinde = new Date(eindJaar, 8, 1);
+  while (zomer < zomerEinde) { voeg(zomer); zomer.setDate(zomer.getDate() + 7); }
+
+  return vakantie;
+}
+
 export function vulWoWeekDropdown(schooljaar) {
-  // Hergebruik genereerSchoolweken uit taken.js — maar die is niet geëxporteerd.
-  // Implementeer hier direct een vereenvoudigde versie.
   const sel = document.getElementById('wo-week');
   if (!sel || !schooljaar) return;
   const huidig = sel.value;
+  const [startJaar, eindJaar] = schooljaar.split('-').map(Number);
+  const vakantie = berekenVakantieWekenWO(schooljaar);
+  const fmt = d => `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}`;
 
-  // Genereer weken 1-38
-  const [startJaar] = schooljaar.split('-').map(Number);
-  // Eerste september van startJaar → maandag van die week
-  let datum = new Date(startJaar, 8, 1);
-  const dag = datum.getDay();
-  datum.setDate(datum.getDate() - (dag === 0 ? 6 : dag - 1));
-
+  let datum = maandagVan(new Date(startJaar, 8, 1));
+  const einde = new Date(eindJaar, 5, 30);
   const opties = ['<option value="">Week...</option>'];
-  for (let w = 1; w <= 38; w++) {
-    const zondag = new Date(datum);
-    zondag.setDate(datum.getDate() + 6);
-    const fmt = d => `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}`;
-    opties.push(`<option value="${w}" ${w == huidig ? 'selected' : ''}>Week ${w} — ${fmt(datum)} t/m ${fmt(zondag)}</option>`);
+  let weekNr = 0;
+
+  while (datum <= einde) {
+    const sleutel = datum.toISOString().slice(0, 10);
+    if (!vakantie.has(sleutel)) {
+      weekNr++;
+      const zo = new Date(datum); zo.setDate(datum.getDate() + 6);
+      opties.push(`<option value="${weekNr}" ${weekNr == huidig ? 'selected' : ''}>Week ${weekNr} — ${fmt(datum)} t/m ${fmt(zo)}</option>`);
+    }
     datum.setDate(datum.getDate() + 7);
   }
   sel.innerHTML = opties.join('');
@@ -104,8 +164,6 @@ export async function laadWeekoverzicht() {
 function renderKolommen() {
   ['G', 'B', 'Z'].forEach(route => {
     const lijst = kolomData[route];
-    const container = document.getElementById(`wo-kolom-${route}`);
-    if (!container) return;
 
     // Totale werktijd
     const totaal = lijst.reduce((som, t) => {
@@ -116,6 +174,7 @@ function renderKolommen() {
 
     // Tegels
     const tegelContainer = document.getElementById(`wo-tegels-${route}`);
+    if (!tegelContainer) return;
     tegelContainer.innerHTML = '';
 
     if (!lijst.length) {
@@ -302,6 +361,26 @@ export function toonWeekoverzichtPreview() {
   });
 
   previewEl.innerHTML = renderWeekpaginaHTML(actueleKolommen, huidigWeekWO, false);
+
+  // Koppel routeknoppen in de preview
+  previewEl.querySelectorAll('.route-tegel').forEach(tegel => {
+    tegel.addEventListener('click', () => {
+      const route = tegel.classList[1]; // G, B of Z
+      previewEl.querySelectorAll('.route-tegel').forEach(t => t.classList.remove('actief'));
+      tegel.classList.add('actief');
+      const welkom = previewEl.querySelector('#welkom-bericht');
+      const inhoudstafel = previewEl.querySelector('#inhoudstafel');
+      if (welkom) welkom.classList.add('verborgen');
+      if (inhoudstafel) inhoudstafel.classList.remove('verborgen');
+      previewEl.querySelectorAll('.taak-blok').forEach(blok => {
+        blok.classList.toggle('verborgen', blok.dataset.routes !== route);
+      });
+      previewEl.querySelectorAll('.inhoudslink').forEach(link => {
+        link.style.display = link.dataset.routes === route ? 'block' : 'none';
+      });
+    });
+  });
+
   document.getElementById('wo-beheer-wrapper').style.display = 'none';
   document.getElementById('wo-preview-wrapper').style.display = 'block';
 }
