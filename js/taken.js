@@ -334,6 +334,13 @@ function verzamelStapData(nr) {
 // ===== STAP 0: START =====
 function renderStap0() {
   const el = document.getElementById('taak-stap-0');
+  // Reset alle stap-displays expliciet zodat vorige sessie geen invloed heeft
+  const formulier = document.getElementById('taak-formulier');
+  if (formulier) {
+    formulier.querySelectorAll('.taak-stap').forEach((s, i) => {
+      s.style.display = i === 0 ? 'block' : 'none';
+    });
+  }
   el.innerHTML = `
     <h3 style="margin-bottom:20px;color:var(--blauw);">Wat wil je doen?</h3>
     <div style="display:flex;flex-direction:column;gap:14px;max-width:480px;">
@@ -348,7 +355,7 @@ function renderStap0() {
         <input type="radio" name="taak-start-keuze" value="aanpassen">
         <div class="start-keuze-inhoud">
           <div class="start-keuze-titel">✏️ Bestaande taak aanpassen</div>
-          <div class="start-keuze-omschrijving">Pas een bestaande taak aan. Versienummer wordt verhoogd.</div>
+          <div class="start-keuze-omschrijving">Pas een bestaande taak aan en sla op om de wijzigingen te bewaren.</div>
         </div>
       </label>
       <label class="start-keuze-optie">
@@ -1146,16 +1153,6 @@ export async function slaaTaakOp() {
   }
 
   const nu = new Date().toISOString();
-  let versie = 1;
-  if (isBewerkModus && bewerkId) {
-    try {
-      const snap = await getDoc(doc(db, 'taken', bewerkId));
-      versie = (snap.data()?.versienummer || 0) + 1;
-    } catch (e) {
-      console.warn('Versie ophalen mislukt, gebruik 1:', e);
-    }
-  }
-
   const isKopie = huidigeTaak.startKeuze === 'kopie';
 
   // Zorg dat alle stap-data verzameld is (ook als gebruiker niet alle stappen doorlopen heeft)
@@ -1198,7 +1195,6 @@ export async function slaaTaakOp() {
     })),
     indienwijze: huidigeTaak.indienwijze || {},
     leerkrachtId: uid,
-    versienummer: isKopie ? 1 : versie,
     aangepastOp: nu,
   };
 
@@ -1216,8 +1212,7 @@ export async function slaaTaakOp() {
       const docRef = doc(collection(db, 'taken'));
       await setDoc(docRef, data);
       console.log('Aangemaakt met ID:', docRef.id);
-      bewerkId = docRef.id;  // bewaar ID zodat volgende opslag correct update
-      isBewerkModus = true;
+
     }
     document.getElementById('taak-preview-wrapper').style.display = 'none';
     document.getElementById('taak-formulier').style.display = 'none';
@@ -1412,7 +1407,7 @@ export async function laadTaken() {
         <td style="font-size:9.5pt;">${t.lesweek ? 'Week ' + t.lesweek : '—'}</td>
         <td style="font-size:9.5pt;">${(t.routes || []).filter(r => r !== 'geen').join(', ') || (t.routes?.includes('geen') ? '—' : '—')}</td>
         <td><span class="badge ${statusKleur[t.status] || 'badge-bg'}">${t.status}</span></td>
-        <td style="font-size:9pt;color:var(--tekst-licht);">v${t.versienummer || 1}</td>
+
         <td>
           <button class="knop knop-secundair knop-klein" onclick="window._bewerkTaak('${t.id}')">✏️</button>
           <button class="knop knop-secundair knop-klein" onclick="window._kopieerTaak('${t.id}')">📋</button>
