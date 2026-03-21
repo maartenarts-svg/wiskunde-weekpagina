@@ -1,4 +1,3 @@
-
 // ===== WEEKDROPDOWN VULLEN =====
 export function vulWoWeekDropdown(schooljaar) {
   // Hergebruik genereerSchoolweken uit taken.js — maar die is niet geëxporteerd.
@@ -52,6 +51,7 @@ export async function laadWeekoverzicht() {
 
   huidigSchooljaarWO = sj;
   huidigWeekWO = week;
+  const weekGetal = parseInt(week);
 
   document.getElementById('wo-lader').style.display = 'block';
   document.getElementById('wo-kolommen').style.display = 'none';
@@ -60,10 +60,19 @@ export async function laadWeekoverzicht() {
 
   try {
     const snap = await getDocs(collection(db, 'taken'));
-    alleTakenVanWeek = snap.docs
-      .map(d => ({ id: d.id, ...d.data() }))
-      .filter(t => t.schooljaar === sj && String(t.lesweek) === String(week))
+    const alleTaken = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    console.log('Alle taken geladen:', alleTaken.length);
+    console.log('Filter: schooljaar=', sj, 'week=', weekGetal);
+    alleTaken.forEach(t => console.log(' taak:', t.code, 'sj:', t.schooljaar, 'lesweek:', t.lesweek, '(type:', typeof t.lesweek, ')'));
+
+    alleTakenVanWeek = alleTaken
+      .filter(t => {
+        const sjMatch = t.schooljaar === sj;
+        const weekMatch = parseInt(t.lesweek) === weekGetal;
+        return sjMatch && weekMatch;
+      })
       .sort((a, b) => (a.volgorde || 999) - (b.volgorde || 999));
+    console.log('Gefilterde taken:', alleTakenVanWeek.length, alleTakenVanWeek.map(t => t.code));
 
     // Bouw kolomData op
     kolomData = { G: [], B: [], Z: [] };
