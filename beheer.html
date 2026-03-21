@@ -430,7 +430,13 @@
           <div class="formulier-rij">
             <div class="formulier-groep">
               <label>Referentie (optioneel)</label>
-              <input type="text" id="bron-referentie" placeholder="bv. 7.1">
+              <div class="cd-wrapper">
+                <input type="text" class="cd-input" id="bron-referentie" placeholder="bv. 7.1"
+                  autocomplete="off" data-type="referentie"
+                  oninput="window._cdFilter(this)" onfocus="window._cdFilter(this)" onblur="window._cdVerberg(this)">
+                <div class="cd-lijst"></div>
+                <div class="cd-waarschuwing">&#9888; Deze referentie bestaat nog niet in de databank.</div>
+              </div>
             </div>
             <div class="formulier-groep">
               <label>Notities</label>
