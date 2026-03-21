@@ -1005,7 +1005,82 @@
       <!-- WEEKOVERZICHT -->
       <div class="sectie" id="sectie-weekoverzicht">
         <div class="pagina-titel">Weekoverzicht</div>
-        <div class="pagina-ondertitel">Wordt geladen...</div>
+        <div class="pagina-ondertitel">Stel de weekpagina samen en exporteer naar HTML.</div>
+
+        <div id="melding-weekoverzicht" class="melding"></div>
+
+        <div id="wo-beheer-wrapper">
+          <!-- Filters -->
+          <div class="kaart" style="padding:16px 24px;">
+            <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;">
+              <select id="wo-schooljaar" onchange="window._vulWoWeekDropdown(this.value); window._laadWeekoverzicht();" style="font-size:9.5pt;padding:5px 10px;">
+                <option value="">Schooljaar...</option>
+                <option value="2025-2026">2025-2026</option>
+                <option value="2024-2025">2024-2025</option>
+              </select>
+              <select id="wo-week" onchange="window._laadWeekoverzicht()" style="font-size:9.5pt;padding:5px 10px;">
+                <option value="">Week...</option>
+              </select>
+            </div>
+          </div>
+
+          <div id="wo-lader" class="lader" style="display:none;">Laden...</div>
+
+          <div id="wo-leeg" class="leeg-staat">
+            <div class="leeg-icoon">&#128197;</div>
+            <p>Kies een schooljaar en week om het overzicht te laden.</p>
+          </div>
+
+          <!-- Drie kolommen -->
+          <div id="wo-kolommen" style="display:none;grid-template-columns:1fr 1fr 1fr;gap:16px;">
+            <!-- G-route -->
+            <div class="kaart" style="padding:16px;">
+              <div class="kaart-titel" style="padding-bottom:10px;margin-bottom:10px;">
+                <span style="color:#1a6b2f;">&#9679; G-route</span>
+                <span id="wo-tijd-G" style="font-size:9.5pt;font-weight:400;color:var(--tekst-licht);">0 min</span>
+              </div>
+              <div id="wo-tegels-G" class="wo-tegel-container"></div>
+            </div>
+            <!-- B-route -->
+            <div class="kaart" style="padding:16px;">
+              <div class="kaart-titel" style="padding-bottom:10px;margin-bottom:10px;">
+                <span style="color:#0d47a1;">&#9679; B-route</span>
+                <span id="wo-tijd-B" style="font-size:9.5pt;font-weight:400;color:var(--tekst-licht);">0 min</span>
+              </div>
+              <div id="wo-tegels-B" class="wo-tegel-container"></div>
+            </div>
+            <!-- Z-route -->
+            <div class="kaart" style="padding:16px;">
+              <div class="kaart-titel" style="padding-bottom:10px;margin-bottom:10px;">
+                <span style="color:#8b1a1a;">&#9679; Z-route</span>
+                <span id="wo-tijd-Z" style="font-size:9.5pt;font-weight:400;color:var(--tekst-licht);">0 min</span>
+              </div>
+              <div id="wo-tegels-Z" class="wo-tegel-container"></div>
+            </div>
+          </div>
+
+          <!-- Actieknoppen -->
+          <div id="wo-acties" style="display:none;gap:10px;margin-top:16px;">
+            <button class="knop knop-secundair" onclick="window._slaWeekoverzichtOp()">&#128190; Volgorde opslaan</button>
+            <button class="knop knop-primair" onclick="window._toonWeekoverzichtPreview()">&#128065; Preview</button>
+          </div>
+        </div>
+
+        <!-- Preview wrapper -->
+        <div id="wo-preview-wrapper" style="display:none;">
+          <div class="kaart">
+            <div class="kaart-titel">
+              <span>Preview weekpagina</span>
+              <button class="knop knop-secundair knop-klein" onclick="window._sluitWeekoverzichtPreview()">&#9998; Aanpassen</button>
+            </div>
+            <div id="wo-preview-inhoud" style="border:1.5px solid var(--grijs-rand);border-radius:8px;overflow:hidden;margin-top:12px;font-family:Lato,sans-serif;font-size:11pt;"></div>
+          </div>
+          <div style="display:flex;gap:10px;margin-top:16px;">
+            <button class="knop knop-primair" onclick="window._exporteerWeekpagina()">&#11015; Exporteren als HTML</button>
+            <button class="knop knop-secundair" onclick="window._sluitWeekoverzichtPreview()">&#9998; Aanpassen</button>
+          </div>
+        </div>
+
       </div>
 
     </main>
@@ -1049,6 +1124,11 @@
     vulLesweekDropdown, filterBestaandeTaken, kiesBestaandeTaak, verwijderTaak,
     initStap0Listeners
   } from './js/taken.js';
+  import {
+    laadWeekoverzicht, slaWeekoverzichtOp, toonWeekoverzichtPreview,
+    sluitWeekoverzichtPreview, exporteerWeekpagina,
+    verwijderUitKolom, updateVolgtijdelijkheid, vulWoWeekDropdown
+  } from './js/weekoverzicht.js';
 
   window._laadLeerplandoelen = laadLeerplandoelen;
   window._slaLeerplandoelOp = slaLeerplandoelOp;
@@ -1131,6 +1211,15 @@
   window._filterBestaandeTaken = filterBestaandeTaken;
   window._kiesBestaandeTaak = kiesBestaandeTaak;
   window._verwijderTaak = verwijderTaak;
+  window._laadWeekoverzicht = laadWeekoverzicht;
+  window._vulWoWeekDropdown = vulWoWeekDropdown;
+  window._slaWeekoverzichtOp = slaWeekoverzichtOp;
+  window._toonWeekoverzichtPreview = toonWeekoverzichtPreview;
+  window._sluitWeekoverzichtPreview = sluitWeekoverzichtPreview;
+  window._exporteerWeekpagina = exporteerWeekpagina;
+  window._verwijderUitKolom = verwijderUitKolom;
+  window._updateVolgtijdelijkheid = updateVolgtijdelijkheid;
+
   window._toonScTabblad = (id, knop) => {
     document.querySelectorAll('#taak-stap-3 .tabblad-inhoud').forEach(t => t.classList.remove('actief'));
     document.querySelectorAll('#taak-stap-3 .tabblad-knop').forEach(k => k.classList.remove('actief'));
@@ -1151,7 +1240,13 @@
         laadTaken();
       },
       onUitgelogd: () => {},
-      onSectie: (naam) => {}
+      onSectie: (naam) => {
+        if (naam === 'weekoverzicht') {
+          // Vul weekdropdown op basis van geselecteerd schooljaar
+          const sj = document.getElementById('wo-schooljaar')?.value;
+          if (sj) window._vulWoWeekDropdown(sj);
+        }
+      }
     });
   });
 </script>
