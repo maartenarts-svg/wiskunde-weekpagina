@@ -857,6 +857,16 @@ export function kiesTemplate(id) {
   });
 }
 
+// ===== HULPFUNCTIE: paramVolgorde uit tekst =====
+function berekenParamVolgorde(tekst) {
+  const gezien = new Set();
+  const volgorde = [];
+  for (const m of (tekst || '').matchAll(/\{(\w+)\}/g)) {
+    if (!gezien.has(m[1])) { gezien.add(m[1]); volgorde.push(m[1]); }
+  }
+  return volgorde;
+}
+
 function renderTemplateParams(params, volgorde) {
   const container = document.getElementById('taak-template-params');
   const blok = document.getElementById('taak-template-params-blok');
@@ -880,6 +890,8 @@ export function updatePreviewTaak() {
   // Zorg dat templateData altijd bestaat
   if (!templateData) templateData = { id: null, naam: '', inhoud: '', parameters: {}, paramVolgorde: [] };
   templateData.inhoud = ta.value;
+  // Herbereken volgorde als die ontbreekt
+  if (!templateData.paramVolgorde?.length) templateData.paramVolgorde = berekenParamVolgorde(ta.value);
 
   // Parameters bijwerken
   document.querySelectorAll('.taak-param').forEach(inp => {
@@ -899,6 +911,21 @@ export function updatePreviewTaak() {
   const hoogte = Math.max(320, ta.scrollHeight);
   ta.style.height = hoogte + 'px';
   if (preview) preview.style.minHeight = hoogte + 'px';
+
+  // Knoptekst aanpassen: alleen zichtbaar als er iets te bewaren valt als template
+  const opslaanKnop = document.getElementById('instructie-opslaan-knop');
+  if (opslaanKnop) {
+    if (!ta.value.trim()) {
+      opslaanKnop.style.display = 'none';
+    } else if (templateData?.id) {
+      // Bestaande template geladen: parameters worden automatisch meegestuurd, geen expliciete actie nodig
+      opslaanKnop.style.display = 'none';
+    } else {
+      // Vrije tekst zonder template: toon knop om als template op te slaan
+      opslaanKnop.textContent = '💾 Bewaren als herbruikbare template';
+      opslaanKnop.style.display = 'inline-flex';
+    }
+  }
 }
 
 export function detecteerParametersTaak() {
@@ -935,13 +962,14 @@ export async function slaInstructieOp() {
       const data = { naam, type, inhoud, parameters: params, aangepastOp: new Date().toISOString() };
       const docRef = doc(collection(db, 'templates'));
       await setDoc(docRef, data);
-      templateData = { id: docRef.id, naam, inhoud, parameters: params };
+      templateData = { id: docRef.id, naam, inhoud, parameters: params, paramVolgorde: berekenParamVolgorde(inhoud) };
       toonMelding('taken', `Template "${naam}" opgeslagen.`, 'succes');
     } else {
       // Niet als template opslaan: bewaar inline
-      if (!templateData) templateData = {};
+      if (!templateData) templateData = { id: null, naam: '', parameters: {}, paramVolgorde: [] };
       templateData.id = null;
       templateData.inhoud = inhoud;
+      templateData.paramVolgorde = berekenParamVolgorde(inhoud);
     }
   }
   updatePreviewTaak();
@@ -1436,7 +1464,8 @@ async function laadTaakInFormulier(id, data, isKopie) {
   if (data.templateId) {
     const templates = await zorgTemplatesCache();
     const t = templates.find(x => x.id === data.templateId);
-    templateData = { id: data.templateId, naam: t?.naam || '', inhoud: data.templateInhoud || t?.inhoud || '', parameters: data.templateParams || {} };
+    const tmplInhoud = data.templateInhoud || t?.inhoud || '';
+    templateData = { id: data.templateId, naam: t?.naam || '', inhoud: tmplInhoud, parameters: data.templateParams || {}, paramVolgorde: berekenParamVolgorde(tmplInhoud) };
   }
 
   document.getElementById('taak-formulier').style.display = 'block';
