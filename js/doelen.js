@@ -129,7 +129,7 @@ window.verwijderLeerplancode = (id) => {
 
   let bewerkDoelId = null;
   let referentieTeller = 0;
-  const cacheDoelen = { alle: null };
+
 
   // Scores tonen/verbergen
 window.toggleScores = () => {
