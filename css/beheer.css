@@ -317,3 +317,77 @@ tr:hover td { background: var(--blauw-licht); }
 .geselecteerde-doelen { margin-top: 10px; }
 .geselecteerd-doel-item { display: flex; align-items: center; gap: 8px; padding: 8px 10px; background: var(--grijs); border-radius: 6px; margin-bottom: 4px; font-size: 10.5pt; }
 .geselecteerd-doel-item .verwijder-doel { background: none; border: none; color: var(--rood); cursor: pointer; font-size: 14px; margin-left: auto; }
+
+/* ===== WEEKOVERZICHT ===== */
+.wo-tegel-container {
+  min-height: 60px;
+}
+.wo-tegel {
+  background: var(--wit);
+  border: 1.5px solid var(--grijs-rand);
+  border-radius: 8px;
+  padding: 10px 12px;
+  margin-bottom: 8px;
+  cursor: grab;
+  transition: box-shadow 0.15s, border-color 0.15s;
+  user-select: none;
+}
+.wo-tegel:hover { border-color: var(--blauw); box-shadow: var(--schaduw); }
+.wo-tegel.wo-tegel-sleep { opacity: 0.45; border: 2px dashed var(--blauw); }
+.wo-tegel.wo-tegel-over { border-color: var(--oranje); background: #fff8f0; }
+.wo-tegel-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 4px;
+}
+.wo-tegel-greep {
+  color: var(--tekst-licht);
+  font-size: 14px;
+  cursor: grab;
+  flex-shrink: 0;
+}
+.wo-tegel-code {
+  font-weight: 700;
+  font-size: 10.5pt;
+  color: var(--blauw);
+  flex: 1;
+}
+.wo-tegel-tijd {
+  font-size: 9pt;
+  color: var(--tekst-licht);
+  background: var(--grijs);
+  padding: 2px 7px;
+  border-radius: 10px;
+  flex-shrink: 0;
+}
+.wo-tegel-verwijder {
+  background: none;
+  border: none;
+  color: var(--rood);
+  cursor: pointer;
+  font-size: 13px;
+  padding: 2px 4px;
+  flex-shrink: 0;
+  opacity: 0.6;
+  transition: opacity 0.15s;
+}
+.wo-tegel-verwijder:hover { opacity: 1; }
+.wo-tegel-titel {
+  font-size: 10pt;
+  margin-bottom: 3px;
+  line-height: 1.4;
+}
+.wo-tegel-meta {
+  font-size: 8.5pt;
+  color: var(--tekst-licht);
+  margin-bottom: 6px;
+}
+.wo-tegel-vt {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 4px;
+  padding-top: 6px;
+  border-top: 1px solid var(--grijs-rand);
+}
