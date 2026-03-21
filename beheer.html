@@ -851,6 +851,33 @@
                   </div>
                   <div class="doel-lijst-container" id="stap5-bron-lijst" style="max-height:240px;"></div>
                 </div>
+                <div style="margin-top:8px;">
+                  <button class="knop knop-secundair knop-klein" onclick="window._toggleNieuwBronFormulier()">+ Nieuwe bron toevoegen</button>
+                </div>
+                <div id="stap5-nieuw-bron-formulier" style="display:none;background:var(--grijs);border-radius:8px;padding:14px;margin-top:10px;">
+                  <div class="formulier-rij">
+                    <div class="formulier-groep"><label>Label</label><input type="text" id="stap5-nieuw-bron-label" placeholder="bv. Uitlegvideo breuken"></div>
+                    <div class="formulier-groep"><label>Type</label>
+                      <select id="stap5-nieuw-bron-type">
+                        <option value="website">&#127760; Website</option>
+                        <option value="video">&#9654;&#65039; Video</option>
+                        <option value="classroom">&#127891; Google Classroom</option>
+                        <option value="bestand">&#128196; PDF/Bestand</option>
+                        <option value="andere">&#128206; Andere</option>
+                      </select>
+                    </div>
+                  </div>
+                  <div class="formulier-rij">
+                    <div class="formulier-groep vol"><label>Link</label><input type="url" id="stap5-nieuw-bron-link" placeholder="https://..."></div>
+                  </div>
+                  <div class="formulier-rij">
+                    <div class="formulier-groep"><label>Referentie (optioneel)</label><input type="text" id="stap5-nieuw-bron-ref" placeholder="bv. 7.1"></div>
+                  </div>
+                  <div style="margin-top:10px;display:flex;gap:8px;">
+                    <button class="knop knop-primair knop-klein" onclick="window._slaaNieuwBronOp()">Opslaan</button>
+                    <button class="knop knop-secundair knop-klein" onclick="window._toggleNieuwBronFormulier()">Annuleren</button>
+                  </div>
+                </div>
               </div>
               <div style="margin-top:14px;">
                 <div class="editor-label">Gekozen bronnen</div>
@@ -982,7 +1009,7 @@
     filterDoelen, kiesDoel, verwijderGekozenDoel,
     toggleNieuwDoelFormulier, toggleNieuwDoelScores, slaaNieuwDoelOp,
     kiesTemplate, updatePreviewTaak, detecteerParametersTaak, slaInstructieOp,
-    kiesBron, verwijderGekozenBron, filterBronnen,
+    kiesBron, verwijderGekozenBron, filterBronnen, toggleNieuwBronFormulier, slaaNieuwBronOp,
     vulLesweekDropdown
   } from './js/taken.js';
 
@@ -1061,6 +1088,8 @@
   window._kiesBron = kiesBron;
   window._verwijderGekozenBron = verwijderGekozenBron;
   window._filterBronnen = filterBronnen;
+  window._toggleNieuwBronFormulier = toggleNieuwBronFormulier;
+  window._slaaNieuwBronOp = slaaNieuwBronOp;
   window._vulLesweekDropdown = vulLesweekDropdown;
   window._toonScTabblad = (id, knop) => {
     document.querySelectorAll('#taak-stap-3 .tabblad-inhoud').forEach(t => t.classList.remove('actief'));
