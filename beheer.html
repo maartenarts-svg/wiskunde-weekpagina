@@ -675,7 +675,33 @@
 
           <div id="taak-stappen-wrapper">
 
-            <div class="taak-stap" id="taak-stap-0"></div>
+            <div class="taak-stap" id="taak-stap-0">
+              <h3 style="margin-bottom:20px;color:var(--blauw);">Wat wil je doen?</h3>
+              <div style="display:flex;flex-direction:column;gap:14px;max-width:480px;">
+                <label class="start-keuze-optie" id="keuze-nieuw">
+                  <input type="radio" name="taak-start-keuze" value="nieuw">
+                  <div class="start-keuze-inhoud">
+                    <div class="start-keuze-titel">&#10024; Nieuwe taak aanmaken</div>
+                    <div class="start-keuze-omschrijving">Start van nul met een nieuwe taak of les.</div>
+                  </div>
+                </label>
+                <label class="start-keuze-optie" id="keuze-aanpassen">
+                  <input type="radio" name="taak-start-keuze" value="aanpassen">
+                  <div class="start-keuze-inhoud">
+                    <div class="start-keuze-titel">&#9999;&#65039; Bestaande taak aanpassen</div>
+                    <div class="start-keuze-omschrijving">Pas een bestaande taak aan en sla op om de wijzigingen te bewaren.</div>
+                  </div>
+                </label>
+                <label class="start-keuze-optie" id="keuze-kopie">
+                  <input type="radio" name="taak-start-keuze" value="kopie">
+                  <div class="start-keuze-inhoud">
+                    <div class="start-keuze-titel">&#128203; Bestaande taak kopi&#235;ren</div>
+                    <div class="start-keuze-omschrijving">Gebruik een bestaande taak als basis voor een nieuwe taak.</div>
+                  </div>
+                </label>
+              </div>
+              <div id="bestaande-taak-keuze" style="display:none;margin-top:20px;"></div>
+            </div>
 
             <div class="taak-stap" id="taak-stap-1">
               <h3 class="stap-titel">Stap 1 &mdash; Co&#246;rdinaten</h3>
@@ -1020,7 +1046,8 @@
     toggleNieuwDoelFormulier, toggleNieuwDoelScores, slaaNieuwDoelOp,
     kiesTemplate, updatePreviewTaak, detecteerParametersTaak, slaInstructieOp,
     kiesBron, verwijderGekozenBron, filterBronnen, toggleNieuwBronFormulier, slaaNieuwBronOp,
-    vulLesweekDropdown, filterBestaandeTaken, kiesBestaandeTaak, verwijderTaak
+    vulLesweekDropdown, filterBestaandeTaken, kiesBestaandeTaak, verwijderTaak,
+    initStap0Listeners
   } from './js/taken.js';
 
   window._laadLeerplandoelen = laadLeerplandoelen;
@@ -1112,6 +1139,7 @@
   };
 
   document.addEventListener('DOMContentLoaded', () => {
+    initStap0Listeners(); // eenmalig listeners koppelen
     initAuth({
       onIngelogd: (gebruiker) => {
         laadLeerplandoelen();
