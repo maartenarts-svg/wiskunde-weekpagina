@@ -4,7 +4,7 @@ import { toonMelding } from './ui.js';
 
 export let cacheBronnen = { alle: null };
 
-  // ===== BRONNEN ====
+  // ===== BRONNEN =====
 
   let bewerkBronId = null;
   const cacheBronnen = { alle: null };
