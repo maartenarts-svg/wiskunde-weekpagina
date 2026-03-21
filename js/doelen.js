@@ -3,6 +3,7 @@ import {
   collection, doc, setDoc, getDoc, getDocs, deleteDoc
 } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
 import { toonMelding } from './ui.js';
+import { haalCache, wisCache } from './appCache.js';
 
 // ===== STATE =====
 let cache = null;
@@ -17,9 +18,9 @@ let alleReferentieCodes = [];
 export async function laadDropdownData() {
   try {
     if (!alleLeerplancodes.length) {
-      const snap = await getDocs(collection(db, 'leerplandoelen'));
-      alleLeerplancodes = snap.docs
-        .map(d => ({ code: d.data().code, omschrijving: d.data().doel || '' }))
+      const lp = await haalCache('leerplandoelen', db);
+      alleLeerplancodes = lp
+        .map(d => ({ code: d.code, omschrijving: d.doel || '' }))
         .filter(d => d.code)
         .sort((a, b) => {
           const v = c => c.startsWith('BG') ? 2 : c.startsWith('V') ? 1 : 0;
@@ -28,10 +29,9 @@ export async function laadDropdownData() {
         });
     }
     if (!alleReferentieCodes.length) {
-      const snap = await getDocs(collection(db, 'hoofdstukken'));
+      const hst = await haalCache('hoofdstukken', db);
       const refs = [];
-      snap.docs.forEach(d => {
-        const h = d.data();
+      hst.forEach(h => {
         refs.push({ code: h.nummer + '.0', omschrijving: 'Hoofdstuk ' + h.nummer + ': ' + h.titel });
         (h.paragrafen || []).forEach(p => refs.push({ code: p.nummer, omschrijving: '§' + p.nummer + ' ' + p.titel }));
       });
@@ -286,7 +286,7 @@ export async function slaDoelOp() {
   try {
     const docRef = bewerkId ? doc(db, 'doelen', bewerkId) : doc(collection(db, 'doelen'));
     await setDoc(docRef, data);
-    cache = null;
+    cache = null; wisCache('doelen');
     toonMelding('doelen', 'Doel opgeslagen.', 'succes');
     annuleerDoel();
     laadDoelen();
@@ -302,10 +302,7 @@ export async function laadDoelen() {
   document.getElementById('doelen-leeg').style.display = 'none';
 
   try {
-    if (!cache) {
-      const snap = await getDocs(collection(db, 'doelen'));
-      cache = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-    }
+    if (!cache) cache = await haalCache('doelen', db);
     let doelen = cache;
 
     // Filteropties bijwerken
@@ -395,7 +392,7 @@ export async function verwijderDoel(id) {
   if (!confirm('Ben je zeker dat je dit doel wil verwijderen?')) return;
   try {
     await deleteDoc(doc(db, 'doelen', id));
-    cache = null;
+    cache = null; wisCache('doelen');
     toonMelding('doelen', 'Doel verwijderd.', 'succes');
     laadDoelen();
   } catch (e) {
