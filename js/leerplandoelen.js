@@ -16,7 +16,7 @@ window.berekeningCode = () => {
 
   // ===== SUBDOELEN =====
 
-  let subdoelTeller = 0;
+let subdoelTeller = 0;
 
 window.voegSubdoelToe = (data = {}) => {
     const container = document.getElementById('subdoel-container');
@@ -55,7 +55,7 @@ window.verwijderSubdoel = (id) => {
     }
   };
 
-  function haalSubdoelen() {
+function haalSubdoelen() {
     return Array.from(document.querySelectorAll('.subdoel-item')).map(item => ({
       nummer: item.querySelector('.subdoel-nummer').value.trim(),
       doel: item.querySelector('.subdoel-doel').value.trim(),
@@ -64,7 +64,7 @@ window.verwijderSubdoel = (id) => {
     })).filter(s => s.nummer && s.doel);
   }
 
-  function resetLeerplandoelFormulier() {
+function resetLeerplandoelFormulier() {
     document.getElementById('lp-niveau').value = 'basis';
     document.getElementById('lp-nummer').value = '';
     document.getElementById('lp-code').value = '';
@@ -83,7 +83,7 @@ window.annuleerLeerplandoel = resetLeerplandoelFormulier;
 
   // ===== CSV IMPORT =====
 
-  window.importeerCSV = async (event) => {
+window.importeerCSV = async (event) => {
     const bestand = event.target.files[0];
     if (!bestand) return;
 
