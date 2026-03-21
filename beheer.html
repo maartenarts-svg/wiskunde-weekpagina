@@ -392,7 +392,90 @@
       <!-- BRONNEN -->
       <div class="sectie" id="sectie-bronnen">
         <div class="pagina-titel">Bronnen</div>
-        <div class="pagina-ondertitel">Wordt geladen...</div>
+        <div class="pagina-ondertitel">Beheer overige bronnen zoals websites, video's en Google Classroom-taken.</div>
+
+        <div id="melding-bronnen" class="melding"></div>
+
+        <!-- Formulier -->
+        <div class="kaart">
+          <div class="kaart-titel">
+            <span id="formulier-bron-titel">Nieuwe bron toevoegen</span>
+            <button class="knop knop-secundair knop-klein" id="annuleer-bron" style="display:none" onclick="window._annuleerBron()">Annuleren</button>
+          </div>
+
+          <div class="formulier-rij">
+            <div class="formulier-groep">
+              <label>Label</label>
+              <input type="text" id="bron-label" placeholder="bv. Uitlegvideo breuken">
+            </div>
+            <div class="formulier-groep">
+              <label>Type</label>
+              <select id="bron-type">
+                <option value="website">&#127760; Website</option>
+                <option value="video">&#9654;&#65039; Video (Drive/YouTube)</option>
+                <option value="classroom">&#127891; Google Classroom</option>
+                <option value="bestand">&#128196; PDF/Bestand</option>
+                <option value="andere">&#128206; Andere</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="formulier-rij">
+            <div class="formulier-groep vol">
+              <label>Link</label>
+              <input type="url" id="bron-link" placeholder="https://...">
+            </div>
+          </div>
+
+          <div class="formulier-rij">
+            <div class="formulier-groep">
+              <label>Referentie (optioneel)</label>
+              <input type="text" id="bron-referentie" placeholder="bv. 7.1">
+            </div>
+            <div class="formulier-groep">
+              <label>Notities</label>
+              <input type="text" id="bron-notities" placeholder="Optionele notitie...">
+            </div>
+          </div>
+
+          <div style="margin-top:20px;">
+            <button class="knop knop-primair" onclick="window._slaBronOp()">&#128190; Opslaan</button>
+          </div>
+        </div>
+
+        <!-- Overzicht -->
+        <div class="kaart">
+          <div class="kaart-titel">
+            <span>Overzicht bronnen</span>
+            <select id="filter-bron-type" onchange="window._laadBronnen()" style="font-size:9.5pt;padding:5px 10px;">
+              <option value="">Alle types</option>
+              <option value="website">Website</option>
+              <option value="video">Video</option>
+              <option value="classroom">Google Classroom</option>
+              <option value="bestand">PDF/Bestand</option>
+              <option value="andere">Andere</option>
+            </select>
+          </div>
+          <div id="bronnen-lader" class="lader">Laden...</div>
+          <div class="tabel-wrapper" id="bronnen-tabel" style="display:none;">
+            <table>
+              <thead>
+                <tr>
+                  <th>Label</th>
+                  <th>Type</th>
+                  <th>Link</th>
+                  <th>Referentie</th>
+                  <th>Acties</th>
+                </tr>
+              </thead>
+              <tbody id="bronnen-tbody"></tbody>
+            </table>
+          </div>
+          <div class="leeg-staat" id="bronnen-leeg" style="display:none;">
+            <div class="leeg-icoon">&#128279;</div>
+            <p>Nog geen bronnen ingegeven.</p>
+          </div>
+        </div>
       </div>
 
       <!-- TEMPLATES -->
@@ -435,6 +518,9 @@
     toggleScores, importeerDoelenCSV, laadDropdownData,
     cdFilter, cdKies, cdVerberg
   } from './js/doelen.js';
+  import {
+    laadBronnen, slaBronOp, bewerkBron, verwijderBron, annuleerBron
+  } from './js/bronnen.js';
 
   window._laadLeerplandoelen = laadLeerplandoelen;
   window._slaLeerplandoelOp = slaLeerplandoelOp;
@@ -469,6 +555,12 @@
   window._cdKies = cdKies;
   window._cdVerberg = cdVerberg;
 
+  window._laadBronnen = laadBronnen;
+  window._slaBronOp = slaBronOp;
+  window._bewerkBron = bewerkBron;
+  window._verwijderBron = verwijderBron;
+  window._annuleerBron = annuleerBron;
+
   document.addEventListener('DOMContentLoaded', () => {
     initAuth({
       onIngelogd: (gebruiker) => {
@@ -476,6 +568,7 @@
         laadHoofdstukken();
         laadDoelen();
         laadDropdownData();
+        laadBronnen();
       },
       onUitgelogd: () => {},
       onSectie: (naam) => {}
