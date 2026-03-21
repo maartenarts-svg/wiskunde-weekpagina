@@ -40,7 +40,7 @@ export async function vulDatalijsten() {
     } catch(e) { console.error('Fout bij laden dropdown data:', e); }
   }
 
-export function cdFilter = (input) => {
+export function cdFilter(input) {
     const wrapper = input.closest('.cd-wrapper');
     const lijstId = wrapper.querySelector('.cd-lijst').id;
     const lijst = document.getElementById(lijstId);
@@ -70,7 +70,7 @@ export function cdFilter = (input) => {
     waarschuwing.style.display = bestaatNiet ? 'block' : 'none';
   };
 
-export function cdKies = (event, lijstId, code) => {
+export function cdKies(event, lijstId, code) {
     event.preventDefault();
     const lijst = document.getElementById(lijstId);
     const input = lijst.closest('.cd-wrapper').querySelector('.cd-input');
@@ -79,7 +79,7 @@ export function cdKies = (event, lijstId, code) => {
     lijst.closest('.cd-wrapper').querySelector('.cd-waarschuwing').style.display = 'none';
   };
 
-export function cdVerberg = (input) => {
+export function cdVerberg(input) {
     setTimeout(() => {
       const lijst = input.closest('.cd-wrapper').querySelector('.cd-lijst');
       if (lijst) lijst.classList.remove('zichtbaar');
@@ -90,7 +90,7 @@ export function cdVerberg = (input) => {
 
   let leerplanTeller = 0;
 
-export function voegLeerplancodeToe = (waarde = '') => {
+export function voegLeerplancodeToe(waarde = '') {
     const container = document.getElementById('leerplan-container');
     document.getElementById('geen-leerplancodes').style.display = 'none';
     leerplanTeller++;
@@ -138,7 +138,7 @@ window.toggleScores = () => {
   };
 
   // Referenties
-export function voegReferentieToe = (waarde = '') => {
+export function voegReferentieToe(waarde = '') {
     const container = document.getElementById('referentie-container');
     document.getElementById('geen-referenties').style.display = 'none';
     referentieTeller++;
@@ -188,10 +188,10 @@ window.verwijderReferentie = (id) => {
     bewerkDoelId = null;
   }
 
-export function annuleerDoel = resetDoelFormulier;
+export const annuleerDoel = resetDoelFormulier;
 
   // Opslaan
-export async function slaDoelOp = async () => {
+export async function slaDoelOp() {
     const tekst = document.getElementById('doel-tekst').value.trim();
     const evalueerbaar = document.getElementById('doel-evalueerbaar').value;
     const scores = document.getElementById('doel-scores').value.trim();
@@ -222,7 +222,7 @@ export async function slaDoelOp = async () => {
   };
 
   // Laden + filteropties vullen
-export async function laadDoelen = async () => {
+export async function laadDoelen() {
     document.getElementById('doelen-lader').style.display = 'block';
     document.getElementById('doelen-tabel').style.display = 'none';
     document.getElementById('doelen-leeg').style.display = 'none';
@@ -285,7 +285,7 @@ export async function laadDoelen = async () => {
   };
 
   // Bewerken
-export async function bewerkDoel = async (id) => {
+export async function bewerkDoel(id) {
     try {
       const snap = await getDoc(doc(db, 'doelen', id));
       if (!snap.exists()) return;
@@ -313,7 +313,7 @@ export async function bewerkDoel = async (id) => {
   };
 
   // Verwijderen
-export async function verwijderDoel = async (id) => {
+export async function verwijderDoel(id) {
     if (!confirm('Ben je zeker dat je dit doel wil verwijderen?')) return;
     try {
       await deleteDoc(doc(db, 'doelen', id));
@@ -422,6 +422,3 @@ export async function verwijderDoel = async (id) => {
       laadDoelen();
     });
   });
-
-
-
