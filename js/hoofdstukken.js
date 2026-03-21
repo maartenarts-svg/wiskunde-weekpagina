@@ -4,7 +4,7 @@ import { toonMelding } from './ui.js';
 
 export let cacheHoofdstukken = null;
 
-  // ===== PARAGRAFEN ====
+  // ===== PARAGRAFEN =====
 
   let paragraafTeller = 0;
 
