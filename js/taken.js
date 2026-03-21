@@ -1186,6 +1186,7 @@ export async function slaaTaakOp() {
 
     }
     document.getElementById('taak-preview-wrapper').style.display = 'none';
+    document.getElementById('taak-stappen-wrapper').style.display = 'block';
     document.getElementById('taak-formulier').style.display = 'none';
     resetTaakState();
     laadTaken();
@@ -1486,10 +1487,9 @@ function vulFormulierStap1(data, isKopie) {
 
 // ===== ANNULEER =====
 export function annuleerTaak() {
-  const formulier = document.getElementById('taak-formulier');
-  const preview = document.getElementById('taak-preview-wrapper');
-  if (formulier) formulier.style.display = 'none';
-  if (preview) preview.style.display = 'none';
+  document.getElementById('taak-formulier').style.display = 'none';
+  document.getElementById('taak-preview-wrapper').style.display = 'none';
+  document.getElementById('taak-stappen-wrapper').style.display = 'block';
   resetTaakState();
 }
 
