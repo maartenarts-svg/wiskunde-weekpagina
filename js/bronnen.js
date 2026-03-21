@@ -7,7 +7,7 @@ export let cacheBronnen = { alle: null };
   // ===== BRONNEN =====
 
   let bewerkBronId = null;
-  const cacheBronnen = { alle: null };
+
 
   const typeIconen = {
     website: '🌐', video: '▶️', classroom: '🎓', bestand: '📄', andere: '📎'
