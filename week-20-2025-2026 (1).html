@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Week 20</title>
+<link href="https://fonts.googleapis.com/css2?family=Lato:wght@300;400;700;900&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --blauw: #2c4a6e; --blauw-donker: #1e3a56;
+    --grijs-licht: #f2f2f2; --wit: #ffffff; --geel: #fffacd;
+    --oranje: #e07b00; --tekst: #222222; --tekst-licht: #555555;
+    --font: 'Lato', sans-serif;
+  }
+  body { font-family: var(--font); font-size: 11pt; color: var(--tekst); background: #fff; }
+  .site-header {
+    background: linear-gradient(135deg, #1e3a56 0%, #2c4a6e 50%, #3a5f8a 100%);
+    color: white; text-align: center; padding: 60px 20px 50px; position: relative;
+  }
+  .site-header h1 { font-size: 48pt; font-weight: 900; letter-spacing: 2px; }
+  .route-sectie { background: #fff; padding: 28px 40px 24px; border-bottom: 1px solid #ddd; }
+  .route-label { font-size: 10pt; color: var(--tekst-licht); margin-bottom: 14px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; }
+  .route-tegels { display: flex; gap: 14px; flex-wrap: wrap; }
+  .route-tegel { padding: 14px 32px; border-radius: 8px; font-size: 15pt; font-weight: 900; cursor: pointer; border: 3px solid transparent; transition: all 0.2s ease; letter-spacing: 1px; opacity: 0.72; }
+  .route-tegel.G { background: #d4edda; color: #1a6b2f; border-color: #a8d5b5; }
+  .route-tegel.B { background: #cce5ff; color: #0d47a1; border-color: #90c4f9; }
+  .route-tegel.Z { background: #f8d7da; color: #8b1a1a; border-color: #f0a8ae; }
+  .route-tegel:hover, .route-tegel.actief { opacity: 1; box-shadow: 0 4px 16px rgba(0,0,0,0.18); transform: translateY(-2px); }
+  .welkom-bericht { padding: 56px 40px; text-align: center; color: var(--tekst-licht); font-size: 13pt; line-height: 1.8; }
+  .welkom-bericht strong { color: var(--blauw); font-size: 15pt; display: block; margin-bottom: 8px; }
+  .inhoudstafel { padding: 16px 40px 20px; background: #fff; border-bottom: 2px solid #eee; }
+  .inhoudstafel-titel { font-size: 10pt; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: var(--tekst-licht); margin-bottom: 8px; }
+  .inhoudstafel a { color: var(--blauw); text-decoration: underline; font-size: 11pt; display: block; margin-bottom: 4px; line-height: 1.6; }
+  .taak-blok { margin: 0; border-top: 4px solid var(--blauw-donker); }
+  .verborgen { display: none !important; }
+  .titelbalk { background: var(--blauw); color: white; padding: 16px 40px; font-size: 19pt; font-weight: 700; scroll-margin-top: 20px; }
+  .sectie { display: flex; align-items: flex-start; gap: 24px; padding: 28px 40px; }
+  .sectie.grijs { background: var(--grijs-licht); }
+  .sectie.wit { background: var(--wit); }
+  .sectie.geel { background: var(--geel); }
+  .sectie-icoon { width: 56px; min-width: 56px; height: 56px; display: flex; align-items: center; justify-content: center; }
+  .sectie-icoon img { width: 56px; height: 56px; object-fit: contain; }
+  .sectie-inhoud { flex: 1; }
+  .sectie-titel { font-size: 15pt; font-weight: 700; color: var(--tekst); margin-bottom: 12px; }
+  ul.doel-lijst { list-style: disc; padding-left: 22px; line-height: 1.7; }
+  ul.doel-lijst li { margin-bottom: 4px; }
+  .instructie-stappen { display: flex; flex-direction: column; gap: 6px; }
+  .instructie-stap { display: flex; align-items: flex-start; line-height: 1.7; }
+  .stap-nr { min-width: 28px; font-size: 11pt; font-weight: 700; flex-shrink: 0; padding-top: 1px; }
+  .stap-tekst { flex: 1; }
+  .sc-subtitel { font-size: 11pt; font-weight: 700; color: var(--oranje); margin: 14px 0 6px; text-decoration: underline; }
+  .sc-subtitel:first-child { margin-top: 0; }
+  .leerplandoel { color: var(--tekst-licht); font-size: 10pt; }
+  .score-tekst { font-size: 9pt; color: var(--tekst-licht); margin-left: 4px; line-height: 1.6; margin-top: 2px; }
+  .bron-tegels { display: flex; flex-wrap: wrap; gap: 14px; margin-top: 6px; }
+  .bron-tegel { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; width: 110px; height: 110px; padding: 12px 8px; background: white; border: 1.5px solid #ccc; border-radius: 10px; text-decoration: none; color: var(--tekst); font-size: 10pt; font-weight: 700; text-align: center; line-height: 1.3; }
+  .bron-icoon { font-size: 28px; }
+  .indienen-rijen { display: flex; flex-direction: column; gap: 18px; margin-top: 4px; }
+  .indienen-rij { display: flex; align-items: flex-start; gap: 16px; }
+  .indienen-rij-icoon { font-size: 28px; min-width: 40px; text-align: center; }
+  .indienen-rij-tekst { font-size: 11pt; line-height: 1.6; }
+  @media (max-width: 600px) {
+    .sectie { padding: 20px 18px; gap: 14px; }
+    .titelbalk { padding: 14px 18px; font-size: 15pt; }
+    .route-sectie, .inhoudstafel { padding: 18px; }
+  }
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <h1>week 20</h1>
+</header>
+
+<div class="route-sectie">
+  <div class="route-label">Kies jouw route</div>
+  <div class="route-tegels">
+    <div class="route-tegel G" onclick="kiesRoute('G')">G-route</div>
+    <div class="route-tegel B" onclick="kiesRoute('B')">B-route</div>
+    <div class="route-tegel Z" onclick="kiesRoute('Z')">Z-route</div>
+  </div>
+</div>
+
+<div class="welkom-bericht" id="welkom-bericht">
+  <strong>Welkom op de weekpagina!</strong>
+  Klik hierboven op jouw route om de taken en lessen voor deze week te zien.
+</div>
+
+<nav class="inhoudstafel verborgen" id="inhoudstafel">
+  <div class="inhoudstafel-titel">Deze week</div>
+  <a href="#taak-GIV6ndpFsT4AL52HjMg1-G" class="inhoudslink" data-routes="G">WI MC1: Breuken vermenigvuldigen (rooster)</a>
+  <a href="#taak-tVd3udeA2mvioBkAOHGM-G" class="inhoudslink" data-routes="G">WI RV: Rekenvaardigheden (15')</a>
+  <a href="#taak-tVd3udeA2mvioBkAOHGM-B" class="inhoudslink" data-routes="B">WI RV: Rekenvaardigheden (15')</a>
+  <a href="#taak-GIV6ndpFsT4AL52HjMg1-B" class="inhoudslink" data-routes="B">WI MC1: Breuken vermenigvuldigen (rooster)</a>
+  <a href="#taak-tVd3udeA2mvioBkAOHGM-Z" class="inhoudslink" data-routes="Z">WI RV: Rekenvaardigheden (15')</a>
+</nav>
+
+
+  <div class="taak-blok verborgen" id="taak-GIV6ndpFsT4AL52HjMg1-G" data-routes="G">
+    <div class="titelbalk">WI MC1: Breuken vermenigvuldigen (rooster)</div>
+    
+      <div class="sectie wit">
+        <div class="sectie-icoon"><img src="./pictures/voorkennis.png" alt="Voorkennis"></div>
+        <div class="sectie-inhoud">
+          <div class="sectie-titel">Welke voorkennis heb je nodig?</div>
+          <ul class="doel-lijst"><li>Ik ken de begrippen bij bewerkingen: optelling, aftrekking, vermenigvuldiging, deling, machtsverheffing en vierkantsworteltrekking.</li><li>Ik kan rekenen met gehele getallen: optelling, aftrekking, vermenigvuldiging, deling, machtsverheffing en vierkantsworteltrekking.</li><li>Ik ken de volgorde van de bewerkingen en kan ze toepassen.</li><li>Ik kan breuken gelijknamig maken.</li><li>Ik kan breuken vereenvoudigen.</li></ul>
+        </div>
+      </div>
+      <div class="sectie grijs">
+        <div class="sectie-icoon"><img src="./pictures/succescriteria.png" alt="Succescriteria"></div>
+        <div class="sectie-inhoud">
+          <div class="sectie-titel">Succescriteria</div>
+          <div class="sc-subtitel">Wat leer je met deze taak?</div><ul class="doel-lijst"><li>Ik vermenigvuldig breuken. <span class="leerplandoel">(6.1)</span></li><li>Ik gebruik ICT om te rekenen met breuken. <span class="leerplandoel">(6.1)</span></li><li>Ik mathematiseer een probleem, los het op en demathematiseer.</li></ul>
+        </div>
+      </div>
+  <div class="sectie wit">
+    <div class="sectie-icoon"><img src="./pictures/instructies.png" alt="Instructies"></div>
+    <div class="sectie-inhoud">
+      <div class="sectie-titel">Instructies</div>
+      <div class="instructie-stappen"><div class="instructie-stap"><div class="stap-nr">1|</div><div class="stap-tekst">Maak opdracht 22, cursus blz. 323.</div></div><div class="instructie-stap"><div class="stap-nr">2|</div><div class="stap-tekst">Overloop de theorie bij 7.2 Breuken vermenigvuldigen (theorie blz. 59).</div></div><div class="instructie-stap"><div class="stap-nr">3|</div><div class="stap-tekst">Maak de voorbeeldopdrachten. (cursus blz. 323, opdracht 23 en 24).</div></div><div class="instructie-stap"><div class="stap-nr">4|</div><div class="stap-tekst">Test hoe ver je staat. (cursus blz. 324)</div></div><div class="instructie-stap"><div class="stap-nr">5|</div><div class="stap-tekst">Verbeter en kies welke opdrachtenreeks je maakt.<br>Duid aan in het overzicht van de opdrachten! (cursus blz. 313)</div></div><div class="instructie-stap"><div class="stap-nr">6|</div><div class="stap-tekst">Start met de opdrachten van jouw reeks. (cursus blz. 325-328)</div></div><div class="instructie-stap"><div class="stap-nr">7|</div><div class="stap-tekst">Verbeter de opdrachten met de correctiesleutel (zie bronnen).</div></div><div style="display:flex;gap:8px;padding-left:28px;margin-bottom:4px;"><span style="color:#2c4a6e;">•</span><span>Verbeter in kleur!</span></div><div style="display:flex;gap:8px;padding-left:28px;margin-bottom:4px;"><span style="color:#2c4a6e;">•</span><span>Fout gemaakt? Onderzoek je fout: Waarom is het niet juist? Wat kun je de volgende keer doen om die fout niet meer te maken?</span></div><div class="instructie-stap"><div class="stap-nr">8|</div><div class="stap-tekst">Neem het overzicht van de opdrachten, op blz. 313 in de cursus.<br>Markeer bij <strong><u>7.2 Breuken vermenigvuldigen</u></strong>, bij het symbool van de reeks die jij gemaakt hebt, de opdrachten met de juiste kleur.</div></div><div style="display:flex;gap:8px;padding-left:28px;margin-bottom:4px;"><span style="color:#2c4a6e;">•</span><span>Groen als je geen enkel probleem had met de opdracht.<br>Dit betekent dat je geen enkele fout had en dat je de opdracht ook echt begrijpt.</span></div><div style="display:flex;gap:8px;padding-left:28px;margin-bottom:4px;"><span style="color:#2c4a6e;">•</span><span>Geel als je nog wat hulp nodig had bij de opdracht.<br>Dit betekent dat je af en toe wel een fout maakte, maar dat je wel je fouten en de juiste oplossing begrijpt.</span></div><div style="display:flex;gap:8px;padding-left:28px;margin-bottom:4px;"><span style="color:#2c4a6e;">•</span><span>Roos als je de opdracht niet begrijpt of als je nog vragen hebt bij de opdracht.</span></div></div>
+    </div>
+  </div>
+      <div class="sectie grijs">
+        <div class="sectie-icoon"><img src="./pictures/bronnen.png" alt="Bronnen"></div>
+        <div class="sectie-inhoud">
+          <div class="sectie-titel">Te gebruiken bronnen</div>
+          <div class="bron-tegels"><a href="https://drive.google.com/file/d/1ZWOX2wv6s_0ohBnQUn-aIqtaS5a9WA59/view?usp=drive_link" target="_blank" class="bron-tegel"><span class="bron-icoon">📄</span>Cursus H7</a><a href="https://drive.google.com/file/d/1aKPBk1qJNvf5MgNdkcDP2hTHuTsw4_vq/view?usp=drive_link" target="_blank" class="bron-tegel"><span class="bron-icoon">📖</span>Theorie H7</a><a href="https://drive.google.com/file/d/12DueqblA5x1S1jKrR0jIHkF5jkmG9BQA/view?usp=drive_link" target="_blank" class="bron-tegel"><span class="bron-icoon">✅</span>Correctiesleutel H7</a></div>
+        </div>
+      </div>
+      <div class="sectie geel">
+        <div class="sectie-icoon"><img src="./pictures/indienen.png" alt="Indienen"></div>
+        <div class="sectie-inhoud">
+          <div class="sectie-titel">Indienen</div>
+          <div class="indienen-rijen"><div class="indienen-rij"><div class="indienen-rij-icoon">📁</div><div class="indienen-rij-tekst">Bewaar alles in je map.</div></div></div>
+        </div>
+      </div>
+  </div>
+
+  <div class="taak-blok verborgen" id="taak-tVd3udeA2mvioBkAOHGM-G" data-routes="G">
+    <div class="titelbalk">WI RV: Rekenvaardigheden (15')</div>
+    
+      <div class="sectie wit">
+        <div class="sectie-icoon"><img src="./pictures/voorkennis.png" alt="Voorkennis"></div>
+        <div class="sectie-inhoud">
+          <div class="sectie-titel">Welke voorkennis heb je nodig?</div>
+          <ul class="doel-lijst"><li>Ik kan rekenen met rationale getallen.</li></ul>
+        </div>
+      </div>
+      <div class="sectie grijs">
+        <div class="sectie-icoon"><img src="./pictures/succescriteria.png" alt="Succescriteria"></div>
+        <div class="sectie-inhoud">
+          <div class="sectie-titel">Succescriteria</div>
+          <div class="sc-subtitel">Wat leer je met deze taak?</div><ul class="doel-lijst"><li>Ik oefen mijn rekenvaardigheden door minstens drie keer te oefenen. <span class="leerplandoel">(13.2)</span></li><li>Ik oefen mijn rekenvaardigheden door op minstens drie verschillende onderwerpen te oefenen. <span class="leerplandoel">(13.2)</span></li></ul>
+        </div>
+      </div>
+  <div class="sectie wit">
+    <div class="sectie-icoon"><img src="./pictures/instructies.png" alt="Instructies"></div>
+    <div class="sectie-inhoud">
+      <div class="sectie-titel">Instructies</div>
+      <div class="instructie-stappen"><div class="sc-subtitel" style="margin-top:10px;">Algemene uitleg</div><div style="margin-bottom:4px;">Je oefent elke week minstens drie keer. (Dat mag drie keer op één dag zijn, dat mag ook op drie verschillende dagen.)</div><div style="margin-bottom:4px;">Je respecteert daarbij de volgende afspraken.</div><div style="display:flex;gap:8px;margin-bottom:4px;"><span style="color:#2c4a6e;">•</span><span>Je oefent per week minstens drie verschillende onderwerpen.</span></div><div style="display:flex;gap:8px;margin-bottom:4px;"><span style="color:#2c4a6e;">•</span><span>Tegen het einde van project 3 moet je elk onderwerp minstens één keer geoefend hebben.</span></div><div style="display:flex;gap:8px;margin-bottom:4px;"><span style="color:#2c4a6e;">•</span><span>Je kiest vooral onderwerpen waarin je nog moet groeien.</span></div><div style="height:5px;"></div><div style="height:5px;"></div><div style="margin-bottom:4px;"><strong>Tip!</strong></div><div style="display:flex;gap:8px;margin-bottom:4px;"><span style="color:#2c4a6e;">•</span><span>Bij "groei" zie je de scores die je al behaald hebt.</span></div><div style="display:flex;gap:8px;margin-bottom:4px;"><span style="color:#2c4a6e;">•</span><span>Bekijk eerst nog eens de theorie en de voorbeelden die bij een onderwerp horen. (zie bronnen)</span></div><div style="height:5px;"></div><div style="height:5px;"></div><div class="sc-subtitel" style="margin-top:10px;">Werkwijze voor één oefening</div><div class="instructie-stap"><div class="stap-nr">1|</div><div class="stap-tekst">Open het bestand met de verschillende oefenmogelijkheden. (zie bronnen)</div></div><div class="instructie-stap"><div class="stap-nr">2|</div><div class="stap-tekst">Kies één van de onderwerpen. Respecteer daarbij de afspraken!</div></div><div class="instructie-stap"><div class="stap-nr">3|</div><div class="stap-tekst">Maak de oefening.</div></div><div style="display:flex;gap:8px;padding-left:28px;margin-bottom:4px;"><span style="color:#2c4a6e;">•</span><span>Probeer opnieuw als het niet van de eerste keer lukt. <br>Bekijk de feedback die je daarbij krijgt.</span></div><div style="display:flex;gap:8px;padding-left:28px;margin-bottom:4px;"><span style="color:#2c4a6e;">•</span><span>Twee keer ook niet gelukt: onderzoek wat je fout doet!</span></div></div>
+    </div>
+  </div>
+      <div class="sectie geel">
+        <div class="sectie-icoon"><img src="./pictures/indienen.png" alt="Indienen"></div>
+        <div class="sectie-inhoud">
+          <div class="sectie-titel">Indienen</div>
+          <div class="indienen-rijen"><div class="indienen-rij"><div class="indienen-rij-icoon"><img src="./pictures/digitaal.png" style="width:32px;height:32px;object-fit:contain;"></div><div class="indienen-rij-tekst">Indienen in Google Classroom.</div></div></div>
+        </div>
+      </div>
+  </div>
+
+  <div class="taak-blok verborgen" id="taak-tVd3udeA2mvioBkAOHGM-B" data-routes="B">
+    <div class="titelbalk">WI RV: Rekenvaardigheden (15')</div>
+    
+      <div class="sectie wit">
+        <div class="sectie-icoon"><img src="./pictures/voorkennis.png" alt="Voorkennis"></div>
+        <div class="sectie-inhoud">
+          <div class="sectie-titel">Welke voorkennis heb je nodig?</div>
+          <ul class="doel-lijst"><li>Ik kan rekenen met rationale getallen.</li></ul>
+        </div>
+      </div>
+      <div class="sectie grijs">
+        <div class="sectie-icoon"><img src="./pictures/succescriteria.png" alt="Succescriteria"></div>
+        <div class="sectie-inhoud">
+          <div class="sectie-titel">Succescriteria</div>
+          <div class="sc-subtitel">Wat leer je met deze taak?</div><ul class="doel-lijst"><li>Ik oefen mijn rekenvaardigheden door minstens drie keer te oefenen. <span class="leerplandoel">(13.2)</span></li><li>Ik oefen mijn rekenvaardigheden door op minstens drie verschillende onderwerpen te oefenen. <span class="leerplandoel">(13.2)</span></li></ul>
+        </div>
+      </div>
+  <div class="sectie wit">
+    <div class="sectie-icoon"><img src="./pictures/instructies.png" alt="Instructies"></div>
+    <div class="sectie-inhoud">
+      <div class="sectie-titel">Instructies</div>
+      <div class="instructie-stappen"><div class="sc-subtitel" style="margin-top:10px;">Algemene uitleg</div><div style="margin-bottom:4px;">Je oefent elke week minstens drie keer. (Dat mag drie keer op één dag zijn, dat mag ook op drie verschillende dagen.)</div><div style="margin-bottom:4px;">Je respecteert daarbij de volgende afspraken.</div><div style="display:flex;gap:8px;margin-bottom:4px;"><span style="color:#2c4a6e;">•</span><span>Je oefent per week minstens drie verschillende onderwerpen.</span></div><div style="display:flex;gap:8px;margin-bottom:4px;"><span style="color:#2c4a6e;">•</span><span>Tegen het einde van project 3 moet je elk onderwerp minstens één keer geoefend hebben.</span></div><div style="display:flex;gap:8px;margin-bottom:4px;"><span style="color:#2c4a6e;">•</span><span>Je kiest vooral onderwerpen waarin je nog moet groeien.</span></div><div style="height:5px;"></div><div style="height:5px;"></div><div style="margin-bottom:4px;"><strong>Tip!</strong></div><div style="display:flex;gap:8px;margin-bottom:4px;"><span style="color:#2c4a6e;">•</span><span>Bij "groei" zie je de scores die je al behaald hebt.</span></div><div style="display:flex;gap:8px;margin-bottom:4px;"><span style="color:#2c4a6e;">•</span><span>Bekijk eerst nog eens de theorie en de voorbeelden die bij een onderwerp horen. (zie bronnen)</span></div><div style="height:5px;"></div><div style="height:5px;"></div><div class="sc-subtitel" style="margin-top:10px;">Werkwijze voor één oefening</div><div class="instructie-stap"><div class="stap-nr">1|</div><div class="stap-tekst">Open het bestand met de verschillende oefenmogelijkheden. (zie bronnen)</div></div><div class="instructie-stap"><div class="stap-nr">2|</div><div class="stap-tekst">Kies één van de onderwerpen. Respecteer daarbij de afspraken!</div></div><div class="instructie-stap"><div class="stap-nr">3|</div><div class="stap-tekst">Maak de oefening.</div></div><div style="display:flex;gap:8px;padding-left:28px;margin-bottom:4px;"><span style="color:#2c4a6e;">•</span><span>Probeer opnieuw als het niet van de eerste keer lukt. <br>Bekijk de feedback die je daarbij krijgt.</span></div><div style="display:flex;gap:8px;padding-left:28px;margin-bottom:4px;"><span style="color:#2c4a6e;">•</span><span>Twee keer ook niet gelukt: onderzoek wat je fout doet!</span></div></div>
+    </div>
+  </div>
+      <div class="sectie geel">
+        <div class="sectie-icoon"><img src="./pictures/indienen.png" alt="Indienen"></div>
+        <div class="sectie-inhoud">
+          <div class="sectie-titel">Indienen</div>
+          <div class="indienen-rijen"><div class="indienen-rij"><div class="indienen-rij-icoon"><img src="./pictures/digitaal.png" style="width:32px;height:32px;object-fit:contain;"></div><div class="indienen-rij-tekst">Indienen in Google Classroom.</div></div></div>
+        </div>
+      </div>
+  </div>
+
+  <div class="taak-blok verborgen" id="taak-GIV6ndpFsT4AL52HjMg1-B" data-routes="B">
+    <div class="titelbalk">WI MC1: Breuken vermenigvuldigen (rooster)</div>
+    
+      <div class="sectie wit">
+        <div class="sectie-icoon"><img src="./pictures/voorkennis.png" alt="Voorkennis"></div>
+        <div class="sectie-inhoud">
+          <div class="sectie-titel">Welke voorkennis heb je nodig?</div>
+          <ul class="doel-lijst"><li>Ik ken de begrippen bij bewerkingen: optelling, aftrekking, vermenigvuldiging, deling, machtsverheffing en vierkantsworteltrekking.</li><li>Ik kan rekenen met gehele getallen: optelling, aftrekking, vermenigvuldiging, deling, machtsverheffing en vierkantsworteltrekking.</li><li>Ik ken de volgorde van de bewerkingen en kan ze toepassen.</li><li>Ik kan breuken gelijknamig maken.</li><li>Ik kan breuken vereenvoudigen.</li></ul>
+        </div>
+      </div>
+      <div class="sectie grijs">
+        <div class="sectie-icoon"><img src="./pictures/succescriteria.png" alt="Succescriteria"></div>
+        <div class="sectie-inhoud">
+          <div class="sectie-titel">Succescriteria</div>
+          <div class="sc-subtitel">Wat leer je met deze taak?</div><ul class="doel-lijst"><li>Ik vermenigvuldig breuken. <span class="leerplandoel">(6.1)</span></li><li>Ik gebruik ICT om te rekenen met breuken. <span class="leerplandoel">(6.1)</span></li><li>Ik mathematiseer een probleem, los het op en demathematiseer.</li></ul>
+        </div>
+      </div>
+  <div class="sectie wit">
+    <div class="sectie-icoon"><img src="./pictures/instructies.png" alt="Instructies"></div>
+    <div class="sectie-inhoud">
+      <div class="sectie-titel">Instructies</div>
+      <div class="instructie-stappen"><div class="instructie-stap"><div class="stap-nr">1|</div><div class="stap-tekst">Maak opdracht 22, cursus blz. 323.</div></div><div class="instructie-stap"><div class="stap-nr">2|</div><div class="stap-tekst">Overloop de theorie bij 7.2 Breuken vermenigvuldigen (theorie blz. 59).</div></div><div class="instructie-stap"><div class="stap-nr">3|</div><div class="stap-tekst">Maak de voorbeeldopdrachten. (cursus blz. 323, opdracht 23 en 24).</div></div><div class="instructie-stap"><div class="stap-nr">4|</div><div class="stap-tekst">Test hoe ver je staat. (cursus blz. 324)</div></div><div class="instructie-stap"><div class="stap-nr">5|</div><div class="stap-tekst">Verbeter en kies welke opdrachtenreeks je maakt.<br>Duid aan in het overzicht van de opdrachten! (cursus blz. 313)</div></div><div class="instructie-stap"><div class="stap-nr">6|</div><div class="stap-tekst">Start met de opdrachten van jouw reeks. (cursus blz. 325-328)</div></div><div class="instructie-stap"><div class="stap-nr">7|</div><div class="stap-tekst">Verbeter de opdrachten met de correctiesleutel (zie bronnen).</div></div><div style="display:flex;gap:8px;padding-left:28px;margin-bottom:4px;"><span style="color:#2c4a6e;">•</span><span>Verbeter in kleur!</span></div><div style="display:flex;gap:8px;padding-left:28px;margin-bottom:4px;"><span style="color:#2c4a6e;">•</span><span>Fout gemaakt? Onderzoek je fout: Waarom is het niet juist? Wat kun je de volgende keer doen om die fout niet meer te maken?</span></div><div class="instructie-stap"><div class="stap-nr">8|</div><div class="stap-tekst">Neem het overzicht van de opdrachten, op blz. 313 in de cursus.<br>Markeer bij <strong><u>7.2 Breuken vermenigvuldigen</u></strong>, bij het symbool van de reeks die jij gemaakt hebt, de opdrachten met de juiste kleur.</div></div><div style="display:flex;gap:8px;padding-left:28px;margin-bottom:4px;"><span style="color:#2c4a6e;">•</span><span>Groen als je geen enkel probleem had met de opdracht.<br>Dit betekent dat je geen enkele fout had en dat je de opdracht ook echt begrijpt.</span></div><div style="display:flex;gap:8px;padding-left:28px;margin-bottom:4px;"><span style="color:#2c4a6e;">•</span><span>Geel als je nog wat hulp nodig had bij de opdracht.<br>Dit betekent dat je af en toe wel een fout maakte, maar dat je wel je fouten en de juiste oplossing begrijpt.</span></div><div style="display:flex;gap:8px;padding-left:28px;margin-bottom:4px;"><span style="color:#2c4a6e;">•</span><span>Roos als je de opdracht niet begrijpt of als je nog vragen hebt bij de opdracht.</span></div></div>
+    </div>
+  </div>
+      <div class="sectie grijs">
+        <div class="sectie-icoon"><img src="./pictures/bronnen.png" alt="Bronnen"></div>
+        <div class="sectie-inhoud">
+          <div class="sectie-titel">Te gebruiken bronnen</div>
+          <div class="bron-tegels"><a href="https://drive.google.com/file/d/1ZWOX2wv6s_0ohBnQUn-aIqtaS5a9WA59/view?usp=drive_link" target="_blank" class="bron-tegel"><span class="bron-icoon">📄</span>Cursus H7</a><a href="https://drive.google.com/file/d/1aKPBk1qJNvf5MgNdkcDP2hTHuTsw4_vq/view?usp=drive_link" target="_blank" class="bron-tegel"><span class="bron-icoon">📖</span>Theorie H7</a><a href="https://drive.google.com/file/d/12DueqblA5x1S1jKrR0jIHkF5jkmG9BQA/view?usp=drive_link" target="_blank" class="bron-tegel"><span class="bron-icoon">✅</span>Correctiesleutel H7</a></div>
+        </div>
+      </div>
+      <div class="sectie geel">
+        <div class="sectie-icoon"><img src="./pictures/indienen.png" alt="Indienen"></div>
+        <div class="sectie-inhoud">
+          <div class="sectie-titel">Indienen</div>
+          <div class="indienen-rijen"><div class="indienen-rij"><div class="indienen-rij-icoon">📁</div><div class="indienen-rij-tekst">Bewaar alles in je map.</div></div></div>
+        </div>
+      </div>
+  </div>
+
+  <div class="taak-blok verborgen" id="taak-tVd3udeA2mvioBkAOHGM-Z" data-routes="Z">
+    <div class="titelbalk">WI RV: Rekenvaardigheden (15')</div>
+    
+      <div class="sectie wit">
+        <div class="sectie-icoon"><img src="./pictures/voorkennis.png" alt="Voorkennis"></div>
+        <div class="sectie-inhoud">
+          <div class="sectie-titel">Welke voorkennis heb je nodig?</div>
+          <ul class="doel-lijst"><li>Ik kan rekenen met rationale getallen.</li></ul>
+        </div>
+      </div>
+      <div class="sectie grijs">
+        <div class="sectie-icoon"><img src="./pictures/succescriteria.png" alt="Succescriteria"></div>
+        <div class="sectie-inhoud">
+          <div class="sectie-titel">Succescriteria</div>
+          <div class="sc-subtitel">Wat leer je met deze taak?</div><ul class="doel-lijst"><li>Ik oefen mijn rekenvaardigheden door minstens drie keer te oefenen. <span class="leerplandoel">(13.2)</span></li><li>Ik oefen mijn rekenvaardigheden door op minstens drie verschillende onderwerpen te oefenen. <span class="leerplandoel">(13.2)</span></li></ul>
+        </div>
+      </div>
+  <div class="sectie wit">
+    <div class="sectie-icoon"><img src="./pictures/instructies.png" alt="Instructies"></div>
+    <div class="sectie-inhoud">
+      <div class="sectie-titel">Instructies</div>
+      <div class="instructie-stappen"><div class="sc-subtitel" style="margin-top:10px;">Algemene uitleg</div><div style="margin-bottom:4px;">Je oefent elke week minstens drie keer. (Dat mag drie keer op één dag zijn, dat mag ook op drie verschillende dagen.)</div><div style="margin-bottom:4px;">Je respecteert daarbij de volgende afspraken.</div><div style="display:flex;gap:8px;margin-bottom:4px;"><span style="color:#2c4a6e;">•</span><span>Je oefent per week minstens drie verschillende onderwerpen.</span></div><div style="display:flex;gap:8px;margin-bottom:4px;"><span style="color:#2c4a6e;">•</span><span>Tegen het einde van project 3 moet je elk onderwerp minstens één keer geoefend hebben.</span></div><div style="display:flex;gap:8px;margin-bottom:4px;"><span style="color:#2c4a6e;">•</span><span>Je kiest vooral onderwerpen waarin je nog moet groeien.</span></div><div style="height:5px;"></div><div style="height:5px;"></div><div style="margin-bottom:4px;"><strong>Tip!</strong></div><div style="display:flex;gap:8px;margin-bottom:4px;"><span style="color:#2c4a6e;">•</span><span>Bij "groei" zie je de scores die je al behaald hebt.</span></div><div style="display:flex;gap:8px;margin-bottom:4px;"><span style="color:#2c4a6e;">•</span><span>Bekijk eerst nog eens de theorie en de voorbeelden die bij een onderwerp horen. (zie bronnen)</span></div><div style="height:5px;"></div><div style="height:5px;"></div><div class="sc-subtitel" style="margin-top:10px;">Werkwijze voor één oefening</div><div class="instructie-stap"><div class="stap-nr">1|</div><div class="stap-tekst">Open het bestand met de verschillende oefenmogelijkheden. (zie bronnen)</div></div><div class="instructie-stap"><div class="stap-nr">2|</div><div class="stap-tekst">Kies één van de onderwerpen. Respecteer daarbij de afspraken!</div></div><div class="instructie-stap"><div class="stap-nr">3|</div><div class="stap-tekst">Maak de oefening.</div></div><div style="display:flex;gap:8px;padding-left:28px;margin-bottom:4px;"><span style="color:#2c4a6e;">•</span><span>Probeer opnieuw als het niet van de eerste keer lukt. <br>Bekijk de feedback die je daarbij krijgt.</span></div><div style="display:flex;gap:8px;padding-left:28px;margin-bottom:4px;"><span style="color:#2c4a6e;">•</span><span>Twee keer ook niet gelukt: onderzoek wat je fout doet!</span></div></div>
+    </div>
+  </div>
+      <div class="sectie geel">
+        <div class="sectie-icoon"><img src="./pictures/indienen.png" alt="Indienen"></div>
+        <div class="sectie-inhoud">
+          <div class="sectie-titel">Indienen</div>
+          <div class="indienen-rijen"><div class="indienen-rij"><div class="indienen-rij-icoon"><img src="./pictures/digitaal.png" style="width:32px;height:32px;object-fit:contain;"></div><div class="indienen-rij-tekst">Indienen in Google Classroom.</div></div></div>
+        </div>
+      </div>
+  </div>
+<script>
+  function kiesRoute(route) {
+    document.querySelectorAll('.route-tegel').forEach(t => t.classList.remove('actief'));
+    document.querySelector('.route-tegel.' + route).classList.add('actief');
+    document.getElementById('welkom-bericht').classList.add('verborgen');
+    document.getElementById('inhoudstafel').classList.remove('verborgen');
+    document.querySelectorAll('.taak-blok').forEach(blok => {
+      blok.classList.toggle('verborgen', blok.dataset.routes !== route);
+    });
+    document.querySelectorAll('.inhoudslink').forEach(link => {
+      link.style.display = link.dataset.routes === route ? 'block' : 'none';
+    });
+  }
+</script>
+</body>
+</html>
