@@ -241,7 +241,7 @@ export async function slaTemplateOp() {
     bewerkTemplateId = null;
   }
 
-window.annuleerTemplate = resetTemplateFormulier;
+export const annuleerTemplate = resetTemplateFormulier;
 
   // ===== LADEN =====
 
