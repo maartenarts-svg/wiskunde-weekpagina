@@ -206,7 +206,7 @@ window.annuleerLeerplandoel = resetLeerplandoelFormulier;
 
   // ===== LEERPLANDOELEN OPSLAAN =====
 
-export async function slaLeerplandoelOp = async () => {
+export async function slaLeerplandoelOp() {
     const code = document.getElementById('lp-code').value.trim();
     const doel = document.getElementById('lp-doel').value.trim();
     if (!code || !doel) {
@@ -237,7 +237,7 @@ export async function slaLeerplandoelOp = async () => {
 
   // ===== LEERPLANDOELEN LADEN =====
 
-export async function laadLeerplandoelen = async () => {
+export async function laadLeerplandoelen() {
     const filterNiveau = document.getElementById('filter-niveau').value;
     document.getElementById('leerplandoelen-lader').style.display = 'block';
     document.getElementById('leerplandoelen-tabel').style.display = 'none';
@@ -285,7 +285,7 @@ export async function laadLeerplandoelen = async () => {
 
   // ===== LEERPLANDOEL BEWERKEN =====
 
-export async function bewerkLeerplandoel = async (id) => {
+export async function bewerkLeerplandoel(id) {
     try {
       const snap = await getDoc(doc(db, 'leerplandoelen', id));
       if (!snap.exists()) return;
@@ -319,7 +319,7 @@ export async function bewerkLeerplandoel = async (id) => {
 
   // ===== LEERPLANDOEL VERWIJDEREN =====
 
-export async function verwijderLeerplandoel = async (id, code) => {
+export async function verwijderLeerplandoel(id, code) {
     if (!confirm(`Ben je zeker dat je leerplandoel ${code} wil verwijderen?`)) return;
     try {
       await deleteDoc(doc(db, 'leerplandoelen', id));
@@ -330,4 +330,3 @@ export async function verwijderLeerplandoel = async (id, code) => {
       toonMelding('leerplandoelen', 'Fout bij verwijderen: ' + e.message, 'fout');
     }
   };
-
