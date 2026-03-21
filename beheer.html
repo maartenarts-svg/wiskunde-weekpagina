@@ -1,728 +1,1255 @@
-// ===== WEEKDROPDOWN VULLEN =====
-// Pasen berekening (Meeus/Jones/Butcher)
-function berekenPasenWO(jaar) {
-  const a = jaar % 19, b = Math.floor(jaar / 100), c = jaar % 100;
-  const d = Math.floor(b / 4), e = b % 4, f = Math.floor((b + 8) / 25);
-  const g = Math.floor((b - f + 1) / 3), h = (19 * a + b - d - g + 15) % 30;
-  const i = Math.floor(c / 4), k = c % 4, l = (32 + 2 * e + 2 * i - h - k) % 7;
-  const m = Math.floor((a + 11 * h + 22 * l) / 451);
-  const maand = Math.floor((h + l - 7 * m + 114) / 31);
-  const dag = ((h + l - 7 * m + 114) % 31) + 1;
-  return new Date(jaar, maand - 1, dag);
-}
-
-function maandagVan(datum) {
-  const d = new Date(datum);
-  d.setHours(0, 0, 0, 0);
-  const dag = d.getDay();
-  d.setDate(d.getDate() - (dag === 0 ? 6 : dag - 1));
-  return d;
-}
-
-function berekenVakantieWekenWO(schooljaar) {
-  const [startJaar, eindJaar] = schooljaar.split('-').map(Number);
-  const vakantie = new Set();
-  const voeg = d => vakantie.add(maandagVan(d).toISOString().slice(0, 10));
-
-  // Herfstvakantie
-  const nov1 = new Date(startJaar, 10, 1);
-  voeg(nov1.getDay() === 0 ? new Date(startJaar, 10, 2) : nov1);
-
-  // Kerstvakantie (2 weken)
-  const dec25 = new Date(startJaar, 11, 25);
-  const kerstMa = maandagVan(dec25.getDay() >= 6 ? new Date(startJaar + 1, 0, 1) : dec25);
-  voeg(kerstMa);
-  const w2 = new Date(kerstMa); w2.setDate(kerstMa.getDate() + 7); voeg(w2);
-
-  // Krokusvakantie
-  const pasen = berekenPasenWO(eindJaar);
-  const aswo = new Date(pasen); aswo.setDate(pasen.getDate() - 46); voeg(aswo);
-
-  // Paasvakantie (2 weken)
-  let paasStart;
-  if (pasen.getMonth() === 2) {
-    const ma = new Date(pasen); ma.setDate(pasen.getDate() + 1); paasStart = maandagVan(ma);
-  } else if (pasen.getDate() > 15) {
-    paasStart = maandagVan(pasen); paasStart.setDate(paasStart.getDate() - 7);
-  } else {
-    const apr1 = new Date(eindJaar, 3, 1); paasStart = maandagVan(apr1);
-    if (paasStart < apr1) paasStart.setDate(paasStart.getDate() + 7);
-  }
-  voeg(paasStart);
-  const pw2 = new Date(paasStart); pw2.setDate(paasStart.getDate() + 7); voeg(pw2);
-
-  // Zomervakantie
-  let zomer = new Date(eindJaar, 6, 1);
-  const zomerEinde = new Date(eindJaar, 8, 1);
-  while (zomer < zomerEinde) { voeg(zomer); zomer.setDate(zomer.getDate() + 7); }
-
-  return vakantie;
-}
-
-export function vulWoWeekDropdown(schooljaar) {
-  const sel = document.getElementById('wo-week');
-  if (!sel || !schooljaar) return;
-  const huidig = sel.value;
-  const [startJaar, eindJaar] = schooljaar.split('-').map(Number);
-  const vakantie = berekenVakantieWekenWO(schooljaar);
-  const fmt = d => `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}`;
-
-  let datum = maandagVan(new Date(startJaar, 8, 1));
-  const einde = new Date(eindJaar, 5, 30);
-  const opties = ['<option value="">Week...</option>'];
-  let weekNr = 0;
-
-  while (datum <= einde) {
-    const sleutel = datum.toISOString().slice(0, 10);
-    if (!vakantie.has(sleutel)) {
-      weekNr++;
-      const zo = new Date(datum); zo.setDate(datum.getDate() + 6);
-      opties.push(`<option value="${weekNr}" ${weekNr == huidig ? 'selected' : ''}>Week ${weekNr} — ${fmt(datum)} t/m ${fmt(zo)}</option>`);
-    }
-    datum.setDate(datum.getDate() + 7);
-  }
-  sel.innerHTML = opties.join('');
-}
-
-import { db } from './firebase-config.js';
-import {
-  collection, doc, setDoc, getDocs, writeBatch
-} from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
-import { toonMelding } from './ui.js';
-import { parseMarkdown } from './templates.js';
-
-// ===== STATE =====
-// kolomData[route] = [{...taakData, _kolomVolgorde, _volgtijdelijkheid}]
-let kolomData = { G: [], B: [], Z: [] };
-let alleTakenVanWeek = [];
-let huidigSchooljaarWO = '';
-let huidigWeekWO = '';
-
-// ===== INIT =====
-export async function laadWeekoverzicht() {
-  const sj = document.getElementById('wo-schooljaar')?.value || '';
-  const week = document.getElementById('wo-week')?.value || '';
-
-  if (!sj || !week) {
-    document.getElementById('wo-kolommen').style.display = 'none';
-    document.getElementById('wo-leeg').style.display = 'block';
-    return;
-  }
-
-  huidigSchooljaarWO = sj;
-  huidigWeekWO = week;
-  const weekGetal = parseInt(week);
-
-  document.getElementById('wo-lader').style.display = 'block';
-  document.getElementById('wo-kolommen').style.display = 'none';
-  document.getElementById('wo-leeg').style.display = 'none';
-  document.getElementById('wo-acties').style.display = 'none';
-
-  try {
-    const snap = await getDocs(collection(db, 'taken'));
-    const alleTaken = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-    console.log('Alle taken geladen:', alleTaken.length);
-    console.log('Filter: schooljaar=', sj, 'week=', weekGetal);
-    alleTaken.forEach(t => console.log(' taak:', t.code, 'sj:', t.schooljaar, 'lesweek:', t.lesweek, '(type:', typeof t.lesweek, ')'));
-
-    alleTakenVanWeek = alleTaken
-      .filter(t => {
-        const sjMatch = t.schooljaar === sj;
-        const weekMatch = parseInt(t.lesweek) === weekGetal;
-        return sjMatch && weekMatch;
-      })
-      .sort((a, b) => (a.volgorde || 999) - (b.volgorde || 999));
-    console.log('Gefilterde taken:', alleTakenVanWeek.length, alleTakenVanWeek.map(t => t.code));
-
-    // Haal alle doelen op voor verrijking
-    const doelenSnap = await getDocs(collection(db, 'doelen'));
-    const alleDoelen = {};
-    doelenSnap.docs.forEach(d => { alleDoelen[d.id] = { id: d.id, ...d.data() }; });
-
-    // Verrijk taken met doeldata (voorkennisData, scData)
-    alleTakenVanWeek = alleTakenVanWeek.map(taak => {
-      const voorkennisData = (taak.voorkennis || [])
-        .map(id => alleDoelen[id]).filter(Boolean);
-      const scLijst = taak.succescriteria || [];
-      const scData = {
-        leren: scLijst.filter(s => s.scIndeling === 'leren').map(s => alleDoelen[s.id]).filter(Boolean),
-        eval: scLijst.filter(s => s.scIndeling === 'eval').map(s => alleDoelen[s.id]).filter(Boolean),
-      };
-      return { ...taak, voorkennisData, scData };
-    });
-
-    // Bouw kolomData op
-    kolomData = { G: [], B: [], Z: [] };
-    for (const taak of alleTakenVanWeek) {
-      const routes = taak.routes || [];
-      const relevanteRoutes = routes.includes('geen')
-        ? ['G', 'B', 'Z']
-        : routes.filter(r => ['G', 'B', 'Z'].includes(r));
-      for (const route of relevanteRoutes) {
-        kolomData[route].push({
-          ...taak,
-          _route: route,
-          _volgtijdelijkheid: taak.volgtijdelijkheid || '0.0',
-        });
-      }
-    }
-
-    document.getElementById('wo-lader').style.display = 'none';
-    renderKolommen();
-    document.getElementById('wo-kolommen').style.display = 'grid';
-    document.getElementById('wo-acties').style.display = 'flex';
-  } catch (e) {
-    toonMelding('weekoverzicht', 'Fout bij laden: ' + e.message, 'fout');
-    document.getElementById('wo-lader').style.display = 'none';
-  }
-}
-
-// ===== RENDER KOLOMMEN =====
-function renderKolommen() {
-  ['G', 'B', 'Z'].forEach(route => {
-    const lijst = kolomData[route];
-
-    // Totale werktijd
-    const totaal = lijst.reduce((som, t) => {
-      const tijd = t.tijd === 'rooster' ? 50 : (parseInt(t.tijd) || 0);
-      return som + tijd;
-    }, 0);
-    document.getElementById(`wo-tijd-${route}`).textContent = `${totaal} min`;
-
-    // Tegels
-    const tegelContainer = document.getElementById(`wo-tegels-${route}`);
-    if (!tegelContainer) return;
-    tegelContainer.innerHTML = '';
-
-    if (!lijst.length) {
-      tegelContainer.innerHTML = '<div style="color:var(--tekst-licht);font-size:9.5pt;padding:12px;">Geen taken voor deze route.</div>';
-      return;
-    }
-
-    lijst.forEach((taak, idx) => {
-      const tegel = maakTegel(taak, route, idx);
-      tegelContainer.appendChild(tegel);
-    });
-
-    initialiseerDragDrop(route);
-  });
-}
-
-function maakTegel(taak, route, idx) {
-  const div = document.createElement('div');
-  div.className = 'wo-tegel';
-  div.dataset.id = taak.id;
-  div.dataset.route = route;
-  div.draggable = true;
-
-  const tijd = taak.tijd === 'rooster' ? 'rooster (50\')' : `${taak.tijd}'`;
-  const routes = (taak.routes || []).filter(r => r !== 'geen').join('/') || '—';
-
-  div.innerHTML = `
-    <div class="wo-tegel-header">
-      <span class="wo-tegel-greep" title="Slepen om volgorde aan te passen">⠿</span>
-      <span class="wo-tegel-code">${taak.code}</span>
-      <span class="wo-tegel-tijd">${tijd}</span>
-      <button class="wo-tegel-verwijder" onclick="window._verwijderUitKolom('${route}', '${taak.id}')" title="Verwijderen uit deze kolom">✕</button>
-    </div>
-    <div class="wo-tegel-titel">${taak.titel}</div>
-    <div class="wo-tegel-meta">${routes}${taak.klas ? ' · ' + taak.klas : ''}</div>
-    <div class="wo-tegel-vt">
-      <label style="font-size:8.5pt;color:var(--tekst-licht);text-transform:uppercase;letter-spacing:0.5px;">Volgtijdelijkheid</label>
-      <input type="text" class="wo-vt-input" value="${taak._volgtijdelijkheid}"
-        data-id="${taak.id}" data-route="${route}"
-        style="width:80px;padding:4px 8px;font-size:9.5pt;border:1.5px solid var(--grijs-rand);border-radius:6px;"
-        onchange="window._updateVolgtijdelijkheid('${route}', '${taak.id}', this.value)">
-    </div>
-  `;
-  return div;
-}
-
-// ===== DRAG & DROP =====
-function initialiseerDragDrop(route) {
-  const container = document.getElementById(`wo-tegels-${route}`);
-  let dragEl = null;
-
-  container.querySelectorAll('.wo-tegel').forEach(tegel => {
-    tegel.addEventListener('dragstart', e => {
-      dragEl = tegel;
-      tegel.classList.add('wo-tegel-sleep');
-      e.dataTransfer.effectAllowed = 'move';
-    });
-    tegel.addEventListener('dragend', () => {
-      tegel.classList.remove('wo-tegel-sleep');
-      container.querySelectorAll('.wo-tegel').forEach(t => t.classList.remove('wo-tegel-over'));
-      dragEl = null;
-      // Volgorde bijwerken na slepen
-      herberekeningVolgorde(route);
-    });
-    tegel.addEventListener('dragover', e => {
-      e.preventDefault();
-      if (dragEl && dragEl !== tegel) {
-        tegel.classList.add('wo-tegel-over');
-        const rect = tegel.getBoundingClientRect();
-        const midden = rect.top + rect.height / 2;
-        if (e.clientY < midden) {
-          container.insertBefore(dragEl, tegel);
-        } else {
-          container.insertBefore(dragEl, tegel.nextSibling);
-        }
-      }
-    });
-    tegel.addEventListener('dragleave', () => {
-      tegel.classList.remove('wo-tegel-over');
-    });
-    tegel.addEventListener('drop', e => {
-      e.preventDefault();
-      tegel.classList.remove('wo-tegel-over');
-    });
-  });
-}
-
-function herberekeningVolgorde(route) {
-  const container = document.getElementById(`wo-tegels-${route}`);
-  const ids = Array.from(container.querySelectorAll('.wo-tegel')).map(t => t.dataset.id);
-  // Pas kolomData aan op basis van nieuwe DOM-volgorde
-  const nieuw = ids.map(id => kolomData[route].find(t => t.id === id)).filter(Boolean);
-  kolomData[route] = nieuw;
-  // Update werktijd (volgorde verandert niet de tijd, maar voor consistentie)
-  const totaal = nieuw.reduce((s, t) => s + (t.tijd === 'rooster' ? 50 : parseInt(t.tijd) || 0), 0);
-  document.getElementById(`wo-tijd-${route}`).textContent = `${totaal} min`;
-}
-
-// ===== VERWIJDEREN UIT KOLOM =====
-export function verwijderUitKolom(route, id) {
-  kolomData[route] = kolomData[route].filter(t => t.id !== id);
-  renderKolommen();
-}
-
-// ===== VOLGTIJDELIJKHEID UPDATEN =====
-export function updateVolgtijdelijkheid(route, id, waarde) {
-  const taak = kolomData[route].find(t => t.id === id);
-  if (taak) taak._volgtijdelijkheid = waarde.trim() || '0.0';
-}
-
-// ===== OPSLAAN VOLGORDE =====
-export async function slaWeekoverzichtOp() {
-  try {
-    const batch = writeBatch(db);
-    ['G', 'B', 'Z'].forEach(route => {
-      // Lees huidige DOM-volgorde
-      const container = document.getElementById(`wo-tegels-${route}`);
-      const ids = Array.from(container.querySelectorAll('.wo-tegel')).map(t => t.dataset.id);
-      ids.forEach((id, idx) => {
-        const taakRef = doc(db, 'taken', id);
-        // Sla volgorde op per route — gebruik een gecombineerde sleutel
-        const vt = kolomData[route].find(t => t.id === id)?._volgtijdelijkheid || '0.0';
-        const updateData = {
-          [`volgordePerRoute.${route}`]: idx + 1,
-          volgtijdelijkheid: vt,
-        };
-        if (route === 'G') updateData.volgorde = idx + 1;
-        batch.update(taakRef, updateData);
-      });
-    });
-    await batch.commit();
-    toonMelding('weekoverzicht', 'Volgorde en volgtijdelijkheid opgeslagen.', 'succes');
-  } catch (e) {
-    toonMelding('weekoverzicht', 'Fout bij opslaan: ' + e.message, 'fout');
-  }
-}
-
-// ===== VOLGTIJDELIJKHEID TEKST =====
-function berekenVtTekst(taak, kolomLijst) {
-  const vt = taak._volgtijdelijkheid || '0.0';
-  const [xStr, yStr] = vt.split('.');
-  const x = parseInt(xStr);
-  const y = parseInt(yStr);
-  if (!x || isNaN(y)) return ''; // 0.0 of ongeldig
-
-  // Alle taken in deze kolom met hetzelfde x, gesorteerd op y
-  const reeks = kolomLijst
-    .filter(t => {
-      const [tx, ty] = (t._volgtijdelijkheid || '0.0').split('.');
-      return parseInt(tx) === x && !isNaN(parseInt(ty));
-    })
-    .sort((a, b) => {
-      const ya = parseInt((a._volgtijdelijkheid || '0.0').split('.')[1]);
-      const yb = parseInt((b._volgtijdelijkheid || '0.0').split('.')[1]);
-      return ya - yb;
-    });
-
-  const eigenIdx = reeks.findIndex(t => t.id === taak.id);
-  if (eigenIdx === -1) return '';
-
-  const voorganger = eigenIdx > 0 ? reeks[eigenIdx - 1] : null;
-  const opvolger = eigenIdx < reeks.length - 1 ? reeks[eigenIdx + 1] : null;
-
-  if (voorganger && opvolger) {
-    return `Opgelet, deze taak kun je pas maken na de taak <strong>${voorganger.code}</strong> en moet je maken voor de taak <strong>${opvolger.code}</strong>.`;
-  } else if (voorganger) {
-    return `Opgelet, deze taak kun je pas maken na de taak <strong>${voorganger.code}</strong>.`;
-  } else if (opvolger) {
-    return `Opgelet, deze taak moet je maken voor de taak <strong>${opvolger.code}</strong>.`;
-  }
-  return '';
-}
-
-// ===== PREVIEW =====
-export function toonWeekoverzichtPreview() {
-  // Lees actuele DOM-volgorde voor elke kolom
-  const actueleKolommen = {};
-  ['G', 'B', 'Z'].forEach(route => {
-    const container = document.getElementById(`wo-tegels-${route}`);
-    const ids = Array.from(container.querySelectorAll('.wo-tegel')).map(t => t.dataset.id);
-    actueleKolommen[route] = ids.map(id => kolomData[route].find(t => t.id === id)).filter(Boolean);
-  });
-
-  // Genereer volledige HTML (zelfde als export) en toon in iframe
-  const volledigeHTML = bouwVolledigeHTML(actueleKolommen, huidigWeekWO);
-  const iframe = document.getElementById('wo-preview-iframe');
-  if (!iframe) return;
-  iframe.srcdoc = volledigeHTML;
-
-  document.getElementById('wo-beheer-wrapper').style.display = 'none';
-  document.getElementById('wo-preview-wrapper').style.display = 'block';
-}
-
-export function sluitWeekoverzichtPreview() {
-  document.getElementById('wo-beheer-wrapper').style.display = 'block';
-  document.getElementById('wo-preview-wrapper').style.display = 'none';
-}
-
-// ===== HTML EXPORT =====
-export function exporteerWeekpagina() {
-  // Lees actuele DOM-volgorde
-  const actueleKolommen = {};
-  ['G', 'B', 'Z'].forEach(route => {
-    const container = document.getElementById(`wo-tegels-${route}`);
-    const ids = Array.from(container.querySelectorAll('.wo-tegel')).map(t => t.dataset.id);
-    actueleKolommen[route] = ids.map(id => kolomData[route].find(t => t.id === id)).filter(Boolean);
-  });
-
-  const volledigeHTML = bouwVolledigeHTML(actueleKolommen, huidigWeekWO);
-
-  const blob = new Blob([volledigeHTML], { type: 'text/html;charset=utf-8' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = `week-${huidigWeekWO}-${huidigSchooljaarWO}.html`;
-  a.click();
-  URL.revokeObjectURL(url);
-}
-
-// ===== VOLLEDIGE HTML BOUWEN (voor preview én export) =====
-function bouwVolledigeHTML(actueleKolommen, weekNr) {
-  const body = renderWeekpaginaHTML(actueleKolommen, weekNr, true);
-  return `<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="nl">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Week ${weekNr}</title>
+<title>Wiskunde Lab — Beheer</title>
 <link href="https://fonts.googleapis.com/css2?family=Lato:wght@300;400;700;900&display=swap" rel="stylesheet">
-${weekpaginaCSS()}
+<link rel="stylesheet" href="./css/beheer.css">
 </head>
 <body>
-${body}
-${weekpaginaScript()}
-</body>
-</html>`;
-}
 
-// ===== WEEKPAGINA HTML RENDERER =====
-function renderWeekpaginaHTML(actueleKolommen, weekNr, isExport) {
-  const basisUrl = isExport ? './pictures/' : './pictures/';
-
-  // Verzamel alle unieke taken over alle kolommen, met hun route-info
-  // Elke taak kan meerdere keren voorkomen (één per route)
-  const taakBlokken = [];
-
-  ['G', 'B', 'Z'].forEach(route => {
-    const lijst = actueleKolommen[route];
-    lijst.forEach((taak, idx) => {
-      const vtTekst = berekenVtTekst(taak, lijst);
-      taakBlokken.push({ taak, route, idx, vtTekst });
-    });
-  });
-
-  // Genereer HTML per taakblok
-  const blokkenHtml = taakBlokken.map(({ taak, route, idx, vtTekst }) => {
-    const taakId = `taak-${taak.id}-${route}`;
-    const tijd = taak.tijd === 'rooster' ? 'rooster' : `${taak.tijd}'`;
-
-    // Instructie
-    let instructieHtml = '';
-    if (taak.templateInhoud) {
-      let tekst = taak.templateInhoud;
-      const params = taak.templateParams || {};
-      Object.entries(params).forEach(([k, v]) => {
-        tekst = tekst.replace(new RegExp(`\\{${k}\\}`, 'g'), v || `{${k}}`);
-      });
-      instructieHtml = renderInstructieVoorExport(tekst);
-    }
-
-    // Voorkennis
-    let voorkennisHtml = '';
-    if (taak.heeftVoorkennis && taak.voorkennisData?.length) {
-      const items = taak.voorkennisData.map(d => `<li>${d.tekst}</li>`).join('');
-      voorkennisHtml = `
-      <div class="sectie wit">
-        <div class="sectie-icoon"><img src="${basisUrl}voorkennis.png" alt="Voorkennis"></div>
-        <div class="sectie-inhoud">
-          <div class="sectie-titel">Welke voorkennis heb je nodig?</div>
-          <ul class="doel-lijst">${items}</ul>
-        </div>
-      </div>`;
-    }
-
-    // Succescriteria
-    let scHtml = '';
-    const scData = taak.scData || {};
-    const lerenItems = scData.leren || [];
-    const evalItems = scData.eval || [];
-    if (lerenItems.length || evalItems.length) {
-      let scInhoud = '';
-      if (lerenItems.length) {
-        scInhoud += `<div class="sc-subtitel">Wat leer je met deze taak?</div><ul class="doel-lijst">`;
-        scInhoud += lerenItems.map(d => {
-          const codes = (d.leerplandoel_codes || []).join(', ');
-          return `<li>${d.tekst}${codes ? ` <span class="leerplandoel">(${codes})</span>` : ''}</li>`;
-        }).join('');
-        scInhoud += '</ul>';
-      }
-      if (evalItems.length) {
-        scInhoud += `<div class="sc-subtitel">Waarop word je geëvalueerd bij deze taak?</div><ul class="doel-lijst">`;
-        scInhoud += evalItems.map(d => {
-          const codes = (d.leerplandoel_codes || []).join(', ');
-          const score = d.scores ? `<div class="score-tekst">${d.scores.replace(/\n/g, '<br>')}</div>` : '';
-          return `<li>${d.tekst}${codes ? ` <span class="leerplandoel">(${codes})</span>` : ''}${score}</li>`;
-        }).join('');
-        scInhoud += '</ul>';
-      }
-      scHtml = `
-      <div class="sectie grijs">
-        <div class="sectie-icoon"><img src="${basisUrl}succescriteria.png" alt="Succescriteria"></div>
-        <div class="sectie-inhoud">
-          <div class="sectie-titel">Succescriteria</div>
-          ${scInhoud}
-        </div>
-      </div>`;
-    }
-
-    // Bronnen
-    const typeIconen = { website: '🌐', video: '▶️', classroom: '🎓', bestand: '📄', andere: '📎' };
-    let bronnenHtml = '';
-    const bronnen = taak.bronnen || [];
-    if (bronnen.length) {
-      const tegels = bronnen.map(b => {
-        const icoon = b.icoon || typeIconen[b.type] || '📎';
-        const href = b.link ? `href="${b.link}" target="_blank"` : 'href="#"';
-        return `<a ${href} class="bron-tegel"><span class="bron-icoon">${icoon}</span>${b.label}</a>`;
-      }).join('');
-      bronnenHtml = `
-      <div class="sectie grijs">
-        <div class="sectie-icoon"><img src="${basisUrl}bronnen.png" alt="Bronnen"></div>
-        <div class="sectie-inhoud">
-          <div class="sectie-titel">Te gebruiken bronnen</div>
-          <div class="bron-tegels">${tegels}</div>
-        </div>
-      </div>`;
-    }
-
-    // Indienwijze
-    const ind = taak.indienwijze || {};
-    const rijen = [];
-    if (ind.map) rijen.push(`<div class="indienen-rij"><div class="indienen-rij-icoon">📁</div><div class="indienen-rij-tekst">Bewaar alles in je map.</div></div>`);
-    if (ind.digitaal) rijen.push(`<div class="indienen-rij"><div class="indienen-rij-icoon"><img src="${basisUrl}digitaal.png" style="width:32px;height:32px;object-fit:contain;"></div><div class="indienen-rij-tekst">Indienen in Google Classroom.</div></div>`);
-    if (ind.vakje) rijen.push(`<div class="indienen-rij"><div class="indienen-rij-icoon">📥</div><div class="indienen-rij-tekst">In het vakje van ${taak.vak || 'het vak'}.</div></div>`);
-    if (ind.anders && ind.andersText) rijen.push(`<div class="indienen-rij"><div class="indienen-rij-icoon">📌</div><div class="indienen-rij-tekst">${ind.andersText}</div></div>`);
-    let indienHtml = '';
-    if (rijen.length) {
-      indienHtml = `
-      <div class="sectie geel">
-        <div class="sectie-icoon"><img src="${basisUrl}indienen.png" alt="Indienen"></div>
-        <div class="sectie-inhoud">
-          <div class="sectie-titel">Indienen</div>
-          <div class="indienen-rijen">${rijen.join('')}</div>
-        </div>
-      </div>`;
-    }
-
-    // Volgtijdelijkheid blok
-    const vtHtml = vtTekst
-      ? `<div style="background:#fff3f3;border-left:4px solid #c0392b;padding:12px 20px;color:#c0392b;font-size:10.5pt;line-height:1.6;">${vtTekst}</div>`
-      : '';
-
-    return `
-  <div class="taak-blok verborgen" id="${taakId}" data-routes="${route}">
-    <div class="titelbalk">${taak.code}: ${taak.titel} (${tijd})</div>
-    ${vtHtml}${voorkennisHtml}${scHtml}${instructieHtml}${bronnenHtml}${indienHtml}
-  </div>`;
-  }).join('\n');
-
-  // Inhoudstafel
-  const inhoudstafelLinks = ['G', 'B', 'Z'].flatMap(route =>
-    (actueleKolommen[route] || []).map(taak => {
-      const tijd = taak.tijd === 'rooster' ? 'rooster' : `${taak.tijd}'`;
-      return `  <a href="#taak-${taak.id}-${route}" class="inhoudslink" data-routes="${route}">${taak.code}: ${taak.titel} (${tijd})</a>`;
-    })
-  ).join('\n');
-
-  return `
-<header class="site-header">
-  <h1>week ${weekNr}</h1>
-</header>
-
-<div class="route-sectie">
-  <div class="route-label">Kies jouw route</div>
-  <div class="route-tegels">
-    <div class="route-tegel G" onclick="kiesRoute('G')">G-route</div>
-    <div class="route-tegel B" onclick="kiesRoute('B')">B-route</div>
-    <div class="route-tegel Z" onclick="kiesRoute('Z')">Z-route</div>
+<!-- INLOGSCHERM -->
+<div id="inlogscherm">
+  <div class="inlog-kaart">
+    <h1>Wiskunde Lab</h1>
+    <p>Beheerpagina — Meld aan om verder te gaan</p>
+    <button class="google-knop" id="google-knop">
+      <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google">
+      Aanmelden met Google
+    </button>
+    <div id="inlog-fout" class="melding fout"></div>
   </div>
 </div>
 
-<div class="welkom-bericht" id="welkom-bericht">
-  <strong>Welkom op de weekpagina!</strong>
-  Klik hierboven op jouw route om de taken en lessen voor deze week te zien.
+<!-- APP -->
+<div id="app">
+  <div class="topbalk">
+    <div class="topbalk-titel">🎓 Wiskunde Lab — Beheer</div>
+    <div class="topbalk-gebruiker">
+      <img id="gebruiker-foto" src="" alt="" style="display:none">
+      <span id="gebruiker-naam"></span>
+      <button class="uitlog-knop" id="uitlog-knop">Afmelden</button>
+    </div>
+  </div>
+
+  <div class="hoofdlayout">
+    <!-- ZIJMENU -->
+    <nav class="zijmenu">
+      <div class="menu-sectie-titel">Databank</div>
+      <div class="menu-item actief" id="menu-leerplandoelen" data-sectie="leerplandoelen">
+        <span class="menu-icoon">📋</span> Leerplandoelen
+      </div>
+      <div class="menu-item" id="menu-hoofdstukken" data-sectie="hoofdstukken">
+        <span class="menu-icoon">📚</span> Hoofdstukken
+      </div>
+      <div class="menu-item" id="menu-doelen" data-sectie="doelen">
+        <span class="menu-icoon">🎯</span> Doelen
+      </div>
+      <div class="menu-item" id="menu-bronnen" data-sectie="bronnen">
+        <span class="menu-icoon">🔗</span> Bronnen
+      </div>
+      <div class="menu-item" id="menu-templates" data-sectie="templates">
+        <span class="menu-icoon">📝</span> Templates
+      </div>
+      <div class="menu-scheiding"></div>
+      <div class="menu-item" id="menu-taken" data-sectie="taken">
+        <span class="menu-icoon">📅</span> Taken
+      </div>
+      <div class="menu-item" id="menu-weekoverzicht" data-sectie="weekoverzicht">
+        <span class="menu-icoon">🗓️</span> Weekoverzicht
+      </div>
+    </nav>
+
+    <!-- HOOFDINHOUD -->
+    <main class="hoofdinhoud">
+
+      <!-- LEERPLANDOELEN -->
+      <div class="sectie actief" id="sectie-leerplandoelen">
+        <div class="pagina-titel">Leerplandoelen</div>
+        <div class="pagina-ondertitel">Beheer de leerplandoelen van het leerplan.</div>
+
+        <div id="melding-leerplandoelen" class="melding"></div>
+
+        <!-- Formulier -->
+        <div class="kaart">
+          <div class="kaart-titel">
+            <span id="formulier-lp-titel">Nieuw leerplandoel toevoegen</span>
+            <button class="knop knop-secundair knop-klein" id="annuleer-lp" style="display:none" onclick="window._annuleerLeerplandoel()">Annuleren</button>
+          </div>
+
+          <div class="formulier-rij">
+            <div class="formulier-groep">
+              <label>Niveau</label>
+              <select id="lp-niveau" onchange="window._berekeningCode()">
+                <option value="basis">Basis</option>
+                <option value="verdieping">Verdieping</option>
+                <option value="basisgeletterdheid">Basisgeletterdheid</option>
+              </select>
+            </div>
+            <div class="formulier-groep">
+              <label>Nummer</label>
+              <input type="text" id="lp-nummer" placeholder="bv. 6.1" oninput="window._berekeningCode()">
+            </div>
+            <div class="formulier-groep">
+              <label>Code (automatisch)</label>
+              <input type="text" id="lp-code" readonly style="background:#f4f5f7;">
+            </div>
+          </div>
+
+          <div class="formulier-rij">
+            <div class="formulier-groep vol">
+              <label>Leerplandoel</label>
+              <textarea id="lp-doel" placeholder="Omschrijving van het leerplandoel..."></textarea>
+            </div>
+          </div>
+
+          <div class="formulier-rij">
+            <div class="formulier-groep">
+              <label>Beheersingsniveau</label>
+              <input type="text" id="lp-beheersingsniveau" placeholder="Beheersingsniveau...">
+            </div>
+            <div class="formulier-groep">
+              <label>Afbakening</label>
+              <input type="text" id="lp-afbakening" placeholder="Minimale inhoudelijke afbakening...">
+            </div>
+          </div>
+
+          <!-- Subdoelen -->
+          <div style="margin-top:12px;">
+            <label>Subdoelen</label>
+            <div class="subdoel-blok" id="subdoel-container" style="margin-top:8px;">
+              <div id="geen-subdoelen" style="font-size:9.5pt;color:var(--tekst-licht);">Nog geen subdoelen.</div>
+            </div>
+            <button class="knop knop-secundair knop-klein" style="margin-top:8px;" onclick="window._voegSubdoelToe()">+ Subdoel toevoegen</button>
+          </div>
+
+          <!-- CSV Import -->
+          <div style="margin-top:20px;padding-top:16px;border-top:1px solid var(--grijs-rand);">
+            <label style="display:block;margin-bottom:8px;">CSV Importeren</label>
+            <input type="file" accept=".csv" onchange="window._importeerCSV(event)" style="font-size:10pt;">
+            <div id="import-voortgang" style="display:none;margin-top:12px;">
+              <div id="import-tekst" style="font-size:9.5pt;color:var(--tekst-licht);margin-bottom:6px;"></div>
+              <div style="background:var(--grijs-rand);border-radius:4px;height:8px;overflow:hidden;">
+                <div id="import-balk" style="background:var(--blauw);height:100%;width:0%;transition:width 0.3s;"></div>
+              </div>
+            </div>
+          </div>
+
+          <div style="margin-top:20px;">
+            <button class="knop knop-primair" onclick="window._slaLeerplandoelOp()">💾 Opslaan</button>
+          </div>
+        </div>
+
+        <!-- Overzicht -->
+        <div class="kaart">
+          <div class="kaart-titel">
+            <span>Overzicht leerplandoelen</span>
+            <select id="filter-lp-niveau" onchange="window._laadLeerplandoelen()" style="font-size:9.5pt;padding:5px 10px;">
+              <option value="">Alle niveaus</option>
+              <option value="basis">Basis</option>
+              <option value="verdieping">Verdieping</option>
+              <option value="basisgeletterdheid">Basisgeletterdheid</option>
+            </select>
+          </div>
+          <div id="lp-lader" class="lader">Laden...</div>
+          <div class="tabel-wrapper" id="lp-tabel" style="display:none;">
+            <table>
+              <thead>
+                <tr>
+                  <th>Code</th>
+                  <th>Niveau</th>
+                  <th>Doel</th>
+                  <th>Subdoelen</th>
+                  <th>Acties</th>
+                </tr>
+              </thead>
+              <tbody id="lp-tbody"></tbody>
+            </table>
+          </div>
+          <div class="leeg-staat" id="lp-leeg" style="display:none;">
+            <div class="leeg-icoon">📋</div>
+            <p>Nog geen leerplandoelen ingegeven.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- HOOFDSTUKKEN -->
+      <div class="sectie" id="sectie-hoofdstukken">
+        <div class="pagina-titel">Hoofdstukken</div>
+        <div class="pagina-ondertitel">Beheer de hoofdstukken en hun paragrafen.</div>
+
+        <div id="melding-hoofdstukken" class="melding"></div>
+
+        <!-- Formulier -->
+        <div class="kaart">
+          <div class="kaart-titel">
+            <span id="formulier-hoofdstuk-titel">Nieuw hoofdstuk toevoegen</span>
+            <button class="knop knop-secundair knop-klein" id="annuleer-hoofdstuk" style="display:none" onclick="window._annuleerHoofdstuk()">Annuleren</button>
+          </div>
+
+          <div class="formulier-rij">
+            <div class="formulier-groep" style="flex:0 0 120px;min-width:120px;">
+              <label>Nummer</label>
+              <input type="number" id="hst-nummer" placeholder="6" min="1">
+            </div>
+            <div class="formulier-groep">
+              <label>Titel</label>
+              <input type="text" id="hst-titel" placeholder="Breuken">
+            </div>
+          </div>
+
+          <!-- Bronnen -->
+          <div style="margin-top:8px;margin-bottom:14px;">
+            <label>Bronnen</label>
+            <div class="formulier-rij" style="margin-top:8px;">
+              <div class="formulier-groep">
+                <label>📄 Cursus (link)</label>
+                <input type="url" id="hst-cursus" placeholder="https://...">
+              </div>
+              <div class="formulier-groep">
+                <label>📖 Theorie (link)</label>
+                <input type="url" id="hst-theorie" placeholder="https://...">
+              </div>
+              <div class="formulier-groep">
+                <label>✅ Correctiesleutel (link)</label>
+                <input type="url" id="hst-correctiesleutel" placeholder="https://...">
+              </div>
+            </div>
+          </div>
+
+          <!-- Paragrafen -->
+          <div style="margin-top:8px;">
+            <label>Paragrafen</label>
+            <div class="subdoel-blok" id="paragraaf-container" style="margin-top:8px;">
+              <div id="geen-paragrafen" style="font-size:9.5pt;color:var(--tekst-licht);">Nog geen paragrafen.</div>
+            </div>
+            <button class="knop knop-secundair knop-klein" style="margin-top:8px;" onclick="window._voegParagraafToe()">+ Paragraaf toevoegen</button>
+          </div>
+
+          <div style="margin-top:20px;">
+            <button class="knop knop-primair" onclick="window._slaHoofdstukOp()">💾 Opslaan</button>
+          </div>
+        </div>
+
+        <!-- Overzicht -->
+        <div class="kaart">
+          <div class="kaart-titel">Overzicht hoofdstukken</div>
+          <div id="hst-lader" class="lader">Laden...</div>
+          <div class="tabel-wrapper" id="hst-tabel" style="display:none;">
+            <table>
+              <thead>
+                <tr>
+                  <th>Nr.</th>
+                  <th>Titel</th>
+                  <th>Paragrafen</th>
+                  <th>Bronnen</th>
+                  <th>Acties</th>
+                </tr>
+              </thead>
+              <tbody id="hst-tbody"></tbody>
+            </table>
+          </div>
+          <div class="leeg-staat" id="hst-leeg" style="display:none;">
+            <div class="leeg-icoon">📚</div>
+            <p>Nog geen hoofdstukken ingegeven.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- DOELEN -->
+      <div class="sectie" id="sectie-doelen">
+        <div class="pagina-titel">Doelen</div>
+        <div class="pagina-ondertitel">Beheer voorkennis en succescriteria.</div>
+
+        <div id="melding-doelen" class="melding"></div>
+
+        <!-- Formulier -->
+        <div class="kaart">
+          <div class="kaart-titel">
+            <span id="formulier-doel-titel">Nieuw doel toevoegen</span>
+            <div style="display:flex;gap:8px;align-items:center;">
+              <label class="knop knop-secundair knop-klein" style="cursor:pointer;margin:0;">
+                &#128194; Importeren via CSV
+                <input type="file" id="doelen-csv-import" accept=".csv" style="display:none" onchange="window._importeerDoelenCSV(event)">
+              </label>
+              <button class="knop knop-secundair knop-klein" id="annuleer-doel" style="display:none" onclick="window._annuleerDoel()">Annuleren</button>
+            </div>
+          </div>
+
+          <div id="doelen-import-voortgang" style="display:none;margin-bottom:14px;">
+            <div style="background:var(--grijs-rand);border-radius:4px;height:8px;overflow:hidden;">
+              <div id="doelen-import-balk" style="background:var(--blauw);height:100%;width:0%;transition:width 0.3s;"></div>
+            </div>
+            <div id="doelen-import-tekst" style="font-size:9.5pt;color:var(--tekst-licht);margin-top:6px;"></div>
+          </div>
+
+          <div class="formulier-rij">
+            <div class="formulier-groep vol">
+              <label>Tekst</label>
+              <textarea id="doel-tekst" placeholder="Ik kan breuken optellen en aftrekken."></textarea>
+            </div>
+          </div>
+
+          <div class="formulier-rij">
+            <div class="formulier-groep">
+              <label>Type</label>
+              <select id="doel-type">
+                <option value="succescriterium">Succescriterium</option>
+                <option value="voorkennis">Voorkennis</option>
+              </select>
+            </div>
+            <div class="formulier-groep">
+              <label>Evalueerbaar</label>
+              <select id="doel-evalueerbaar" onchange="window._toggleScores()">
+                <option value="nee">Nee</option>
+                <option value="ja">Ja</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Leerplandoel-codes -->
+          <div style="margin-bottom:14px;">
+            <label>Leerplandoel-codes</label>
+            <div class="subdoel-blok" id="leerplan-container" style="margin-top:8px;">
+              <div id="geen-leerplancodes" style="font-size:9.5pt;color:var(--tekst-licht);">Nog geen leerplandoel-codes toegevoegd.</div>
+            </div>
+            <button class="knop knop-secundair knop-klein" style="margin-top:8px;" onclick="window._voegLeerplancodeToe()">+ Code toevoegen</button>
+          </div>
+
+          <!-- Referenties -->
+          <div style="margin-bottom:14px;">
+            <label>Referenties (hoofdstuk.paragraaf)</label>
+            <div class="subdoel-blok" id="referentie-container" style="margin-top:8px;">
+              <div id="geen-referenties" style="font-size:9.5pt;color:var(--tekst-licht);">Nog geen referenties toegevoegd.</div>
+            </div>
+            <button class="knop knop-secundair knop-klein" style="margin-top:8px;" onclick="window._voegReferentieToe()">+ Referentie toevoegen</button>
+          </div>
+
+          <!-- Scores -->
+          <div id="scores-blok" style="display:none;">
+            <div class="formulier-rij">
+              <div class="formulier-groep vol">
+                <label>Scores <span style="font-weight:400;text-transform:none;">(gebruik ### voor een nieuwe regel)</span></label>
+                <textarea id="doel-scores" placeholder="A+: Omschrijving###A: Omschrijving###B: Omschrijving###C: Omschrijving"></textarea>
+              </div>
+            </div>
+          </div>
+
+          <div class="formulier-rij">
+            <div class="formulier-groep vol">
+              <label>Notities</label>
+              <input type="text" id="doel-notities" placeholder="Optionele notitie...">
+            </div>
+          </div>
+
+          <div style="margin-top:20px;">
+            <button class="knop knop-primair" onclick="window._slaDoelOp()">&#128190; Opslaan</button>
+          </div>
+        </div>
+
+        <!-- Overzicht -->
+        <div class="kaart">
+          <div class="kaart-titel">
+            <span>Overzicht doelen</span>
+            <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+              <select id="filter-doel-type" onchange="window._laadDoelen()" style="font-size:9.5pt;padding:5px 10px;">
+                <option value="">Alle types</option>
+                <option value="succescriterium">Succescriteria</option>
+                <option value="voorkennis">Voorkennis</option>
+              </select>
+              <select id="filter-doel-leerplan" onchange="window._laadDoelen()" style="font-size:9.5pt;padding:5px 10px;">
+                <option value="">Alle leerplandoelen</option>
+              </select>
+              <select id="filter-doel-referentie" onchange="window._laadDoelen()" style="font-size:9.5pt;padding:5px 10px;">
+                <option value="">Alle referenties</option>
+              </select>
+            </div>
+          </div>
+          <div id="doelen-lader" class="lader">Laden...</div>
+          <div class="tabel-wrapper" id="doelen-tabel" style="display:none;">
+            <table>
+              <thead>
+                <tr>
+                  <th>Tekst</th>
+                  <th>Type</th>
+                  <th>Leerplan</th>
+                  <th>Referenties</th>
+                  <th>Eval.</th>
+                  <th>Acties</th>
+                </tr>
+              </thead>
+              <tbody id="doelen-tbody"></tbody>
+            </table>
+          </div>
+          <div class="leeg-staat" id="doelen-leeg" style="display:none;">
+            <div class="leeg-icoon">&#127919;</div>
+            <p>Nog geen doelen ingegeven.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- BRONNEN -->
+      <div class="sectie" id="sectie-bronnen">
+        <div class="pagina-titel">Bronnen</div>
+        <div class="pagina-ondertitel">Beheer overige bronnen zoals websites, video's en Google Classroom-taken.</div>
+
+        <div id="melding-bronnen" class="melding"></div>
+
+        <!-- Formulier -->
+        <div class="kaart">
+          <div class="kaart-titel">
+            <span id="formulier-bron-titel">Nieuwe bron toevoegen</span>
+            <button class="knop knop-secundair knop-klein" id="annuleer-bron" style="display:none" onclick="window._annuleerBron()">Annuleren</button>
+          </div>
+
+          <div class="formulier-rij">
+            <div class="formulier-groep">
+              <label>Label</label>
+              <input type="text" id="bron-label" placeholder="bv. Uitlegvideo breuken">
+            </div>
+            <div class="formulier-groep">
+              <label>Type</label>
+              <select id="bron-type">
+                <option value="website">&#127760; Website</option>
+                <option value="video">&#9654;&#65039; Video (Drive/YouTube)</option>
+                <option value="classroom">&#127891; Google Classroom</option>
+                <option value="bestand">&#128196; PDF/Bestand</option>
+                <option value="andere">&#128206; Andere</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="formulier-rij">
+            <div class="formulier-groep vol">
+              <label>Link</label>
+              <input type="url" id="bron-link" placeholder="https://...">
+            </div>
+          </div>
+
+          <div class="formulier-rij">
+            <div class="formulier-groep">
+              <label>Referentie (optioneel)</label>
+              <div class="cd-wrapper">
+                <input type="text" class="cd-input" id="bron-referentie" placeholder="bv. 7.1"
+                  autocomplete="off" data-type="referentie"
+                  oninput="window._cdFilter(this)" onfocus="window._cdFilter(this)" onblur="window._cdVerberg(this)">
+                <div class="cd-lijst"></div>
+                <div class="cd-waarschuwing">&#9888; Deze referentie bestaat nog niet in de databank.</div>
+              </div>
+            </div>
+            <div class="formulier-groep">
+              <label>Notities</label>
+              <input type="text" id="bron-notities" placeholder="Optionele notitie...">
+            </div>
+          </div>
+
+          <div style="margin-top:20px;">
+            <button class="knop knop-primair" onclick="window._slaBronOp()">&#128190; Opslaan</button>
+          </div>
+        </div>
+
+        <!-- Overzicht -->
+        <div class="kaart">
+          <div class="kaart-titel">
+            <span>Overzicht bronnen</span>
+            <select id="filter-bron-type" onchange="window._laadBronnen()" style="font-size:9.5pt;padding:5px 10px;">
+              <option value="">Alle types</option>
+              <option value="website">Website</option>
+              <option value="video">Video</option>
+              <option value="classroom">Google Classroom</option>
+              <option value="bestand">PDF/Bestand</option>
+              <option value="andere">Andere</option>
+            </select>
+          </div>
+          <div id="bronnen-lader" class="lader">Laden...</div>
+          <div class="tabel-wrapper" id="bronnen-tabel" style="display:none;">
+            <table>
+              <thead>
+                <tr>
+                  <th>Label</th>
+                  <th>Type</th>
+                  <th>Link</th>
+                  <th>Referentie</th>
+                  <th>Acties</th>
+                </tr>
+              </thead>
+              <tbody id="bronnen-tbody"></tbody>
+            </table>
+          </div>
+          <div class="leeg-staat" id="bronnen-leeg" style="display:none;">
+            <div class="leeg-icoon">&#128279;</div>
+            <p>Nog geen bronnen ingegeven.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- TEMPLATES -->
+      <div class="sectie" id="sectie-templates">
+        <div class="pagina-titel">Templates</div>
+        <div class="pagina-ondertitel">Beheer herbruikbare instructietemplates met opmaak en parameters.</div>
+
+        <div id="melding-templates" class="melding"></div>
+
+        <!-- Formulier -->
+        <div class="kaart">
+          <div class="kaart-titel">
+            <span id="formulier-template-titel">Nieuwe template toevoegen</span>
+            <div style="display:flex;gap:8px;">
+              <button class="knop knop-secundair knop-klein" onclick="window._toggleSyntax()">&#10067; Syntaxhulp</button>
+              <button class="knop knop-secundair knop-klein" id="annuleer-template" style="display:none" onclick="window._annuleerTemplate()">Annuleren</button>
+            </div>
+          </div>
+
+          <div class="formulier-rij">
+            <div class="formulier-groep">
+              <label>Naam</label>
+              <input type="text" id="tmpl-naam" placeholder="bv. Standaard les">
+            </div>
+            <div class="formulier-groep">
+              <label>Type</label>
+              <select id="tmpl-type">
+                <option value="les">Les</option>
+                <option value="taak">Taak</option>
+                <option value="rekenvaardigheden">Rekenvaardigheden</option>
+                <option value="andere">Andere</option>
+              </select>
+            </div>
+            <div class="formulier-groep">
+              <label>Notities</label>
+              <input type="text" id="tmpl-notities" placeholder="Optionele notitie...">
+            </div>
+          </div>
+
+          <!-- Editor + preview -->
+          <div id="editor-wrapper" style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-top:12px;">
+            <div class="editor-panel">
+              <div class="editor-label">Instructies <span style="font-weight:400;text-transform:none;font-size:9pt;">(gebruik syntaxhulp voor opmaak)</span></div>
+              <textarea class="editor-textarea" id="tmpl-inhoud"
+                oninput="window._updatePreview(); window._detecteerParameters()"
+                placeholder="## Voorbereiding&#10;Lees eerst blz. {blz_intro}.&#10;&#10;1| Maak opdracht {opdracht_nr}, cursus blz. {blz_opdracht}.&#10;   - Verbeter in __kleur__!&#10;2| Overloop de theorie bij **{sectie}**."></textarea>
+            </div>
+            <div class="editor-panel">
+              <div class="editor-label">Preview</div>
+              <div class="preview-vak" id="tmpl-preview"></div>
+            </div>
+            <div class="editor-panel" id="syntax-kolom" style="display:none;">
+              <div class="syntax-hulp zichtbaar" style="position:static;display:block;max-height:400px;">
+                <div class="syntax-hulp-titel">
+                  Syntaxhulp
+                  <button onclick="window._toggleSyntax()" style="background:none;border:none;cursor:pointer;font-size:16px;color:var(--tekst-licht);">&#x2715;</button>
+                </div>
+                <div style="font-size:9pt;color:var(--tekst-licht);margin-bottom:10px;">Klik om in te voegen op cursorpositie.</div>
+
+                <div style="font-size:9pt;font-weight:700;color:var(--tekst);margin:6px 0 3px;">Structuur</div>
+                <div class="syntax-rij" onclick="window._voegSyntaxIn('1| ')"><span class="syntax-code">1| </span><span class="syntax-omschrijving">Genummerde stap</span></div>
+                <div class="syntax-rij" onclick="window._voegSyntaxIn('- ')"><span class="syntax-code">- </span><span class="syntax-omschrijving">Opsomming</span></div>
+                <div class="syntax-rij" onclick="window._voegSyntaxIn('  1| ')"><span class="syntax-code">&#xB7;&#xB7;1| </span><span class="syntax-omschrijving">Geneste nummering</span></div>
+                <div class="syntax-rij" onclick="window._voegSyntaxIn('  - ')"><span class="syntax-code">&#xB7;&#xB7;- </span><span class="syntax-omschrijving">Geneste opsomming</span></div>
+                <div class="syntax-rij" onclick="window._voegSyntaxIn('## ')"><span class="syntax-code">## </span><span class="syntax-omschrijving">Subtitel</span></div>
+                <div class="syntax-rij" onclick="window._voegSyntaxIn('++')"><span class="syntax-code">tekst++</span><span class="syntax-omschrijving">Zachte enter</span></div>
+
+                <div style="font-size:9pt;font-weight:700;color:var(--tekst);margin:6px 0 3px;">Tekstopmaak</div>
+                <div class="syntax-rij" onclick="window._voegSyntaxIn('**tekst**')"><span class="syntax-code">**tekst**</span><span class="syntax-omschrijving"><strong>Vet</strong></span></div>
+                <div class="syntax-rij" onclick="window._voegSyntaxIn('*tekst*')"><span class="syntax-code">*tekst*</span><span class="syntax-omschrijving"><em>Cursief</em></span></div>
+                <div class="syntax-rij" onclick="window._voegSyntaxIn('__tekst__')"><span class="syntax-code">__tekst__</span><span class="syntax-omschrijving"><u>Onderstrepen</u></span></div>
+                <div class="syntax-rij" onclick="window._voegSyntaxIn('~tekst~')"><span class="syntax-code">~tekst~</span><span class="syntax-omschrijving" style="font-size:8pt;">Kleiner</span></div>
+                <div class="syntax-rij" onclick="window._voegSyntaxIn('^^tekst^^')"><span class="syntax-code">^^tekst^^</span><span class="syntax-omschrijving" style="font-size:11pt;">Groter</span></div>
+                <div class="syntax-rij" onclick="window._voegSyntaxIn('[kleur:rood]tekst[/kleur]')"><span class="syntax-code">[kleur:rood]</span><span class="syntax-omschrijving" style="color:#c0392b;">Kleur</span></div>
+
+                <div style="font-size:9pt;font-weight:700;color:var(--tekst);margin:6px 0 3px;">Media &amp; links</div>
+                <div class="syntax-rij" onclick="window._voegSyntaxIn('[label](url)')"><span class="syntax-code">[label](url)</span><span class="syntax-omschrijving">Link</span></div>
+                <div class="syntax-rij" onclick="window._voegSyntaxIn('![naam](./pictures/naam.png)')"><span class="syntax-code">![naam](./pictures/...)</span><span class="syntax-omschrijving">Afbeelding</span></div>
+                <div class="syntax-rij" onclick="window._voegSyntaxIn('![video-thumb](url)')"><span class="syntax-code">![video-thumb](url)</span><span class="syntax-omschrijving">Video thumbnail</span></div>
+                <div class="syntax-rij" onclick="window._voegSyntaxIn('![video-embed](url)')"><span class="syntax-code">![video-embed](url)</span><span class="syntax-omschrijving">Video ingesloten</span></div>
+
+                <div style="font-size:9pt;font-weight:700;color:var(--tekst);margin:6px 0 3px;">Parameters</div>
+                <div class="syntax-rij" onclick="window._voegSyntaxIn('{parameternaam}')"><span class="syntax-code">{parameternaam}</span><span class="syntax-omschrijving">Variabele</span></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Parameters -->
+          <div id="param-container" style="display:none;" class="param-blok">
+            <div class="param-blok-titel">&#128295; Gedetecteerde parameters &#8212; vul standaardwaarden in</div>
+            <div id="param-lijst"></div>
+          </div>
+
+          <div style="margin-top:20px;">
+            <button class="knop knop-primair" onclick="window._slaTemplateOp()">&#128190; Opslaan</button>
+          </div>
+        </div>
+
+        <!-- Overzicht -->
+        <div class="kaart">
+          <div class="kaart-titel">
+            <span>Overzicht templates</span>
+            <select id="filter-tmpl-type" onchange="window._laadTemplates()" style="font-size:9.5pt;padding:5px 10px;">
+              <option value="">Alle types</option>
+              <option value="les">Les</option>
+              <option value="taak">Taak</option>
+              <option value="rekenvaardigheden">Rekenvaardigheden</option>
+              <option value="andere">Andere</option>
+            </select>
+          </div>
+          <div id="templates-lader" class="lader">Laden...</div>
+          <div class="tabel-wrapper" id="templates-tabel" style="display:none;">
+            <table>
+              <thead>
+                <tr>
+                  <th>Naam</th>
+                  <th>Type</th>
+                  <th>Parameters</th>
+                  <th>Acties</th>
+                </tr>
+              </thead>
+              <tbody id="templates-tbody"></tbody>
+            </table>
+          </div>
+          <div class="leeg-staat" id="templates-leeg" style="display:none;">
+            <div class="leeg-icoon">&#128221;</div>
+            <p>Nog geen templates ingegeven.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAKEN -->
+      <div class="sectie" id="sectie-taken">
+        <div class="pagina-titel">Taken &amp; Lessen</div>
+        <div class="pagina-ondertitel">Stel taken en lessen samen voor de weekpagina.</div>
+
+        <div id="melding-taken" class="melding"></div>
+
+        <div class="kaart" style="padding:16px 24px;">
+          <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;">
+            <select id="filter-taak-schooljaar" onchange="window._laadTaken()" style="font-size:9.5pt;padding:5px 10px;">
+              <option value="">Alle schooljaren</option>
+              <option value="2025-2026">2025-2026</option>
+              <option value="2024-2025">2024-2025</option>
+            </select>
+            <select id="filter-taak-week" onchange="window._laadTaken()" style="font-size:9.5pt;padding:5px 10px;">
+              <option value="">Alle weken</option>
+            </select>
+            <select id="filter-taak-status" onchange="window._laadTaken()" style="font-size:9.5pt;padding:5px 10px;">
+              <option value="">Alle statussen</option>
+              <option value="concept">Concept</option>
+              <option value="actief">Actief</option>
+              <option value="archief">Archief</option>
+            </select>
+            <button class="knop knop-primair" onclick="window._nieuweTaak()">+ Nieuwe taak</button>
+          </div>
+        </div>
+
+        <div class="kaart" id="taken-overzicht">
+          <div id="taken-lader" class="lader">Laden...</div>
+          <div class="tabel-wrapper" id="taken-tabel" style="display:none;">
+            <table>
+              <thead>
+                <tr><th>Code</th><th>Titel</th><th>Klas</th><th>Week</th><th>Routes</th><th>Status</th><th>Acties</th></tr>
+              </thead>
+              <tbody id="taken-tbody"></tbody>
+            </table>
+          </div>
+          <div class="leeg-staat" id="taken-leeg" style="display:none;">
+            <div class="leeg-icoon">&#128197;</div>
+            <p>Nog geen taken aangemaakt.</p>
+          </div>
+        </div>
+
+        <div class="kaart" id="taak-formulier" style="display:none;">
+          <div class="stap-voortgang">
+            <div class="stap-indicator" data-stap="0">Start</div>
+            <div class="stap-pijl">&#8250;</div>
+            <div class="stap-indicator" data-stap="1">Co&#246;rdinaten</div>
+            <div class="stap-pijl">&#8250;</div>
+            <div class="stap-indicator" data-stap="2">Voorkennis</div>
+            <div class="stap-pijl">&#8250;</div>
+            <div class="stap-indicator" data-stap="3">Succescriteria</div>
+            <div class="stap-pijl">&#8250;</div>
+            <div class="stap-indicator" data-stap="4">Instructie</div>
+            <div class="stap-pijl">&#8250;</div>
+            <div class="stap-indicator" data-stap="5">Bronnen</div>
+            <div class="stap-pijl">&#8250;</div>
+            <div class="stap-indicator" data-stap="6">Indienen</div>
+          </div>
+
+          <div id="taak-stappen-wrapper">
+
+            <div class="taak-stap" id="taak-stap-0">
+              <h3 style="margin-bottom:20px;color:var(--blauw);">Wat wil je doen?</h3>
+              <div style="display:flex;flex-direction:column;gap:14px;max-width:480px;">
+                <label class="start-keuze-optie" id="keuze-nieuw">
+                  <input type="radio" name="taak-start-keuze" value="nieuw">
+                  <div class="start-keuze-inhoud">
+                    <div class="start-keuze-titel">&#10024; Nieuwe taak aanmaken</div>
+                    <div class="start-keuze-omschrijving">Start van nul met een nieuwe taak of les.</div>
+                  </div>
+                </label>
+                <label class="start-keuze-optie" id="keuze-aanpassen">
+                  <input type="radio" name="taak-start-keuze" value="aanpassen">
+                  <div class="start-keuze-inhoud">
+                    <div class="start-keuze-titel">&#9999;&#65039; Bestaande taak aanpassen</div>
+                    <div class="start-keuze-omschrijving">Pas een bestaande taak aan en sla op om de wijzigingen te bewaren.</div>
+                  </div>
+                </label>
+                <label class="start-keuze-optie" id="keuze-kopie">
+                  <input type="radio" name="taak-start-keuze" value="kopie">
+                  <div class="start-keuze-inhoud">
+                    <div class="start-keuze-titel">&#128203; Bestaande taak kopi&#235;ren</div>
+                    <div class="start-keuze-omschrijving">Gebruik een bestaande taak als basis voor een nieuwe taak.</div>
+                  </div>
+                </label>
+              </div>
+              <div id="bestaande-taak-keuze" style="display:none;margin-top:20px;"></div>
+            </div>
+
+            <div class="taak-stap" id="taak-stap-1">
+              <h3 class="stap-titel">Stap 1 &mdash; Co&#246;rdinaten</h3>
+              <div class="formulier-rij">
+                <div class="formulier-groep"><label>Code <span style="color:var(--rood);">*</span></label><input type="text" id="taak-code" placeholder="bv. WI T6.1"></div>
+                <div class="formulier-groep"><label>Titel <span style="color:var(--rood);">*</span></label><input type="text" id="taak-titel" placeholder="bv. Breuken"></div>
+              </div>
+              <div class="formulier-rij">
+                <div class="formulier-groep"><label>Type <span style="color:var(--rood);">*</span></label>
+                  <select id="taak-type" onchange="window._toggleTijdVeld()"><option value="taak">Taak</option><option value="les">Les</option></select>
+                </div>
+                <div class="formulier-groep"><label>Tijd <span style="color:var(--rood);">*</span></label><input type="text" id="taak-tijd" placeholder="50"></div>
+                <div class="formulier-groep"><label>Vak <span style="color:var(--rood);">*</span></label>
+                  <select id="taak-vak"><option value="Wiskunde">Wiskunde</option><option value="Frans">Frans</option><option value="Nederlands">Nederlands</option></select>
+                </div>
+                <div class="formulier-groep"><label>Klas <span style="color:var(--rood);">*</span></label>
+                  <select id="taak-klas"><option value="1a">1a</option><option value="1b">1b</option></select>
+                </div>
+              </div>
+              <div class="formulier-rij">
+                <div class="formulier-groep"><label>Schooljaar <span style="color:var(--rood);">*</span></label>
+                  <input type="text" id="taak-schooljaar" placeholder="2025-2026" oninput="window._vulLesweekDropdown(this.value)" value="">
+                </div>
+                <div class="formulier-groep"><label>Lesweek <span style="color:var(--rood);">*</span></label>
+                  <select id="taak-lesweek"><option value="">Kies een week...</option></select>
+                </div>
+              </div>
+              <div class="formulier-rij">
+                <div class="formulier-groep vol"><label>Korte omschrijving</label>
+                  <textarea id="taak-omschrijving" style="min-height:60px;" placeholder="Optionele omschrijving..."></textarea>
+                </div>
+              </div>
+              <div class="formulier-rij">
+                <div class="formulier-groep vol"><label>Tags (kommagescheiden)</label>
+                  <input type="text" id="taak-tags" placeholder="bv. breuken, optellen">
+                </div>
+              </div>
+              <div class="formulier-rij">
+                <div class="formulier-groep">
+                  <label>Routes <span style="color:var(--rood);">*</span></label>
+                  <div style="display:flex;flex-wrap:wrap;gap:12px;margin-top:4px;">
+                    <label class="check-label"><input type="checkbox" id="route-G" value="G"> G-route</label>
+                    <label class="check-label"><input type="checkbox" id="route-B" value="B"> B-route</label>
+                    <label class="check-label"><input type="checkbox" id="route-Z" value="Z"> Z-route</label>
+                    <label class="check-label"><input type="checkbox" id="route-geen" value="geen"> Geen route</label>
+                  </div>
+                </div>
+              </div>
+              <div class="formulier-rij">
+                <div class="formulier-groep">
+                  <label>Referentie (optioneel)</label>
+                  <div class="subdoel-blok" id="taak-ref-container" style="padding:8px;">
+                    <div id="geen-taak-refs" style="font-size:9.5pt;color:var(--tekst-licht);">Nog geen referenties.</div>
+                  </div>
+                  <button class="knop knop-secundair knop-klein" style="margin-top:6px;" onclick="window._voegTaakRefToe()">+ Referentie</button>
+                </div>
+                <div class="formulier-groep">
+                  <label>Volgtijdelijkheid</label>
+                  <input type="text" id="taak-volgtijdelijkheid" placeholder="0.0" value="0.0">
+                  <span style="font-size:8.5pt;color:var(--tekst-licht);">x.y = reeks x, positie y. 0.0 = geen.</span>
+                </div>
+                <div class="formulier-groep">
+                  <label>Volgorde op weekpagina</label>
+                  <input type="number" id="taak-volgorde" placeholder="1" min="1">
+                </div>
+              </div>
+              <div class="formulier-rij">
+                <div class="formulier-groep">
+                  <label>Leerprocesfase <span style="color:var(--rood);">*</span></label>
+                  <div style="display:flex;flex-wrap:wrap;gap:12px;margin-top:4px;">
+                    <label class="check-label"><input type="checkbox" id="fase-verkennen"> Verkennen</label>
+                    <label class="check-label"><input type="checkbox" id="fase-verwerken"> Verwerken</label>
+                    <label class="check-label"><input type="checkbox" id="fase-inprenten"> Inprenten</label>
+                    <label class="check-label"><input type="checkbox" id="fase-evalueren"> Evalueren</label>
+                    <label class="check-label"><input type="checkbox" id="fase-herhalen"> Herhalen</label>
+                  </div>
+                </div>
+              </div>
+              <div class="formulier-rij">
+                <div class="formulier-groep">
+                  <label>Extra papier</label>
+                  <label class="check-label" style="margin-top:4px;"><input type="checkbox" id="taak-extra-papier"> Ja, extra papier nodig</label>
+                </div>
+                <div class="formulier-groep"><label>Status <span style="color:var(--rood);">*</span></label>
+                  <select id="taak-status"><option value="concept">Concept</option><option value="actief">Actief</option><option value="archief">Archief</option></select>
+                </div>
+              </div>
+            </div>
+
+            <div class="taak-stap" id="taak-stap-2">
+              <h3 class="stap-titel">Stap 2 &mdash; Voorkennis</h3>
+              <div style="margin-bottom:16px;">
+                <label class="check-label" style="font-size:11pt;"><input type="radio" name="vk-keuze" value="nee"> Geen voorkennis nodig.</label><br>
+                <label class="check-label" style="font-size:11pt;margin-top:8px;"><input type="radio" name="vk-keuze" value="ja" checked> Voorkennis nodig.</label>
+              </div>
+              <div class="doel-keuze-sectie"></div>
+              <div class="gekozen-doelen-sectie"></div>
+            </div>
+
+            <div class="taak-stap" id="taak-stap-3">
+              <h3 class="stap-titel">Stap 3 &mdash; Succescriteria</h3>
+              <div class="tabbladen">
+                <button class="tabblad-knop actief" onclick="window._toonScTabblad('leren', this)">&#128218; Wat leer je?</button>
+                <button class="tabblad-knop" onclick="window._toonScTabblad('eval', this)">&#128202; Waarop ge&#235;valueerd?</button>
+              </div>
+              <div class="tabblad-inhoud actief" id="sc-tab-leren">
+                <div style="margin-bottom:12px;">
+                  <label class="check-label" style="font-size:11pt;"><input type="checkbox" id="sc-leren-actief" checked> Dit type succescriterium is van toepassing.</label>
+                </div>
+                <div class="doel-keuze-sectie-leren"></div>
+                <div class="gekozen-doelen-sectie-leren"></div>
+              </div>
+              <div class="tabblad-inhoud" id="sc-tab-eval">
+                <div style="margin-bottom:12px;">
+                  <label class="check-label" style="font-size:11pt;"><input type="checkbox" id="sc-eval-actief"> Dit type succescriterium is van toepassing.</label>
+                </div>
+                <div class="doel-keuze-sectie-eval"></div>
+                <div class="gekozen-doelen-sectie-eval"></div>
+              </div>
+            </div>
+
+            <div class="taak-stap" id="taak-stap-4">
+              <h3 class="stap-titel">Stap 4 &mdash; Instructie</h3>
+              <div style="display:grid;grid-template-columns:240px 1fr;gap:20px;">
+                <div>
+                  <div class="editor-label">Kies een template</div>
+                  <div class="doel-lijst-container" id="stap4-template-lijst" style="max-height:320px;"></div>
+                </div>
+                <div>
+                  <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;" id="stap4-editor-wrapper">
+                    <div class="editor-panel">
+                      <div class="editor-label">Instructies</div>
+                      <textarea class="editor-textarea" id="taak-instructies-inhoud" style="min-height:300px;"
+                        oninput="window._updatePreviewTaak(); window._detecteerParametersTaak()"
+                        placeholder="Typ hier of kies een template links..."></textarea>
+                    </div>
+                    <div class="editor-panel">
+                      <div class="editor-label">Preview</div>
+                      <div class="preview-vak" id="taak-instructies-preview" style="min-height:300px;"></div>
+                    </div>
+                  </div>
+                  <div id="taak-template-params-blok" style="display:none;" class="param-blok">
+                    <div class="param-blok-titel">&#128295; Parameters</div>
+                    <div id="taak-template-params"></div>
+                  </div>
+                  <div style="margin-top:12px;">
+                    <button id="instructie-opslaan-knop" class="knop knop-secundair knop-klein" style="display:none;" onclick="window._slaInstructieOp()">&#128190; Bewaren als herbruikbare template</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="taak-stap" id="taak-stap-5">
+              <h3 class="stap-titel">Stap 5 &mdash; Bronnen</h3>
+              <div class="kaart" style="background:var(--blauw-licht);box-shadow:none;margin-bottom:16px;">
+                <div style="font-weight:700;margin-bottom:10px;">Standaardbronnen uit de databank</div>
+                <div id="stap5-standaard-bronnen"></div>
+              </div>
+              <div>
+                <div class="editor-label" style="margin-bottom:8px;">Extra bronnen toevoegen</div>
+                <div class="doel-zoek-blok">
+                  <div class="doel-zoek-rij">
+                    <input type="text" id="bron-zoek" placeholder="Zoeken op label..." oninput="window._filterBronnen()"
+                      style="flex:2;padding:7px 10px;border:1.5px solid var(--grijs-rand);border-radius:7px;font-size:10pt;">
+                    <select id="bron-filter-type" onchange="window._filterBronnen()"
+                      style="flex:1;padding:7px 10px;border:1.5px solid var(--grijs-rand);border-radius:7px;font-size:9.5pt;">
+                      <option value="">Alle types</option>
+                      <option value="website">Website</option>
+                      <option value="video">Video</option>
+                      <option value="classroom">Google Classroom</option>
+                      <option value="bestand">PDF/Bestand</option>
+                      <option value="andere">Andere</option>
+                    </select>
+                  </div>
+                  <div class="doel-lijst-container" id="stap5-bron-lijst" style="max-height:240px;"></div>
+                </div>
+                <div style="margin-top:8px;">
+                  <button class="knop knop-secundair knop-klein" onclick="window._toggleNieuwBronFormulier()">+ Nieuwe bron toevoegen</button>
+                </div>
+                <div id="stap5-nieuw-bron-formulier" style="display:none;background:var(--grijs);border-radius:8px;padding:14px;margin-top:10px;">
+                  <div class="formulier-rij">
+                    <div class="formulier-groep"><label>Label</label><input type="text" id="stap5-nieuw-bron-label" placeholder="bv. Uitlegvideo breuken"></div>
+                    <div class="formulier-groep"><label>Type</label>
+                      <select id="stap5-nieuw-bron-type">
+                        <option value="website">&#127760; Website</option>
+                        <option value="video">&#9654;&#65039; Video</option>
+                        <option value="classroom">&#127891; Google Classroom</option>
+                        <option value="bestand">&#128196; PDF/Bestand</option>
+                        <option value="andere">&#128206; Andere</option>
+                      </select>
+                    </div>
+                  </div>
+                  <div class="formulier-rij">
+                    <div class="formulier-groep vol"><label>Link</label><input type="url" id="stap5-nieuw-bron-link" placeholder="https://..."></div>
+                  </div>
+                  <div class="formulier-rij">
+                    <div class="formulier-groep"><label>Referentie (optioneel)</label><input type="text" id="stap5-nieuw-bron-ref" placeholder="bv. 7.1"></div>
+                  </div>
+                  <div style="margin-top:10px;display:flex;gap:8px;">
+                    <button class="knop knop-primair knop-klein" onclick="window._slaaNieuwBronOp()">Opslaan</button>
+                    <button class="knop knop-secundair knop-klein" onclick="window._toggleNieuwBronFormulier()">Annuleren</button>
+                  </div>
+                </div>
+              </div>
+              <div style="margin-top:14px;">
+                <div class="editor-label">Gekozen bronnen</div>
+                <div id="stap5-gekozen-bronnen" style="margin-top:8px;"></div>
+                <div id="stap5-geen-bronnen" style="font-size:9.5pt;color:var(--tekst-licht);padding:8px 0;">Nog geen bronnen gekozen.</div>
+              </div>
+            </div>
+
+            <div class="taak-stap" id="taak-stap-6">
+              <h3 class="stap-titel">Stap 6 &mdash; Indienwijze</h3>
+              <p style="color:var(--tekst-licht);margin-bottom:16px;font-size:10.5pt;">Kies minstens &#233;&#233;n indienwijze.</p>
+              <div style="display:flex;flex-direction:column;gap:14px;max-width:500px;">
+                <label class="indienen-optie"><input type="checkbox" id="indienen-map">
+                  <div class="indienen-optie-inhoud"><div class="indienen-optie-label">&#128193; In de map bewaren</div></div>
+                </label>
+                <label class="indienen-optie"><input type="checkbox" id="indienen-digitaal">
+                  <div class="indienen-optie-inhoud"><div class="indienen-optie-label">&#128187; Digitaal indienen (Google Classroom)</div></div>
+                </label>
+                <label class="indienen-optie"><input type="checkbox" id="indienen-vakje">
+                  <div class="indienen-optie-inhoud"><div class="indienen-optie-label">&#128089; In het vakje</div></div>
+                </label>
+                <label class="indienen-optie">
+                  <input type="checkbox" id="indienen-anders" onchange="document.getElementById('indienen-anders-extra').style.display=this.checked?'block':'none'">
+                  <div class="indienen-optie-inhoud">
+                    <div class="indienen-optie-label">&#128204; Anders</div>
+                    <div id="indienen-anders-extra" style="display:none;margin-top:8px;">
+                      <input type="text" id="indienen-anders-tekst" placeholder="Omschrijf de indienwijze..." style="width:100%;">
+                    </div>
+                  </div>
+                </label>
+              </div>
+            </div>
+
+          </div>
+
+          <div style="display:flex;gap:10px;margin-top:24px;padding-top:16px;border-top:1px solid var(--grijs-rand);">
+            <button class="knop knop-secundair" id="taak-vorige-knop" style="display:none;" onclick="window._vorigeStap()">&#8592; Vorige</button>
+            <button class="knop knop-primair" id="taak-volgende-knop" onclick="window._volgendeStap()">Volgende &#8594;</button>
+            <button class="knop knop-primair" id="taak-voltooien-knop" style="display:none;" onclick="window._voltooiTaak()">&#10003; Voltooien &amp; preview</button>
+            <button class="knop knop-secundair" onclick="window._annuleerTaak()" style="margin-left:auto;">Annuleren</button>
+          </div>
+        </div>
+
+        <div id="taak-preview-wrapper" style="display:none;">
+          <div class="kaart">
+            <div class="kaart-titel">
+              <span>Preview taak</span>
+              <button class="knop knop-secundair knop-klein" onclick="window._bewerkPreview()">&#9998; Aanpassen</button>
+            </div>
+            <style>
+              #taak-preview-inhoud .taak-blok{border-top:4px solid #1e3a56}
+              #taak-preview-inhoud .titelbalk{background:#2c4a6e;color:white;padding:16px 40px;font-size:19pt;font-weight:700}
+              #taak-preview-inhoud .sectie{display:flex;align-items:flex-start;gap:24px;padding:28px 40px}
+              #taak-preview-inhoud .sectie.grijs{background:#f2f2f2}
+              #taak-preview-inhoud .sectie.wit{background:#fff}
+              #taak-preview-inhoud .sectie.geel{background:#fffacd}
+              #taak-preview-inhoud .sectie-icoon{width:56px;min-width:56px;height:56px;display:flex;align-items:center;justify-content:center}
+              #taak-preview-inhoud .sectie-icoon img{width:56px;height:56px;object-fit:contain}
+              #taak-preview-inhoud .sectie-inhoud{flex:1}
+              #taak-preview-inhoud .sectie-titel{font-size:15pt;font-weight:700;margin-bottom:12px}
+              #taak-preview-inhoud .doel-lijst{list-style:disc;padding-left:22px;line-height:1.7}
+              #taak-preview-inhoud .doel-lijst li{margin-bottom:4px}
+              #taak-preview-inhoud .sc-subtitel{font-size:11pt;font-weight:700;color:#e07b00;margin:14px 0 6px;text-decoration:underline}
+              #taak-preview-inhoud .sc-subtitel:first-child{margin-top:0}
+              #taak-preview-inhoud .leerplandoel{color:#555;font-size:10pt}
+              #taak-preview-inhoud .score-tekst{font-size:9pt;color:#555;margin-left:4px;line-height:1.6;margin-top:2px}
+              #taak-preview-inhoud .instructie-stappen{display:flex;flex-direction:column;gap:6px}
+              #taak-preview-inhoud .instructie-stap{display:flex;align-items:flex-start;line-height:1.7}
+              #taak-preview-inhoud .stap-nr{min-width:28px;font-size:11pt;flex-shrink:0;padding-top:1px;font-weight:700}
+              #taak-preview-inhoud .stap-tekst{flex:1}
+              #taak-preview-inhoud .preview-instructie-wrapper .preview-stap{display:flex;align-items:flex-start;gap:0;margin-bottom:6px}
+              #taak-preview-inhoud .preview-instructie-wrapper .preview-nr{font-weight:700;margin-right:6px;flex-shrink:0;white-space:nowrap}
+              #taak-preview-inhoud .preview-instructie-wrapper .preview-opsomming{display:flex;gap:8px;margin-bottom:4px}
+              #taak-preview-inhoud .preview-instructie-wrapper .preview-opsomming .preview-bullet{color:#2c4a6e;flex-shrink:0}
+              #taak-preview-inhoud .preview-instructie-wrapper .preview-genest{padding-left:32px}
+              #taak-preview-inhoud .preview-instructie-wrapper .preview-subtitel{font-weight:700;font-size:12pt;text-decoration:underline;color:#e07b00;margin:10px 0 4px}
+              #taak-preview-inhoud .preview-instructie-wrapper .preview-gewoon{margin-bottom:4px}
+              #taak-preview-inhoud .preview-instructie-wrapper .preview-klein{font-size:9pt}
+              #taak-preview-inhoud .preview-instructie-wrapper .preview-groot{font-size:13pt}
+              #taak-preview-inhoud .bron-tegels{display:flex;flex-wrap:wrap;gap:14px;margin-top:6px}
+              #taak-preview-inhoud .bron-tegel{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;width:110px;height:110px;padding:12px 8px;background:white;border:1.5px solid #ccc;border-radius:10px;text-decoration:none;color:#222;font-size:10pt;font-weight:700;text-align:center;line-height:1.3}
+              #taak-preview-inhoud .bron-icoon{font-size:28px}
+              #taak-preview-inhoud .indienen-rijen{display:flex;flex-direction:column;gap:18px;margin-top:4px}
+              #taak-preview-inhoud .indienen-rij{display:flex;align-items:flex-start;gap:16px}
+              #taak-preview-inhoud .indienen-rij-icoon{font-size:28px;min-width:40px;text-align:center}
+              #taak-preview-inhoud .indienen-rij-tekst{font-size:11pt;line-height:1.6}
+            </style>
+            <div id="taak-preview-inhoud" style="border:1.5px solid var(--grijs-rand);border-radius:8px;overflow:hidden;margin-top:12px;"></div>
+          </div>
+          <div style="display:flex;gap:10px;margin-top:16px;">
+            <button class="knop knop-primair" onclick="window._slaaTaakOp()">&#128190; Taak opslaan</button>
+            <button class="knop knop-secundair" onclick="window._bewerkPreview()">&#9998; Aanpassen</button>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- WEEKOVERZICHT -->
+      <div class="sectie" id="sectie-weekoverzicht">
+        <div class="pagina-titel">Weekoverzicht</div>
+        <div class="pagina-ondertitel">Stel de weekpagina samen en exporteer naar HTML.</div>
+
+        <div id="melding-weekoverzicht" class="melding"></div>
+
+        <div id="wo-beheer-wrapper">
+          <!-- Filters -->
+          <div class="kaart" style="padding:16px 24px;">
+            <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;">
+              <select id="wo-schooljaar" onchange="window._vulWoWeekDropdown(this.value);" style="font-size:9.5pt;padding:5px 10px;">
+                <option value="">Schooljaar...</option>
+                <option value="2025-2026">2025-2026</option>
+                <option value="2024-2025">2024-2025</option>
+              </select>
+              <select id="wo-week" onchange="window._laadWeekoverzicht()" style="font-size:9.5pt;padding:5px 10px;">
+                <option value="">Week...</option>
+              </select>
+            </div>
+          </div>
+
+          <div id="wo-lader" class="lader" style="display:none;">Laden...</div>
+
+          <div id="wo-leeg" class="leeg-staat">
+            <div class="leeg-icoon">&#128197;</div>
+            <p>Kies een schooljaar en week om het overzicht te laden.</p>
+          </div>
+
+          <!-- Drie kolommen -->
+          <div id="wo-kolommen" style="display:none;grid-template-columns:1fr 1fr 1fr;gap:16px;">
+            <!-- G-route -->
+            <div class="kaart" style="padding:16px;">
+              <div class="kaart-titel" style="padding-bottom:10px;margin-bottom:10px;">
+                <span style="color:#1a6b2f;">&#9679; G-route</span>
+                <span id="wo-tijd-G" style="font-size:9.5pt;font-weight:400;color:var(--tekst-licht);">0 min</span>
+              </div>
+              <div id="wo-tegels-G" class="wo-tegel-container"></div>
+            </div>
+            <!-- B-route -->
+            <div class="kaart" style="padding:16px;">
+              <div class="kaart-titel" style="padding-bottom:10px;margin-bottom:10px;">
+                <span style="color:#0d47a1;">&#9679; B-route</span>
+                <span id="wo-tijd-B" style="font-size:9.5pt;font-weight:400;color:var(--tekst-licht);">0 min</span>
+              </div>
+              <div id="wo-tegels-B" class="wo-tegel-container"></div>
+            </div>
+            <!-- Z-route -->
+            <div class="kaart" style="padding:16px;">
+              <div class="kaart-titel" style="padding-bottom:10px;margin-bottom:10px;">
+                <span style="color:#8b1a1a;">&#9679; Z-route</span>
+                <span id="wo-tijd-Z" style="font-size:9.5pt;font-weight:400;color:var(--tekst-licht);">0 min</span>
+              </div>
+              <div id="wo-tegels-Z" class="wo-tegel-container"></div>
+            </div>
+          </div>
+
+          <!-- Actieknoppen -->
+          <div id="wo-acties" style="display:none;gap:10px;margin-top:16px;">
+            <button class="knop knop-secundair" onclick="window._slaWeekoverzichtOp()">&#128190; Volgorde opslaan</button>
+            <button class="knop knop-primair" onclick="window._toonWeekoverzichtPreview()">&#128065; Preview</button>
+          </div>
+        </div>
+
+        <!-- Preview wrapper -->
+        <div id="wo-preview-wrapper" style="display:none;">
+          <div class="kaart">
+            <div class="kaart-titel">
+              <span>Preview weekpagina</span>
+              <button class="knop knop-secundair knop-klein" onclick="window._sluitWeekoverzichtPreview()">&#9998; Aanpassen</button>
+            </div>
+            <iframe id="wo-preview-iframe" style="width:100%;height:80vh;border:1.5px solid var(--grijs-rand);border-radius:8px;margin-top:12px;" frameborder="0"></iframe>
+          </div>
+          <div style="display:flex;gap:10px;margin-top:16px;">
+            <button class="knop knop-primair" onclick="window._exporteerWeekpagina()">&#11015; Exporteren als HTML</button>
+            <button class="knop knop-secundair" onclick="window._sluitWeekoverzichtPreview()">&#9998; Aanpassen</button>
+          </div>
+        </div>
+
+      </div>
+
+    </main>
+  </div>
 </div>
 
-<nav class="inhoudstafel verborgen" id="inhoudstafel">
-  <div class="inhoudstafel-titel">Deze week</div>
-${inhoudstafelLinks}
-</nav>
+<script type="module">
+  import { initAuth } from './js/auth.js';
+  import { toonSectie } from './js/ui.js';
+  import {
+    laadLeerplandoelen, slaLeerplandoelOp, bewerkLeerplandoel, verwijderLeerplandoel,
+    annuleerLeerplandoel, berekeningCode, voegSubdoelToe, verwijderSubdoel, importeerCSV
+  } from './js/leerplandoelen.js';
+  import {
+    laadHoofdstukken, slaHoofdstukOp, bewerkHoofdstuk, verwijderHoofdstuk,
+    annuleerHoofdstuk, voegParagraafToe, verwijderParagraaf
+  } from './js/hoofdstukken.js';
+  import {
+    laadDoelen, slaDoelOp, bewerkDoel, verwijderDoel, annuleerDoel,
+    voegLeerplancodeToe, verwijderLeerplancode,
+    voegReferentieToe, verwijderReferentie,
+    toggleScores, importeerDoelenCSV, laadDropdownData,
+    cdFilter, cdKies, cdVerberg
+  } from './js/doelen.js';
+  import {
+    laadBronnen, slaBronOp, bewerkBron, verwijderBron, annuleerBron
+  } from './js/bronnen.js';
+  import {
+    laadTemplates, slaTemplateOp, bewerkTemplate, verwijderTemplate, annuleerTemplate,
+    updatePreview, detecteerParameters, toggleSyntax, voegSyntaxIn, parseMarkdown,
+    zorgCache as zorgTemplatesCache
+  } from './js/templates.js';
+  import {
+    laadTaken, nieuweTaak, bewerkTaak, kopieerTaak, annuleerTaak,
+    volgendeStap, vorigeStap, voltooiTaak, slaaTaakOp, bewerkPreview,
+    voegTaakRefToe, verwijderTaakRef, toggleTijdVeld,
+    filterDoelen, kiesDoel, verwijderGekozenDoel,
+    toggleNieuwDoelFormulier, toggleNieuwDoelScores, slaaNieuwDoelOp,
+    kiesTemplate, updatePreviewTaak, detecteerParametersTaak, slaInstructieOp,
+    kiesBron, verwijderGekozenBron, filterBronnen, toggleNieuwBronFormulier, slaaNieuwBronOp,
+    vulLesweekDropdown, filterBestaandeTaken, kiesBestaandeTaak, verwijderTaak,
+    initStap0Listeners
+  } from './js/taken.js';
+  import {
+    laadWeekoverzicht, slaWeekoverzichtOp, toonWeekoverzichtPreview,
+    sluitWeekoverzichtPreview, exporteerWeekpagina,
+    verwijderUitKolom, updateVolgtijdelijkheid, vulWoWeekDropdown
+  } from './js/weekoverzicht.js';
 
-${blokkenHtml}`;
-}
+  window._laadLeerplandoelen = laadLeerplandoelen;
+  window._slaLeerplandoelOp = slaLeerplandoelOp;
+  window._bewerkLeerplandoel = bewerkLeerplandoel;
+  window._verwijderLeerplandoel = verwijderLeerplandoel;
+  window._annuleerLeerplandoel = annuleerLeerplandoel;
+  window._berekeningCode = berekeningCode;
+  window._voegSubdoelToe = voegSubdoelToe;
+  window._verwijderSubdoel = verwijderSubdoel;
+  window._importeerCSV = importeerCSV;
 
-// ===== INSTRUCTIE RENDER VOOR EXPORT (weekpagina stijl) =====
-function renderInstructieVoorExport(tekst) {
-  const regels = tekst.split('\n');
-  let stappen = '';
-  let numTeller = 0;
+  window._laadHoofdstukken = laadHoofdstukken;
+  window._slaHoofdstukOp = slaHoofdstukOp;
+  window._bewerkHoofdstuk = bewerkHoofdstuk;
+  window._verwijderHoofdstuk = verwijderHoofdstuk;
+  window._annuleerHoofdstuk = annuleerHoofdstuk;
+  window._voegParagraafToe = voegParagraafToe;
+  window._verwijderParagraaf = verwijderParagraaf;
 
-  function inline(t) {
-    return t
-      .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
-      .replace(/\*(.+?)\*/g, '<em>$1</em>')
-      .replace(/__(.+?)__/g, '<u>$1</u>')
-      .replace(/\[kleur:(\w+|#[0-9a-fA-F]{3,6})\](.+?)\[\/kleur\]/g, (m, k, t) => `<span style="color:${k};">${t}</span>`)
-      .replace(/\[(.+?)\]\((.+?)\)/g, '<a href="$2" target="_blank">$1</a>')
-      .replace(/\+\+/g, '<br>');
-  }
+  window._laadDoelen = laadDoelen;
+  window._slaDoelOp = slaDoelOp;
+  window._bewerkDoel = bewerkDoel;
+  window._verwijderDoel = verwijderDoel;
+  window._annuleerDoel = annuleerDoel;
+  window._voegLeerplancodeToe = voegLeerplancodeToe;
+  window._verwijderLeerplancode = verwijderLeerplancode;
+  window._voegReferentieToe = voegReferentieToe;
+  window._verwijderReferentie = verwijderReferentie;
+  window._toggleScores = toggleScores;
+  window._importeerDoelenCSV = importeerDoelenCSV;
+  window._cdFilter = cdFilter;
+  window._cdKies = cdKies;
+  window._cdVerberg = cdVerberg;
 
-  for (const regel of regels) {
-    const g = regel.trimStart();
-    const isGenest = regel.startsWith('  ') || regel.startsWith('\t');
-    if (!g) { stappen += '<div style="height:5px;"></div>'; numTeller = 0; continue; }
+  window._laadBronnen = laadBronnen;
+  window._slaBronOp = slaBronOp;
+  window._bewerkBron = bewerkBron;
+  window._verwijderBron = verwijderBron;
+  window._annuleerBron = annuleerBron;
 
-    if (g.startsWith('## ')) {
-      numTeller = 0;
-      stappen += `<div class="sc-subtitel" style="margin-top:10px;">${g.slice(3)}</div>`;
-    } else if (isGenest && g.match(/^\d+\|\s*/)) {
-      stappen += `<div class="instructie-stap" style="padding-left:28px;"><div class="stap-nr" style="min-width:28px;"></div><div class="stap-tekst">${inline(g.replace(/^\d+\|\s*/, ''))}</div></div>`;
-    } else if (isGenest && g.startsWith('- ')) {
-      stappen += `<div style="display:flex;gap:8px;padding-left:28px;margin-bottom:4px;"><span style="color:#2c4a6e;">•</span><span>${inline(g.slice(2))}</span></div>`;
-    } else if (g.match(/^\d+\|\s*/)) {
-      numTeller++;
-      stappen += `<div class="instructie-stap"><div class="stap-nr">${numTeller}|</div><div class="stap-tekst">${inline(g.replace(/^\d+\|\s*/, ''))}</div></div>`;
-    } else if (g.startsWith('- ')) {
-      stappen += `<div style="display:flex;gap:8px;margin-bottom:4px;"><span style="color:#2c4a6e;">•</span><span>${inline(g.slice(2))}</span></div>`;
-    } else {
-      stappen += `<div style="margin-bottom:4px;">${inline(g)}</div>`;
-    }
-  }
+  window._laadTemplates = laadTemplates;
+  window._slaTemplateOp = slaTemplateOp;
+  window._bewerkTemplate = bewerkTemplate;
+  window._verwijderTemplate = verwijderTemplate;
+  window._annuleerTemplate = annuleerTemplate;
+  window._updatePreview = updatePreview;
+  window._detecteerParameters = detecteerParameters;
+  window._toggleSyntax = toggleSyntax;
+  window._voegSyntaxIn = voegSyntaxIn;
 
-  return `
-  <div class="sectie wit">
-    <div class="sectie-icoon"><img src="./pictures/instructies.png" alt="Instructies"></div>
-    <div class="sectie-inhoud">
-      <div class="sectie-titel">Instructies</div>
-      <div class="instructie-stappen">${stappen}</div>
-    </div>
-  </div>`;
-}
+  window._laadTaken = laadTaken;
+  window._nieuweTaak = nieuweTaak;
+  window._bewerkTaak = bewerkTaak;
+  window._kopieerTaak = kopieerTaak;
+  window._annuleerTaak = annuleerTaak;
+  window._volgendeStap = volgendeStap;
+  window._vorigeStap = vorigeStap;
+  window._voltooiTaak = voltooiTaak;
+  window._slaaTaakOp = slaaTaakOp;
+  window._bewerkPreview = bewerkPreview;
+  window._voegTaakRefToe = voegTaakRefToe;
+  window._verwijderTaakRef = verwijderTaakRef;
+  window._toggleTijdVeld = toggleTijdVeld;
+  window._filterDoelen = filterDoelen;
+  window._kiesDoel = kiesDoel;
+  window._verwijderGekozenDoel = verwijderGekozenDoel;
+  window._toggleNieuwDoelFormulier = toggleNieuwDoelFormulier;
+  window._toggleNieuwDoelScores = toggleNieuwDoelScores;
+  window._slaaNieuwDoelOp = slaaNieuwDoelOp;
+  window._kiesTemplate = kiesTemplate;
+  window._updatePreviewTaak = updatePreviewTaak;
+  window._detecteerParametersTaak = detecteerParametersTaak;
+  window._slaInstructieOp = slaInstructieOp;
+  window._kiesBron = kiesBron;
+  window._verwijderGekozenBron = verwijderGekozenBron;
+  window._filterBronnen = filterBronnen;
+  window._toggleNieuwBronFormulier = toggleNieuwBronFormulier;
+  window._slaaNieuwBronOp = slaaNieuwBronOp;
+  window._vulLesweekDropdown = vulLesweekDropdown;
+  window._filterBestaandeTaken = filterBestaandeTaken;
+  window._kiesBestaandeTaak = kiesBestaandeTaak;
+  window._verwijderTaak = verwijderTaak;
+  window._laadWeekoverzicht = laadWeekoverzicht;
+  window._vulWoWeekDropdown = vulWoWeekDropdown;
+  window._slaWeekoverzichtOp = slaWeekoverzichtOp;
+  window._toonWeekoverzichtPreview = toonWeekoverzichtPreview;
+  window._sluitWeekoverzichtPreview = sluitWeekoverzichtPreview;
+  window._exporteerWeekpagina = exporteerWeekpagina;
+  window._verwijderUitKolom = verwijderUitKolom;
+  window._updateVolgtijdelijkheid = updateVolgtijdelijkheid;
 
-// ===== CSS VOOR EXPORT =====
-function weekpaginaCSS() {
-  return `<style>
-  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-  :root {
-    --blauw: #2c4a6e; --blauw-donker: #1e3a56;
-    --grijs-licht: #f2f2f2; --wit: #ffffff; --geel: #fffacd;
-    --oranje: #e07b00; --tekst: #222222; --tekst-licht: #555555;
-    --font: 'Lato', sans-serif;
-  }
-  body { font-family: var(--font); font-size: 11pt; color: var(--tekst); background: #fff; }
-  .site-header {
-    background: linear-gradient(135deg, #1e3a56 0%, #2c4a6e 50%, #3a5f8a 100%);
-    color: white; text-align: center; padding: 60px 20px 50px; position: relative;
-  }
-  .site-header h1 { font-size: 48pt; font-weight: 900; letter-spacing: 2px; }
-  .route-sectie { background: #fff; padding: 28px 40px 24px; border-bottom: 1px solid #ddd; }
-  .route-label { font-size: 10pt; color: var(--tekst-licht); margin-bottom: 14px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; }
-  .route-tegels { display: flex; gap: 14px; flex-wrap: wrap; }
-  .route-tegel { padding: 14px 32px; border-radius: 8px; font-size: 15pt; font-weight: 900; cursor: pointer; border: 3px solid transparent; transition: all 0.2s ease; letter-spacing: 1px; opacity: 0.72; }
-  .route-tegel.G { background: #d4edda; color: #1a6b2f; border-color: #a8d5b5; }
-  .route-tegel.B { background: #cce5ff; color: #0d47a1; border-color: #90c4f9; }
-  .route-tegel.Z { background: #f8d7da; color: #8b1a1a; border-color: #f0a8ae; }
-  .route-tegel:hover, .route-tegel.actief { opacity: 1; box-shadow: 0 4px 16px rgba(0,0,0,0.18); transform: translateY(-2px); }
-  .welkom-bericht { padding: 56px 40px; text-align: center; color: var(--tekst-licht); font-size: 13pt; line-height: 1.8; }
-  .welkom-bericht strong { color: var(--blauw); font-size: 15pt; display: block; margin-bottom: 8px; }
-  .inhoudstafel { padding: 16px 40px 20px; background: #fff; border-bottom: 2px solid #eee; }
-  .inhoudstafel-titel { font-size: 10pt; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: var(--tekst-licht); margin-bottom: 8px; }
-  .inhoudstafel a { color: var(--blauw); text-decoration: underline; font-size: 11pt; display: block; margin-bottom: 4px; line-height: 1.6; }
-  .taak-blok { margin: 0; border-top: 4px solid var(--blauw-donker); }
-  .verborgen { display: none !important; }
-  .titelbalk { background: var(--blauw); color: white; padding: 16px 40px; font-size: 19pt; font-weight: 700; scroll-margin-top: 20px; }
-  .sectie { display: flex; align-items: flex-start; gap: 24px; padding: 28px 40px; }
-  .sectie.grijs { background: var(--grijs-licht); }
-  .sectie.wit { background: var(--wit); }
-  .sectie.geel { background: var(--geel); }
-  .sectie-icoon { width: 56px; min-width: 56px; height: 56px; display: flex; align-items: center; justify-content: center; }
-  .sectie-icoon img { width: 56px; height: 56px; object-fit: contain; }
-  .sectie-inhoud { flex: 1; }
-  .sectie-titel { font-size: 15pt; font-weight: 700; color: var(--tekst); margin-bottom: 12px; }
-  ul.doel-lijst { list-style: disc; padding-left: 22px; line-height: 1.7; }
-  ul.doel-lijst li { margin-bottom: 4px; }
-  .instructie-stappen { display: flex; flex-direction: column; gap: 6px; }
-  .instructie-stap { display: flex; align-items: flex-start; line-height: 1.7; }
-  .stap-nr { min-width: 28px; font-size: 11pt; font-weight: 700; flex-shrink: 0; padding-top: 1px; }
-  .stap-tekst { flex: 1; }
-  .sc-subtitel { font-size: 11pt; font-weight: 700; color: var(--oranje); margin: 14px 0 6px; text-decoration: underline; }
-  .sc-subtitel:first-child { margin-top: 0; }
-  .leerplandoel { color: var(--tekst-licht); font-size: 10pt; }
-  .score-tekst { font-size: 9pt; color: var(--tekst-licht); margin-left: 4px; line-height: 1.6; margin-top: 2px; }
-  .bron-tegels { display: flex; flex-wrap: wrap; gap: 14px; margin-top: 6px; }
-  .bron-tegel { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; width: 110px; height: 110px; padding: 12px 8px; background: white; border: 1.5px solid #ccc; border-radius: 10px; text-decoration: none; color: var(--tekst); font-size: 10pt; font-weight: 700; text-align: center; line-height: 1.3; }
-  .bron-icoon { font-size: 28px; }
-  .indienen-rijen { display: flex; flex-direction: column; gap: 18px; margin-top: 4px; }
-  .indienen-rij { display: flex; align-items: flex-start; gap: 16px; }
-  .indienen-rij-icoon { font-size: 28px; min-width: 40px; text-align: center; }
-  .indienen-rij-tekst { font-size: 11pt; line-height: 1.6; }
-  @media (max-width: 600px) {
-    .sectie { padding: 20px 18px; gap: 14px; }
-    .titelbalk { padding: 14px 18px; font-size: 15pt; }
-    .route-sectie, .inhoudstafel { padding: 18px; }
-  }
-</style>`;
-}
+  window._toonScTabblad = (id, knop) => {
+    document.querySelectorAll('#taak-stap-3 .tabblad-inhoud').forEach(t => t.classList.remove('actief'));
+    document.querySelectorAll('#taak-stap-3 .tabblad-knop').forEach(k => k.classList.remove('actief'));
+    document.getElementById('sc-tab-' + id).classList.add('actief');
+    knop.classList.add('actief');
+  };
 
-// ===== JS VOOR EXPORT =====
-function weekpaginaScript() {
-  return `<script>
-  function kiesRoute(route) {
-    document.querySelectorAll('.route-tegel').forEach(t => t.classList.remove('actief'));
-    document.querySelector('.route-tegel.' + route).classList.add('actief');
-    document.getElementById('welkom-bericht').classList.add('verborgen');
-    document.getElementById('inhoudstafel').classList.remove('verborgen');
-    document.querySelectorAll('.taak-blok').forEach(blok => {
-      blok.classList.toggle('verborgen', blok.dataset.routes !== route);
+  document.addEventListener('DOMContentLoaded', () => {
+    initStap0Listeners(); // eenmalig listeners koppelen
+    initAuth({
+      onIngelogd: (gebruiker) => {
+        laadLeerplandoelen();
+        laadHoofdstukken();
+        laadDoelen();
+        laadDropdownData();
+        laadBronnen();
+        laadTemplates();
+        laadTaken();
+      },
+      onUitgelogd: () => {},
+      onSectie: (naam) => {
+        if (naam === 'weekoverzicht') {
+          // Vul weekdropdown op basis van geselecteerd schooljaar
+          const sj = document.getElementById('wo-schooljaar')?.value;
+          if (sj) window._vulWoWeekDropdown(sj);
+        }
+      }
     });
-    document.querySelectorAll('.inhoudslink').forEach(link => {
-      link.style.display = link.dataset.routes === route ? 'block' : 'none';
-    });
-  }
-<\/script>`;
-}
+  });
+</script>
+
+</body>
+</html>
