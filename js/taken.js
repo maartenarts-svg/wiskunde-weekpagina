@@ -317,8 +317,20 @@ function verzamelStapData(nr) {
     huidigeTaak.templateInhoud = templateData?.inhoud || '';
   }
   if (nr === 5) {
-    huidigeTaak.bronnen = geselecteerdeBronnen.map(b => b.id);
-    huidigeTaak.bronnenData = geselecteerdeBronnen;
+    // Standaardbronnen ophalen uit aangevinkte checkboxes
+    const standaard = [];
+    document.querySelectorAll('.standaard-bron-check:checked').forEach(cb => {
+      standaard.push({
+        id: 'std-' + cb.dataset.label.replace(/\s/g, '-'),
+        label: cb.dataset.label,
+        type: cb.dataset.type || 'bestand',
+        link: cb.dataset.link || '',
+        icoon: cb.dataset.icoon || '📄',
+        standaard: true,
+      });
+    });
+    huidigeTaak.bronnenData = [...standaard, ...geselecteerdeBronnen];
+    huidigeTaak.bronnen = huidigeTaak.bronnenData; // bewaar volledige objecten
   }
   if (nr === 6) {
     huidigeTaak.indienwijze = {
@@ -1094,14 +1106,9 @@ export async function slaaNieuwBronOp() {
 // ===== VOLTOOIEN & PREVIEW =====
 export async function voltooiTaak() {
   if (!valideerStap(6)) return;
+  // Verzamel stap 5 (bronnen) en 6 (indienen) met actuele DOM-staat
+  verzamelStapData(5);
   verzamelStapData(6);
-
-  // Standaardbronnen samenvoegen
-  const standaard = [];
-  document.querySelectorAll('.standaard-bron-check:checked').forEach(cb => {
-    standaard.push({ id: 'std-' + cb.dataset.label, label: cb.dataset.label, type: cb.dataset.type, link: cb.dataset.link, icoon: cb.dataset.icoon, standaard: true });
-  });
-  huidigeTaak.bronnenData = [...standaard, ...geselecteerdeBronnen];
 
   // Preview tonen
   const previewEl = document.getElementById('taak-preview-inhoud');
@@ -1128,10 +1135,18 @@ export async function slaaTaakOp() {
   const nu = new Date().toISOString();
   const isKopie = huidigeTaak.startKeuze === 'kopie';
 
+  // Bewaar bronnenData die al correct is (van voltooiTaak of stap 5)
+  const bewaardeBronnen = huidigeTaak.bronnenData ? [...huidigeTaak.bronnenData] : null;
+
   // Zorg dat alle stap-data verzameld is (ook als gebruiker niet alle stappen doorlopen heeft)
   [1,2,3,4,5,6].forEach(nr => {
     try { verzamelStapData(nr); } catch(e) { /* stap mogelijk niet geïnitialiseerd */ }
   });
+
+  // Herstel bronnenData als die al correct was (checkboxes zijn weg in preview)
+  if (bewaardeBronnen && bewaardeBronnen.length > 0) {
+    huidigeTaak.bronnenData = bewaardeBronnen;
+  }
 
   const data = {
     code: huidigeTaak.code || '',
@@ -1164,6 +1179,7 @@ export async function slaaTaakOp() {
       label: b.label || '',
       type: b.type || 'andere',
       link: b.link || '',
+      icoon: b.icoon || '',
       standaard: b.standaard || false,
     })),
     indienwijze: huidigeTaak.indienwijze || {},
