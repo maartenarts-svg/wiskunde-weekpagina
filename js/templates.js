@@ -127,7 +127,7 @@ export function parseMarkdown(tekst) {
 
   // ===== PREVIEW =====
 
-export function updatePreview = () => {
+export function updatePreview() {
     const ta = document.getElementById('tmpl-inhoud');
     const tekst = ta.value;
     document.getElementById('tmpl-preview').innerHTML = parseMarkdown(tekst);
@@ -138,7 +138,7 @@ export function updatePreview = () => {
 
   // ===== PARAMETERS DETECTEREN =====
 
-export function detecteerParameters = () => {
+export function detecteerParameters() {
     const inhoud = document.getElementById('tmpl-inhoud').value;
     const gevonden = [...new Set([...inhoud.matchAll(/\{(\w+)\}/g)].map(m => m[1]))];
     const container = document.getElementById('param-container');
@@ -168,7 +168,7 @@ export function detecteerParameters = () => {
 
   // ===== SYNTAXHULP =====
 
-export function toggleSyntax = () => {
+export function toggleSyntax() {
     const kolom = document.getElementById('syntax-kolom');
     const wrapper = document.getElementById('editor-wrapper');
     const zichtbaar = kolom.style.display !== 'none';
@@ -177,7 +177,7 @@ export function toggleSyntax = () => {
     actievEditor = document.getElementById('tmpl-inhoud');
   };
 
-export function voegSyntaxIn = (syntax) => {
+export function voegSyntaxIn(syntax) {
     const ta = actievEditor || document.getElementById('tmpl-inhoud');
     const start = ta.selectionStart;
     const einde = ta.selectionEnd;
@@ -191,7 +191,7 @@ export function voegSyntaxIn = (syntax) => {
 
   // ===== OPSLAAN =====
 
-export async function slaTemplateOp = async () => {
+export async function slaTemplateOp() {
     const naam = document.getElementById('tmpl-naam').value.trim();
     const inhoud = document.getElementById('tmpl-inhoud').value.trim();
     if (!naam) { toonMelding('templates', 'Vul een naam in.', 'fout'); return; }
@@ -245,7 +245,7 @@ window.annuleerTemplate = resetTemplateFormulier;
 
   // ===== LADEN =====
 
-export async function laadTemplates = async () => {
+export async function laadTemplates() {
     document.getElementById('templates-lader').style.display = 'block';
     document.getElementById('templates-tabel').style.display = 'none';
     document.getElementById('templates-leeg').style.display = 'none';
@@ -289,7 +289,7 @@ export async function laadTemplates = async () => {
 
   // ===== BEWERKEN =====
 
-export async function bewerkTemplate = async (id) => {
+export async function bewerkTemplate(id) {
     try {
       const snap = await getDoc(doc(db, 'templates', id));
       if (!snap.exists()) return;
@@ -320,7 +320,7 @@ export async function bewerkTemplate = async (id) => {
 
   // ===== VERWIJDEREN =====
 
-export async function verwijderTemplate = async (id) => {
+export async function verwijderTemplate(id) {
     if (!confirm('Ben je zeker dat je deze template wil verwijderen?')) return;
     try {
       await deleteDoc(doc(db, 'templates', id));
@@ -331,6 +331,3 @@ export async function verwijderTemplate = async (id) => {
       toonMelding('templates', 'Fout bij verwijderen: ' + e.message, 'fout');
     }
   };
-
-
-
