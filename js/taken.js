@@ -400,7 +400,7 @@ function initStap1() {
   vulLesweekDropdown(sj);
 }
 
-function vulLesweekDropdown(schooljaar) {
+export function vulLesweekDropdown(schooljaar) {
   const sel = document.getElementById('taak-lesweek');
   if (!sel) return;
   const huidig = sel.value;
