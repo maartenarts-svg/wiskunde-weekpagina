@@ -7,7 +7,7 @@ import { vulDatalijsten, cacheDoelen } from './doelen.js';
 import { cacheBronnen } from './bronnen.js';
 import { cache as cacheHoofdstukken } from './leerplandoelen.js';
 
-  // ===== TAKEN =====
+  // ===== TAKEN ====
 
   let bewerkTaakId = null;
   let taakRefTeller = 0;
