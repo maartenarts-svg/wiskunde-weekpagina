@@ -332,45 +332,17 @@ function verzamelStapData(nr) {
 }
 
 // ===== STAP 0: START =====
+// HTML staat vast in beheer.html — reset alleen staat en koppel listeners eenmalig
 function renderStap0() {
-  const el = document.getElementById('taak-stap-0');
-  // Reset alle stap-displays expliciet zodat vorige sessie geen invloed heeft
-  const formulier = document.getElementById('taak-formulier');
-  if (formulier) {
-    formulier.querySelectorAll('.taak-stap').forEach((s, i) => {
-      s.style.display = i === 0 ? 'block' : 'none';
-    });
-  }
-  el.innerHTML = `
-    <h3 style="margin-bottom:20px;color:var(--blauw);">Wat wil je doen?</h3>
-    <div style="display:flex;flex-direction:column;gap:14px;max-width:480px;">
-      <label class="start-keuze-optie">
-        <input type="radio" name="taak-start-keuze" value="nieuw">
-        <div class="start-keuze-inhoud">
-          <div class="start-keuze-titel">✨ Nieuwe taak aanmaken</div>
-          <div class="start-keuze-omschrijving">Start van nul met een nieuwe taak of les.</div>
-        </div>
-      </label>
-      <label class="start-keuze-optie">
-        <input type="radio" name="taak-start-keuze" value="aanpassen">
-        <div class="start-keuze-inhoud">
-          <div class="start-keuze-titel">✏️ Bestaande taak aanpassen</div>
-          <div class="start-keuze-omschrijving">Pas een bestaande taak aan en sla op om de wijzigingen te bewaren.</div>
-        </div>
-      </label>
-      <label class="start-keuze-optie">
-        <input type="radio" name="taak-start-keuze" value="kopie">
-        <div class="start-keuze-inhoud">
-          <div class="start-keuze-titel">📋 Bestaande taak kopiëren</div>
-          <div class="start-keuze-omschrijving">Gebruik een bestaande taak als basis voor een nieuwe taak.</div>
-        </div>
-      </label>
-    </div>
-    <div id="bestaande-taak-keuze" style="display:none;margin-top:20px;"></div>
-  `;
+  // Deselecteer radio's
+  document.querySelectorAll('input[name="taak-start-keuze"]').forEach(r => r.checked = false);
+  // Verberg bestaande takenlijst
+  const blok = document.getElementById('bestaande-taak-keuze');
+  if (blok) { blok.style.display = 'none'; blok.innerHTML = ''; }
+}
 
-  // Radio change → toon/verberg taaklijst
-  el.querySelectorAll('input[name="taak-start-keuze"]').forEach(radio => {
+export function initStap0Listeners() {
+  document.querySelectorAll('input[name="taak-start-keuze"]').forEach(radio => {
     radio.addEventListener('change', async () => {
       const blok = document.getElementById('bestaande-taak-keuze');
       if (radio.value === 'aanpassen' || radio.value === 'kopie') {
@@ -378,14 +350,13 @@ function renderStap0() {
         await laadBestaandeTaken();
       } else {
         blok.style.display = 'none';
+        blok.innerHTML = '';
         bewerkId = null;
         isBewerkModus = false;
-        // Geen resetTaakState hier — dat wist huidigeTaak te vroeg
       }
     });
   });
 }
-
 let alleBestaandeTaken = [];
 
 async function laadBestaandeTaken() {
