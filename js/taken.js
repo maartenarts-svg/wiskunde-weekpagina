@@ -38,7 +38,7 @@ export function vulWeekDropdowns() {
   }
 
   // Tabbladen
-  export function toonTabblad(id, knop) {
+export function toonTabblad(id, knop) {
     document.querySelectorAll('.tabblad-inhoud').forEach(t => t.classList.remove('actief'));
     document.querySelectorAll('.tabblad-knop').forEach(k => k.classList.remove('actief'));
     document.getElementById(id).classList.add('actief');
@@ -51,7 +51,7 @@ export function vulWeekDropdowns() {
   };
 
   // Taak referenties
-  export function voegTaakRefToe(waarde = '') {
+export function voegTaakRefToe(waarde = '') {
     const container = document.getElementById('taak-ref-container');
     document.getElementById('geen-taak-refs').style.display = 'none';
     taakRefTeller++;
@@ -72,7 +72,7 @@ export function vulWeekDropdowns() {
     container.appendChild(div);
   };
 
-  export function verwijderTaakRef(id) {
+export function verwijderTaakRef(id) {
     document.getElementById(id).remove();
     if (!document.querySelectorAll('.taak-ref-waarde').length)
       document.getElementById('geen-taak-refs').style.display = 'block';
@@ -83,14 +83,14 @@ export function vulWeekDropdowns() {
   }
 
   // Indienen toggle
-  export function toggleIndienenExtra(id) {
+export function toggleIndienenExtra(id) {
     const el = document.getElementById(id);
     const checkbox = document.getElementById(id.replace('-extra', ''));
     el.classList.toggle('zichtbaar', checkbox.checked);
   };
 
   // Evaluatievorm extra
-  export function voegEvalToe() {
+export function voegEvalToe() {
     const input = document.getElementById('eval-extra');
     const waarde = input.value.trim();
     if (!waarde) return;
@@ -105,26 +105,26 @@ export function vulWeekDropdowns() {
     ).join('');
   }
 
-  export function verwijderEval(i) {
+export function verwijderEval(i) {
     extraEvalForms.splice(i, 1);
     renderEvalExtra();
   };
 
   // Instructie type toggle
-  export function toggleInstructieType() {
+export function toggleInstructieType() {
     const isTemplate = document.getElementById('instr-template').checked;
     document.getElementById('instr-template-blok').style.display = isTemplate ? 'block' : 'none';
     document.getElementById('instr-vrij-blok').style.display = isTemplate ? 'none' : 'block';
   };
 
-  export function updatePreviewTaak() {
+export function updatePreviewTaak() {
     const ta = document.getElementById('taak-instructies-vrij');
     document.getElementById('taak-instructies-preview').innerHTML = parseMarkdown(ta.value);
     ta.style.height = 'auto';
     ta.style.height = Math.max(320, ta.scrollHeight) + 'px';
   };
 
-  export function detecteerParametersTaak() {
+export function detecteerParametersTaak() {
     const inhoud = document.getElementById('taak-instructies-vrij').value;
     const gevonden = [...new Set([...inhoud.matchAll(/\{(\w+)\}/g)].map(m => m[1]))];
     const container = document.getElementById('param-container-taak');
@@ -141,12 +141,12 @@ export function vulWeekDropdowns() {
     `).join('');
   };
 
-  export function toggleSyntaxTaak() {
+export function toggleSyntaxTaak() {
     actievEditor = document.getElementById('taak-instructies-vrij');
     toggleSyntax();
   };
 
-  export async function slaInstructiesAlsTemplateOp() {
+export async function slaInstructiesAlsTemplateOp() {
     const inhoud = document.getElementById('taak-instructies-vrij').value.trim();
     if (!inhoud) { alert('Geen instructies om op te slaan.'); return; }
     const naam = prompt('Naam voor de template:');
@@ -176,7 +176,7 @@ export function vulWeekDropdowns() {
       alleTemplatesCache.map(t => `<option value="${t.id}" ${t.id === huidig ? 'selected' : ''}>${t.naam}</option>`).join('');
   }
 
-  export function laadTemplateParams() {
+export function laadTemplateParams() {
     const id = document.getElementById('taak-template-id').value;
     const blok = document.getElementById('template-params-blok');
     const lijst = document.getElementById('template-params-lijst');
@@ -213,7 +213,7 @@ export function vulWeekDropdowns() {
     filterDoelKeuzes('sc');
   }
 
-  export function filterDoelKeuzes(soort) {
+export function filterDoelKeuzes(soort) {
     if (!alleDoelen) return;
     const zoek = document.getElementById(`zoek-${soort}`)?.value.toLowerCase() || '';
     const lp = document.getElementById(`filter-${soort}-leerplan`)?.value || '';
@@ -242,7 +242,7 @@ export function vulWeekDropdowns() {
     `).join('');
   };
 
-  export function toggleDoel(soort, id) {
+export function toggleDoel(soort, id) {
     const geselecteerd = soort === 'vk' ? geselecteerdeVK : geselecteerdeSC;
     const doel = alleDoelen.find(d => d.id === id);
     if (!doel) return;
@@ -262,7 +262,7 @@ export function vulWeekDropdowns() {
     filterBronKeuzes();
   }
 
-  export function filterBronKeuzes() {
+export function filterBronKeuzes() {
     if (!alleBronnenCache) return;
     const zoek = document.getElementById('zoek-bron')?.value.toLowerCase() || '';
     const type = document.getElementById('filter-bron-keuze-type')?.value || '';
@@ -286,7 +286,7 @@ export function vulWeekDropdowns() {
     `).join('');
   };
 
-  export function toggleBron(id) {
+export function toggleBron(id) {
     const bron = alleBronnenCache.find(b => b.id === id);
     if (!bron) return;
     if (geselecteerdeBronnen[id]) delete geselecteerdeBronnen[id];
@@ -316,7 +316,7 @@ export function vulWeekDropdowns() {
 
   // ===== NIEUWE TAAK / BEWERKEN =====
 
-  export function nieuweTaak() {
+export function nieuweTaak() {
     bewerkTaakId = null;
     resetTaakFormulier();
     document.getElementById('taak-formulier').style.display = 'block';
@@ -370,14 +370,14 @@ export function vulWeekDropdowns() {
     bewerkTaakId = null;
   }
 
-  export function annuleerTaak() {
+export function annuleerTaak() {
     document.getElementById('taak-formulier').style.display = 'none';
     resetTaakFormulier();
   };
 
   // ===== OPSLAAN =====
 
-  export async function slaaTaakOp(nieuweVersie = false) {
+export async function slaaTaakOp(nieuweVersie = false) {
     const verplicht = { 'taak-code': 'Code', 'taak-titel': 'Titel', 'taak-tijd': 'Tijd', 'taak-klas': 'Klas', 'taak-lesweek': 'Lesweek' };
     for (const [id, naam] of Object.entries(verplicht)) {
       if (!document.getElementById(id).value.trim()) {
@@ -500,7 +500,7 @@ export async function laadTaken() {
 
   // ===== BEWERKEN =====
 
-  export async function bewerkTaak(id) {
+export async function bewerkTaak(id) {
     try {
       const snap = await getDoc(doc(db, 'taken', id));
       if (!snap.exists()) return;
@@ -597,7 +597,7 @@ export async function laadTaken() {
 
   // ===== KOPIËREN =====
 
-  export async function kopieerTaak(id) {
+export async function kopieerTaak(id) {
     await bewerkTaak(id);
     bewerkTaakId = null;
     document.getElementById('taak-code').value = '';
@@ -607,7 +607,7 @@ export async function laadTaken() {
 
   // ===== VERWIJDEREN =====
 
-  export async function verwijderTaak(id) {
+export async function verwijderTaak(id) {
     const taak = cacheTaken.alle?.find(t => t.id === id);
     if (!confirm(`Ben je zeker dat je taak "${taak?.titel || id}" wil verwijderen?`)) return;
     try {
@@ -622,7 +622,7 @@ export async function laadTaken() {
 
   // ===== PREVIEW TAAK =====
 
-  export async function previewTaak() {
+export async function previewTaak() {
     toonMelding('taken', 'Preview komt binnenkort beschikbaar bij de weekpagina export.', 'succes');
   };
 
@@ -673,10 +673,10 @@ export async function laadWeekOverzicht() {
 
   // Slepen
   let sleepElement = null;
-  export function sleepStart(e) { sleepElement = e.currentTarget; e.currentTarget.classList.add('sleep'); };
-  export function sleepOver(e) { e.preventDefault(); e.currentTarget.classList.add('sleep-over'); };
-  export function sleepLeave(e) { e.currentTarget.classList.remove('sleep-over'); };
-  export function sleepDrop(e) {
+export function sleepStart(e) { sleepElement = e.currentTarget; e.currentTarget.classList.add('sleep'); };
+export function sleepOver(e) { e.preventDefault(); e.currentTarget.classList.add('sleep-over'); };
+export function sleepLeave(e) { e.currentTarget.classList.remove('sleep-over'); };
+export function sleepDrop(e) {
     e.preventDefault();
     const doel = e.currentTarget;
     doel.classList.remove('sleep-over');
@@ -696,7 +696,7 @@ export async function laadWeekOverzicht() {
     });
   };
 
-  export function updateVolgorde(id, waarde) {
+export function updateVolgorde(id, waarde) {
     // Herorden kaarten op basis van ingevoerd getal
     const container = document.getElementById('week-kaarten-container');
     const kaarten = [...container.querySelectorAll('.taak-kaart')];
@@ -709,7 +709,7 @@ export async function laadWeekOverzicht() {
     }
   };
 
-  export async function slaVolgordeOp() {
+export async function slaVolgordeOp() {
     const kaarten = [...document.getElementById('week-kaarten-container').querySelectorAll('.taak-kaart')];
     try {
       for (let i = 0; i < kaarten.length; i++) {
@@ -723,18 +723,18 @@ export async function laadWeekOverzicht() {
     }
   };
 
-  export function exporteerWeekpagina() {
+export function exporteerWeekpagina() {
     toonMelding('weekoverzicht', 'Export komt binnenkort beschikbaar.', 'succes');
   };
 
-  export function previewWeekpagina() {
+export function previewWeekpagina() {
     toonMelding('weekoverzicht', 'Preview komt binnenkort beschikbaar.', 'succes');
   };
 
 
 
   // ===== TAAK TYPE (les/taak) =====
-  export function toggleTaakType() {
+export function toggleTaakType() {
     const type = document.getElementById('taak-type').value;
     const tijdVeld = document.getElementById('taak-tijd');
     if (type === 'les') {
@@ -756,18 +756,18 @@ export async function laadWeekOverzicht() {
   }
 
   // ===== INLINE NIEUW DOEL FORMULIER =====
-  export function toggleNieuwDoelFormulier(soort) {
+export function toggleNieuwDoelFormulier(soort) {
     const formulier = document.getElementById(`nieuw-doel-formulier-${soort}`);
     formulier.style.display = formulier.style.display === 'none' ? 'block' : 'none';
     if (formulier.style.display === 'block') vulDatalijsten();
   };
 
-  export function toggleNieuwScScores() {
+export function toggleNieuwScScores() {
     const eval_ = document.getElementById('nieuw-sc-eval').value;
     document.getElementById('nieuw-sc-scores-blok').style.display = eval_ === 'ja' ? 'block' : 'none';
   };
 
-  export async function slaaNieuwDoelOp(soort) {
+export async function slaaNieuwDoelOp(soort) {
     const tekst = document.getElementById(`nieuw-${soort}-tekst`).value.trim();
     if (!tekst) { alert('Vul de tekst in.'); return; }
     const leerplan = document.getElementById(`nieuw-${soort}-leerplan`).value.trim();
@@ -874,7 +874,7 @@ export async function laadWeekOverzicht() {
     });
   }
 
-  export function updateScIndeling(id, waarde) {
+export function updateScIndeling(id, waarde) {
     if (geselecteerdeSC[id]) geselecteerdeSC[id].scIndeling = waarde;
   };
 
@@ -922,7 +922,7 @@ export async function laadWeekOverzicht() {
 
   // Overschrijf voegTaakRefToe om automatische bronnen te triggeren
   const origVoegTaakRefToe = window.voegTaakRefToe;
-  export function voegTaakRefToe(waarde = '') {
+export function voegTaakRefToe(waarde = '') {
     origVoegTaakRefToe(waarde);
     if (waarde) {
       // Kleine vertraging zodat het formulier geladen is
