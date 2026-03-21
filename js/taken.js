@@ -1301,6 +1301,15 @@ function vulFormulierStap1(data, isKopie) {
   }, 100);
 }
 
+// ===== ANNULEER =====
+export function annuleerTaak() {
+  const formulier = document.getElementById('taak-formulier');
+  const preview = document.getElementById('taak-preview-wrapper');
+  if (formulier) formulier.style.display = 'none';
+  if (preview) preview.style.display = 'none';
+  resetTaakState();
+}
+
 // ===== RESET =====
 function resetTaakState() {
   huidigeTaak = {};
