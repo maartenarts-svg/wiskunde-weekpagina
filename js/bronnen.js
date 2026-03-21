@@ -28,7 +28,7 @@ export let cacheBronnen = { alle: null };
     bewerkBronId = null;
   }
 
-window.annuleerBron = resetBronFormulier;
+export const annuleerBron = resetBronFormulier;
 
 export async function slaBronOp() {
     const label = document.getElementById('bron-label').value.trim();
