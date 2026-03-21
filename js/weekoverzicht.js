@@ -515,8 +515,12 @@ function renderWeekpaginaHTML(actueleKolommen, weekNr, isExport) {
     const typeIconen = { website: '🌐', video: '▶️', classroom: '🎓', bestand: '📄', andere: '📎' };
     const bronIcoonen = { cursus: '📄', theorie: '📖', correctiesleutel: '✅' };
     let bronnenHtml = '';
+    console.log('Volledige taak', taak.code, ':', JSON.stringify({
+      bronnen: taak.bronnen,
+      bronnenData: taak.bronnenData,
+      keys: Object.keys(taak).filter(k => k.toLowerCase().includes('bron'))
+    }));
     const bronnen = taak.bronnen || [];
-    console.log('Bronnen voor taak', taak.code, ':', bronnen);
     if (bronnen.length) {
       const tegels = bronnen.map(b => {
         // icoon: expliciet opgeslagen > type-mapping > standaard
