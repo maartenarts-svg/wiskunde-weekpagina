@@ -711,7 +711,7 @@ export async function slaaNieuwDoelOp(prefix, typeFilter) {
     if (document.getElementById(`${prefix}-nieuw-scores`)) document.getElementById(`${prefix}-nieuw-scores`).value = '';
     if (document.getElementById(`${prefix}-nieuw-scores-blok`)) document.getElementById(`${prefix}-nieuw-scores-blok`).style.display = 'none';
     document.getElementById(`${prefix}-nieuw-formulier`).style.display = 'none';
-  } catch (e) { alert('Fout bij opslaan: ' + e.message); }
+  } catch (e) { toonMelding('taken', 'Fout bij opslaan doel: ' + e.message, 'fout'); console.error(e); }
 }
 
 // ===== STAP 4: INSTRUCTIE =====
@@ -745,24 +745,31 @@ export function kiesTemplate(id) {
   templates.then(lijst => {
     const t = lijst.find(x => x.id === id);
     if (!t) return;
-    templateData = { id: t.id, naam: t.naam, inhoud: t.inhoud, parameters: { ...t.parameters } };
+    // Bepaal paramVolgorde op basis van volgorde in inhoud
+    const volgorde = [];
+    const gezien = new Set();
+    for (const m of (t.inhoud || '').matchAll(/\{(\w+)\}/g)) {
+      if (!gezien.has(m[1])) { gezien.add(m[1]); volgorde.push(m[1]); }
+    }
+    templateData = { id: t.id, naam: t.naam, inhoud: t.inhoud, parameters: { ...t.parameters }, paramVolgorde: volgorde };
     document.getElementById('taak-instructies-inhoud').value = t.inhoud;
     updatePreviewTaak();
-    renderTemplateParams(t.parameters || {});
+    renderTemplateParams(t.parameters || {}, volgorde);
     toonMelding('taken', `Template "${t.naam}" geladen.`, 'succes');
   });
 }
 
-function renderTemplateParams(params) {
+function renderTemplateParams(params, volgorde) {
   const container = document.getElementById('taak-template-params');
   const blok = document.getElementById('taak-template-params-blok');
-  if (!Object.keys(params).length) { blok.style.display = 'none'; return; }
+  const sleutels = volgorde || Object.keys(params);
+  if (!sleutels.length) { blok.style.display = 'none'; return; }
   blok.style.display = 'block';
-  container.innerHTML = Object.entries(params).map(([naam, std]) => `
+  container.innerHTML = sleutels.map(naam => `
     <div class="param-rij">
       <div class="param-naam">{${naam}}</div>
       <input type="text" class="param-input taak-param" data-param="${naam}"
-        value="${std}" placeholder="Waarde voor ${naam}..."
+        value="${params[naam] || ''}" placeholder="Waarde voor ${naam}..."
         oninput="window._updatePreviewTaak()">
     </div>
   `).join('');
@@ -794,12 +801,21 @@ export function updatePreviewTaak() {
 
 export function detecteerParametersTaak() {
   const inhoud = document.getElementById('taak-instructies-inhoud')?.value || '';
-  const gevonden = [...new Set([...inhoud.matchAll(/\{(\w+)\}/g)].map(m => m[1]))];
+  // Volgorde van eerste voorkomen bewaren
+  const gezien = new Set();
+  const gevonden = [];
+  for (const m of inhoud.matchAll(/\{(\w+)\}/g)) {
+    if (!gezien.has(m[1])) { gezien.add(m[1]); gevonden.push(m[1]); }
+  }
   const huidige = templateData?.parameters || {};
+  // Sla op als geordende array + object
   const nieuw = {};
   gevonden.forEach(p => { nieuw[p] = huidige[p] || ''; });
-  if (templateData) templateData.parameters = nieuw;
-  renderTemplateParams(nieuw);
+  if (templateData) {
+    templateData.parameters = nieuw;
+    templateData.paramVolgorde = gevonden;
+  }
+  renderTemplateParams(nieuw, gevonden);
   updatePreviewTaak();
 }
 
@@ -925,6 +941,42 @@ export function filterBronnen() {
   renderBronLijst();
 }
 
+export function toggleNieuwBronFormulier() {
+  const f = document.getElementById('stap5-nieuw-bron-formulier');
+  if (f) f.style.display = f.style.display === 'none' ? 'block' : 'none';
+}
+
+export async function slaaNieuwBronOp() {
+  const label = document.getElementById('stap5-nieuw-bron-label')?.value.trim();
+  if (!label) { toonMelding('taken', 'Vul een label in voor de nieuwe bron.', 'fout'); return; }
+  const data = {
+    label,
+    type: document.getElementById('stap5-nieuw-bron-type')?.value || 'andere',
+    link: document.getElementById('stap5-nieuw-bron-link')?.value.trim() || '',
+    referentie: document.getElementById('stap5-nieuw-bron-ref')?.value.trim() || '',
+    notities: '',
+    aangepastOp: new Date().toISOString(),
+  };
+  try {
+    const docRef = doc(collection(db, 'bronnen'));
+    await setDoc(docRef, data);
+    const nieuw = { id: docRef.id, ...data };
+    if (alleBronnen) alleBronnen.push(nieuw);
+    geselecteerdeBronnen.push(nieuw);
+    renderGekozenBronnen();
+    renderBronLijst();
+    // Reset formulier
+    document.getElementById('stap5-nieuw-bron-label').value = '';
+    document.getElementById('stap5-nieuw-bron-link').value = '';
+    if (document.getElementById('stap5-nieuw-bron-ref')) document.getElementById('stap5-nieuw-bron-ref').value = '';
+    document.getElementById('stap5-nieuw-bron-formulier').style.display = 'none';
+    toonMelding('taken', `Bron "${label}" aangemaakt en toegevoegd.`, 'succes');
+  } catch (e) {
+    toonMelding('taken', 'Fout bij aanmaken bron: ' + e.message, 'fout');
+    console.error(e);
+  }
+}
+
 // ===== VOLTOOIEN & PREVIEW =====
 export async function voltooiTaak() {
   if (!valideerStap(6)) return;
@@ -1001,13 +1053,15 @@ export async function slaaTaakOp() {
     } else {
       await setDoc(doc(collection(db, 'taken')), data);
     }
-    toonMelding('taken', `Taak "${data.code}" opgeslagen.`, 'succes');
     document.getElementById('taak-preview-wrapper').style.display = 'none';
     document.getElementById('taak-formulier').style.display = 'none';
     resetTaakState();
     laadTaken();
+    // Toon melding nadat DOM herschikt is
+    setTimeout(() => toonMelding('taken', `Taak "${data.code}" opgeslagen.`, 'succes'), 100);
   } catch (e) {
-    toonMelding('taken', 'Fout bij opslaan: ' + e.message, 'fout');
+    console.error('Fout bij opslaan taak:', e);
+    alert('Fout bij opslaan: ' + e.message);
   }
 }
 
