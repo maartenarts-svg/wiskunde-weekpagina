@@ -89,6 +89,7 @@ import {
   collection, doc, setDoc, getDocs, writeBatch
 } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
 import { toonMelding } from './ui.js';
+import { haalCache, wisCache } from './appCache.js';
 import { parseMarkdown } from './templates.js';
 
 // ===== STATE =====
@@ -119,8 +120,7 @@ export async function laadWeekoverzicht() {
   document.getElementById('wo-acties').style.display = 'none';
 
   try {
-    const snap = await getDocs(collection(db, 'taken'));
-    const alleTaken = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    const alleTaken = await haalCache('taken', db);
     console.log('Alle taken geladen:', alleTaken.length);
     console.log('Filter: schooljaar=', sj, 'week=', weekGetal);
     alleTaken.forEach(t => console.log(' taak:', t.code, 'sj:', t.schooljaar, 'lesweek:', t.lesweek, '(type:', typeof t.lesweek, ')'));
@@ -134,10 +134,10 @@ export async function laadWeekoverzicht() {
       .sort((a, b) => (a.volgorde || 999) - (b.volgorde || 999));
     console.log('Gefilterde taken:', alleTakenVanWeek.length, alleTakenVanWeek.map(t => t.code));
 
-    // Haal alle doelen op voor verrijking
-    const doelenSnap = await getDocs(collection(db, 'doelen'));
+    // Haal alle doelen op voor verrijking (via cache)
+    const doelenLijst = await haalCache('doelen', db);
     const alleDoelen = {};
-    doelenSnap.docs.forEach(d => { alleDoelen[d.id] = { id: d.id, ...d.data() }; });
+    doelenLijst.forEach(d => { alleDoelen[d.id] = d; });
 
     // Verrijk taken met doeldata (voorkennisData, scData)
     alleTakenVanWeek = alleTakenVanWeek.map(taak => {
@@ -323,6 +323,7 @@ export async function slaWeekoverzichtOp() {
       });
     });
     await batch.commit();
+    wisCache('taken');
     toonMelding('weekoverzicht', 'Volgorde en volgtijdelijkheid opgeslagen.', 'succes');
   } catch (e) {
     toonMelding('weekoverzicht', 'Fout bij opslaan: ' + e.message, 'fout');
