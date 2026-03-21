@@ -67,7 +67,111 @@
       <!-- LEERPLANDOELEN -->
       <div class="sectie actief" id="sectie-leerplandoelen">
         <div class="pagina-titel">Leerplandoelen</div>
-        <div class="pagina-ondertitel">Wordt geladen...</div>
+        <div class="pagina-ondertitel">Beheer de leerplandoelen van het leerplan.</div>
+
+        <div id="melding-leerplandoelen" class="melding"></div>
+
+        <!-- Formulier -->
+        <div class="kaart">
+          <div class="kaart-titel">
+            <span id="formulier-lp-titel">Nieuw leerplandoel toevoegen</span>
+            <button class="knop knop-secundair knop-klein" id="annuleer-lp" style="display:none" onclick="window._annuleerLeerplandoel()">Annuleren</button>
+          </div>
+
+          <div class="formulier-rij">
+            <div class="formulier-groep">
+              <label>Niveau</label>
+              <select id="lp-niveau" onchange="window._berekeningCode()">
+                <option value="basis">Basis</option>
+                <option value="verdieping">Verdieping</option>
+                <option value="basisgeletterdheid">Basisgeletterdheid</option>
+              </select>
+            </div>
+            <div class="formulier-groep">
+              <label>Nummer</label>
+              <input type="text" id="lp-nummer" placeholder="bv. 6.1" oninput="window._berekeningCode()">
+            </div>
+            <div class="formulier-groep">
+              <label>Code (automatisch)</label>
+              <input type="text" id="lp-code" readonly style="background:#f4f5f7;">
+            </div>
+          </div>
+
+          <div class="formulier-rij">
+            <div class="formulier-groep vol">
+              <label>Leerplandoel</label>
+              <textarea id="lp-doel" placeholder="Omschrijving van het leerplandoel..."></textarea>
+            </div>
+          </div>
+
+          <div class="formulier-rij">
+            <div class="formulier-groep">
+              <label>Beheersingsniveau</label>
+              <input type="text" id="lp-beheersingsniveau" placeholder="Beheersingsniveau...">
+            </div>
+            <div class="formulier-groep">
+              <label>Afbakening</label>
+              <input type="text" id="lp-afbakening" placeholder="Minimale inhoudelijke afbakening...">
+            </div>
+          </div>
+
+          <!-- Subdoelen -->
+          <div style="margin-top:12px;">
+            <label>Subdoelen</label>
+            <div class="subdoel-blok" id="subdoel-container" style="margin-top:8px;">
+              <div id="geen-subdoelen" style="font-size:9.5pt;color:var(--tekst-licht);">Nog geen subdoelen.</div>
+            </div>
+            <button class="knop knop-secundair knop-klein" style="margin-top:8px;" onclick="window._voegSubdoelToe()">+ Subdoel toevoegen</button>
+          </div>
+
+          <!-- CSV Import -->
+          <div style="margin-top:20px;padding-top:16px;border-top:1px solid var(--grijs-rand);">
+            <label style="display:block;margin-bottom:8px;">CSV Importeren</label>
+            <input type="file" accept=".csv" onchange="window._importeerCSV(event)" style="font-size:10pt;">
+            <div id="import-voortgang" style="display:none;margin-top:12px;">
+              <div id="import-tekst" style="font-size:9.5pt;color:var(--tekst-licht);margin-bottom:6px;"></div>
+              <div style="background:var(--grijs-rand);border-radius:4px;height:8px;overflow:hidden;">
+                <div id="import-balk" style="background:var(--blauw);height:100%;width:0%;transition:width 0.3s;"></div>
+              </div>
+            </div>
+          </div>
+
+          <div style="margin-top:20px;">
+            <button class="knop knop-primair" onclick="window._slaLeerplandoelOp()">💾 Opslaan</button>
+          </div>
+        </div>
+
+        <!-- Overzicht -->
+        <div class="kaart">
+          <div class="kaart-titel">
+            <span>Overzicht leerplandoelen</span>
+            <select id="filter-lp-niveau" onchange="window._laadLeerplandoelen()" style="font-size:9.5pt;padding:5px 10px;">
+              <option value="">Alle niveaus</option>
+              <option value="basis">Basis</option>
+              <option value="verdieping">Verdieping</option>
+              <option value="basisgeletterdheid">Basisgeletterdheid</option>
+            </select>
+          </div>
+          <div id="lp-lader" class="lader">Laden...</div>
+          <div class="tabel-wrapper" id="lp-tabel" style="display:none;">
+            <table>
+              <thead>
+                <tr>
+                  <th>Code</th>
+                  <th>Niveau</th>
+                  <th>Doel</th>
+                  <th>Subdoelen</th>
+                  <th>Acties</th>
+                </tr>
+              </thead>
+              <tbody id="lp-tbody"></tbody>
+            </table>
+          </div>
+          <div class="leeg-staat" id="lp-leeg" style="display:none;">
+            <div class="leeg-icoon">📋</div>
+            <p>Nog geen leerplandoelen ingegeven.</p>
+          </div>
+        </div>
       </div>
 
       <!-- HOOFDSTUKKEN -->
@@ -113,19 +217,28 @@
 <script type="module">
   import { initAuth } from './js/auth.js';
   import { toonSectie } from './js/ui.js';
+  import {
+    laadLeerplandoelen, slaLeerplandoelOp, bewerkLeerplandoel, verwijderLeerplandoel,
+    annuleerLeerplandoel, berekeningCode, voegSubdoelToe, verwijderSubdoel, importeerCSV
+  } from './js/leerplandoelen.js';
+
+  window._laadLeerplandoelen = laadLeerplandoelen;
+  window._slaLeerplandoelOp = slaLeerplandoelOp;
+  window._bewerkLeerplandoel = bewerkLeerplandoel;
+  window._verwijderLeerplandoel = verwijderLeerplandoel;
+  window._annuleerLeerplandoel = annuleerLeerplandoel;
+  window._berekeningCode = berekeningCode;
+  window._voegSubdoelToe = voegSubdoelToe;
+  window._verwijderSubdoel = verwijderSubdoel;
+  window._importeerCSV = importeerCSV;
 
   document.addEventListener('DOMContentLoaded', () => {
     initAuth({
       onIngelogd: (gebruiker) => {
-        console.log('Ingelogd als:', gebruiker.email);
-        // Hier worden later de laad-functies aangeroepen
+        laadLeerplandoelen();
       },
-      onUitgelogd: () => {
-        console.log('Uitgelogd');
-      },
-      onSectie: (naam) => {
-        console.log('Sectie:', naam);
-      }
+      onUitgelogd: () => {},
+      onSectie: (naam) => {}
     });
   });
 </script>
