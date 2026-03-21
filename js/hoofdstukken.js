@@ -8,7 +8,7 @@ export let cacheHoofdstukken = null;
 
   let paragraafTeller = 0;
 
-window.voegParagraafToe = (data = {}) => {
+export function voegParagraafToe(data = {}) {
     const container = document.getElementById('paragraaf-container');
     document.getElementById('geen-paragrafen').style.display = 'none';
     paragraafTeller++;
@@ -30,7 +30,7 @@ window.voegParagraafToe = (data = {}) => {
     container.appendChild(div);
   };
 
-window.verwijderParagraaf = (id) => {
+export function verwijderParagraaf(id) {
     document.getElementById(id).remove();
     if (document.querySelectorAll('.paragraaf-item').length === 0) {
       document.getElementById('geen-paragrafen').style.display = 'block';
@@ -57,7 +57,7 @@ window.verwijderParagraaf = (id) => {
     bewerkHoofdstukId = null;
   }
 
-window.annuleerHoofdstuk = resetHoofdstukFormulier;
+export const annuleerHoofdstuk = resetHoofdstukFormulier;
 
   // ===== HOOFDSTUK OPSLAAN =====
 
