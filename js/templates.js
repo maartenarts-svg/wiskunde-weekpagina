@@ -3,6 +3,7 @@ import {
   collection, doc, setDoc, getDoc, getDocs, deleteDoc
 } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
 import { toonMelding } from './ui.js';
+import { haalCache, wisCache } from './appCache.js';
 
 // ===== STATE =====
 let cache = null;
@@ -188,7 +189,7 @@ export async function slaTemplateOp() {
   try {
     const docRef = bewerkId ? doc(db, 'templates', bewerkId) : doc(collection(db, 'templates'));
     await setDoc(docRef, data);
-    cache = null;
+    cache = null; wisCache('templates');
     toonMelding('templates', 'Template opgeslagen.', 'succes');
     annuleerTemplate();
     laadTemplates();
@@ -205,9 +206,7 @@ export async function laadTemplates() {
 
   try {
     if (!cache) {
-      const snap = await getDocs(collection(db, 'templates'));
-      cache = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-      cache.sort((a, b) => a.naam.localeCompare(b.naam, 'nl'));
+      cache = (await haalCache('templates', db)).slice().sort((a, b) => a.naam.localeCompare(b.naam, 'nl'));
     }
 
     let templates = cache;
@@ -271,7 +270,7 @@ export async function verwijderTemplate(id) {
   if (!confirm('Ben je zeker dat je deze template wil verwijderen?')) return;
   try {
     await deleteDoc(doc(db, 'templates', id));
-    cache = null;
+    cache = null; wisCache('templates');
     toonMelding('templates', 'Template verwijderd.', 'succes');
     laadTemplates();
   } catch (e) {
@@ -283,9 +282,7 @@ export async function verwijderTemplate(id) {
 export function getCache() { return cache; }
 export async function zorgCache() {
   if (!cache) {
-    const snap = await getDocs(collection(db, 'templates'));
-    cache = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-    cache.sort((a, b) => a.naam.localeCompare(b.naam, 'nl'));
+    cache = (await haalCache('templates', db)).slice().sort((a, b) => a.naam.localeCompare(b.naam, 'nl'));
   }
   return cache;
 }
