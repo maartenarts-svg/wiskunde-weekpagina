@@ -1007,26 +1007,41 @@ export function bewerkPreview() {
 }
 
 export async function slaaTaakOp() {
-  const uid = auth.currentUser?.uid;
-  const nu = new Date().toISOString();
+  console.log('slaaTaakOp gestart', { huidigeTaak, isBewerkModus, bewerkId });
 
+  const uid = auth.currentUser?.uid;
+  if (!uid) {
+    alert('Niet ingelogd. Meld opnieuw aan.');
+    return;
+  }
+
+  const nu = new Date().toISOString();
   let versie = 1;
   if (isBewerkModus && bewerkId) {
-    const snap = await getDoc(doc(db, 'taken', bewerkId));
-    versie = (snap.data()?.versienummer || 0) + 1;
+    try {
+      const snap = await getDoc(doc(db, 'taken', bewerkId));
+      versie = (snap.data()?.versienummer || 0) + 1;
+    } catch (e) {
+      console.warn('Versie ophalen mislukt, gebruik 1:', e);
+    }
   }
 
   const isKopie = huidigeTaak.startKeuze === 'kopie';
 
+  // Zorg dat alle stap-data verzameld is (ook als gebruiker niet alle stappen doorlopen heeft)
+  [1,2,3,4,5,6].forEach(nr => {
+    try { verzamelStapData(nr); } catch(e) { /* stap mogelijk niet geïnitialiseerd */ }
+  });
+
   const data = {
-    code: huidigeTaak.code,
-    titel: huidigeTaak.titel,
-    type: huidigeTaak.type,
-    tijd: huidigeTaak.tijd,
-    vak: huidigeTaak.vak,
-    klas: huidigeTaak.klas,
-    schooljaar: huidigeTaak.schooljaar,
-    lesweek: huidigeTaak.lesweek,
+    code: huidigeTaak.code || '',
+    titel: huidigeTaak.titel || '',
+    type: huidigeTaak.type || 'taak',
+    tijd: huidigeTaak.tijd || '',
+    vak: huidigeTaak.vak || 'Wiskunde',
+    klas: huidigeTaak.klas || '',
+    schooljaar: huidigeTaak.schooljaar || '',
+    lesweek: huidigeTaak.lesweek || null,
     omschrijving: huidigeTaak.omschrijving || '',
     tags: huidigeTaak.tags || [],
     routes: huidigeTaak.routes || [],
@@ -1044,28 +1059,42 @@ export async function slaaTaakOp() {
     templateId: huidigeTaak.templateId || null,
     templateParams: huidigeTaak.templateParams || {},
     templateInhoud: huidigeTaak.templateInhoud || '',
-    bronnen: huidigeTaak.bronnenData?.map(b => ({ id: b.id, label: b.label, type: b.type, link: b.link || '', standaard: b.standaard || false })) || [],
+    bronnen: (huidigeTaak.bronnenData || []).map(b => ({
+      id: b.id || '',
+      label: b.label || '',
+      type: b.type || 'andere',
+      link: b.link || '',
+      standaard: b.standaard || false,
+    })),
     indienwijze: huidigeTaak.indienwijze || {},
     leerkrachtId: uid,
     versienummer: isKopie ? 1 : versie,
     aangepastOp: nu,
   };
 
+  console.log('Data om op te slaan:', data);
+
+  // Valideer verplichte velden
+  if (!data.code) { alert('Geen code gevonden. Ga terug naar stap 1.'); return; }
+
   try {
     if (isBewerkModus && bewerkId && !isKopie) {
+      console.log('Updaten bestaande taak:', bewerkId);
       await setDoc(doc(db, 'taken', bewerkId), data);
     } else {
-      await setDoc(doc(collection(db, 'taken')), data);
+      console.log('Nieuwe taak aanmaken...');
+      const docRef = doc(collection(db, 'taken'));
+      await setDoc(docRef, data);
+      console.log('Aangemaakt met ID:', docRef.id);
     }
     document.getElementById('taak-preview-wrapper').style.display = 'none';
     document.getElementById('taak-formulier').style.display = 'none';
     resetTaakState();
     laadTaken();
-    // Toon melding nadat DOM herschikt is
     setTimeout(() => toonMelding('taken', `Taak "${data.code}" opgeslagen.`, 'succes'), 100);
   } catch (e) {
-    console.error('Fout bij opslaan taak:', e);
-    alert('Fout bij opslaan: ' + e.message);
+    console.error('Firestore fout bij opslaan taak:', e);
+    alert('Fout bij opslaan:\n\nCode: ' + e.code + '\nBericht: ' + e.message);
   }
 }
 
