@@ -61,7 +61,7 @@ window.annuleerHoofdstuk = resetHoofdstukFormulier;
 
   // ===== HOOFDSTUK OPSLAAN =====
 
-export async function slaHoofdstukOp = async () => {
+export async function slaHoofdstukOp() {
     const nummer = parseInt(document.getElementById('hst-nummer').value);
     const titel = document.getElementById('hst-titel').value.trim();
     if (!nummer || !titel) {
@@ -93,7 +93,7 @@ export async function slaHoofdstukOp = async () => {
 
   // ===== HOOFDSTUKKEN LADEN =====
 
-export async function laadHoofdstukken = async () => {
+export async function laadHoofdstukken() {
     document.getElementById('hoofdstukken-lader').style.display = 'block';
     document.getElementById('hoofdstukken-tabel').style.display = 'none';
     document.getElementById('hoofdstukken-leeg').style.display = 'none';
@@ -140,7 +140,7 @@ export async function laadHoofdstukken = async () => {
 
   // ===== HOOFDSTUK BEWERKEN =====
 
-export async function bewerkHoofdstuk = async (id) => {
+export async function bewerkHoofdstuk(id) {
     try {
       const snap = await getDoc(doc(db, 'hoofdstukken', id));
       if (!snap.exists()) return;
@@ -165,7 +165,7 @@ export async function bewerkHoofdstuk = async (id) => {
 
   // ===== HOOFDSTUK VERWIJDEREN =====
 
-export async function verwijderHoofdstuk = async (id, nummer) => {
+export async function verwijderHoofdstuk(id, nummer) {
     if (!confirm(`Ben je zeker dat je hoofdstuk ${nummer} wil verwijderen?`)) return;
     try {
       await deleteDoc(doc(db, 'hoofdstukken', id));
@@ -176,6 +176,3 @@ export async function verwijderHoofdstuk = async (id, nummer) => {
       toonMelding('hoofdstukken', 'Fout bij verwijderen: ' + e.message, 'fout');
     }
   };
-
-
-
