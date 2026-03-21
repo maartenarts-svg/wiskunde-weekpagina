@@ -64,7 +64,7 @@ export function parseMarkdown(tekst) {
     }
     if (isGenest && getrimmed.match(/^\d+\|\s*/)) {
       genestNumTeller++;
-      html += `<div class="preview-stap preview-genest"><span class="preview-nr">${genestNumTeller}|</span> ${inline(getrimmed.replace(/^\d+\|\s*/, ''))}</div>`;
+      html += `<div class="preview-stap preview-genest"><span class="preview-nr">${genestNumTeller}|</span><div style="flex:1;">${inline(getrimmed.replace(/^\d+\|\s*/, ''))}</div></div>`;
       continue;
     }
     if (isGenest && getrimmed.startsWith('- ')) {
@@ -77,7 +77,7 @@ export function parseMarkdown(tekst) {
     }
     if (getrimmed.match(/^\d+\|\s*/)) {
       numTeller++; genestNumTeller = 0;
-      html += `<div class="preview-stap"><span class="preview-nr">${numTeller}|</span> ${inline(getrimmed.replace(/^\d+\|\s*/, ''))}</div>`;
+      html += `<div class="preview-stap"><span class="preview-nr">${numTeller}|</span><div style="flex:1;">${inline(getrimmed.replace(/^\d+\|\s*/, ''))}</div></div>`;
       continue;
     }
     if (getrimmed.startsWith('- ')) {
@@ -92,9 +92,13 @@ export function parseMarkdown(tekst) {
 // ===== PREVIEW =====
 export function updatePreview() {
   const ta = document.getElementById('tmpl-inhoud');
-  document.getElementById('tmpl-preview').innerHTML = parseMarkdown(ta.value);
+  const preview = document.getElementById('tmpl-preview');
+  preview.innerHTML = parseMarkdown(ta.value);
+  // Bereken hoogte op basis van beide panelen
   ta.style.height = 'auto';
-  ta.style.height = Math.max(320, ta.scrollHeight) + 'px';
+  const hoogte = Math.max(400, ta.scrollHeight, preview.scrollHeight);
+  ta.style.height = hoogte + 'px';
+  preview.style.minHeight = hoogte + 'px';
 }
 
 // ===== PARAMETERS DETECTEREN =====
