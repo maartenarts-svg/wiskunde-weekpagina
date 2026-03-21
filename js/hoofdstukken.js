@@ -3,6 +3,7 @@ import {
   collection, doc, setDoc, getDoc, getDocs, deleteDoc
 } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
 import { toonMelding } from './ui.js';
+import { haalCache, wisCache } from './appCache.js';
 
 // ===== STATE =====
 let cache = null;
@@ -82,7 +83,7 @@ export async function slaHoofdstukOp() {
   try {
     const docId = bewerkId || 'H' + nummer;
     await setDoc(doc(db, 'hoofdstukken', docId), data);
-    cache = null;
+    cache = null; wisCache('hoofdstukken');
     toonMelding('hoofdstukken', `Hoofdstuk ${nummer} opgeslagen.`, 'succes');
     annuleerHoofdstuk();
     laadHoofdstukken();
@@ -99,10 +100,7 @@ export async function laadHoofdstukken() {
 
   try {
     if (!cache) {
-      const snap = await getDocs(collection(db, 'hoofdstukken'));
-      const lijst = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-      lijst.sort((a, b) => a.nummer - b.nummer);
-      cache = lijst;
+      cache = (await haalCache('hoofdstukken', db)).slice().sort((a, b) => a.nummer - b.nummer);
     }
     renderHoofdstukken(cache);
   } catch (e) {
@@ -165,7 +163,7 @@ export async function verwijderHoofdstuk(id, nummer) {
   if (!confirm(`Ben je zeker dat je hoofdstuk ${nummer} wil verwijderen?`)) return;
   try {
     await deleteDoc(doc(db, 'hoofdstukken', id));
-    cache = null;
+    cache = null; wisCache('hoofdstukken');
     toonMelding('hoofdstukken', `Hoofdstuk ${nummer} verwijderd.`, 'succes');
     laadHoofdstukken();
   } catch (e) {
@@ -177,10 +175,7 @@ export async function verwijderHoofdstuk(id, nummer) {
 export function getCache() { return cache; }
 export async function zorgCache() {
   if (!cache) {
-    const snap = await getDocs(collection(db, 'hoofdstukken'));
-    const lijst = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-    lijst.sort((a, b) => a.nummer - b.nummer);
-    cache = lijst;
+    cache = (await haalCache('hoofdstukken', db)).slice().sort((a, b) => a.nummer - b.nummer);
   }
   return cache;
 }
