@@ -6,7 +6,7 @@ export const cache = { leerplandoelen: null, hoofdstukken: null };
 
   // ===== CODE BEREKENING LEERPLANDOEL =====
 
-window.berekeningCode = () => {
+export function berekeningCode() {
     const niveau = document.getElementById('lp-niveau').value;
     const nummer = document.getElementById('lp-nummer').value.trim();
     if (!nummer) { document.getElementById('lp-code').value = ''; return; }
@@ -18,7 +18,7 @@ window.berekeningCode = () => {
 
 let subdoelTeller = 0;
 
-window.voegSubdoelToe = (data = {}) => {
+export function voegSubdoelToe(data = {}) {
     const container = document.getElementById('subdoel-container');
     document.getElementById('geen-subdoelen').style.display = 'none';
     subdoelTeller++;
@@ -48,7 +48,7 @@ window.voegSubdoelToe = (data = {}) => {
     container.appendChild(div);
   };
 
-window.verwijderSubdoel = (id) => {
+export function verwijderSubdoel(id) {
     document.getElementById(id).remove();
     if (document.querySelectorAll('.subdoel-item').length === 0) {
       document.getElementById('geen-subdoelen').style.display = 'block';
@@ -78,12 +78,12 @@ function resetLeerplandoelFormulier() {
     bewerkLeerplandoelId = null;
   }
 
-window.annuleerLeerplandoel = resetLeerplandoelFormulier;
+export const annuleerLeerplandoel = resetLeerplandoelFormulier;
 
 
   // ===== CSV IMPORT =====
 
-window.importeerCSV = async (event) => {
+export async function importeerCSV(event) {
     const bestand = event.target.files[0];
     if (!bestand) return;
 
