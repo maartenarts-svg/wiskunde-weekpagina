@@ -177,7 +177,84 @@
       <!-- HOOFDSTUKKEN -->
       <div class="sectie" id="sectie-hoofdstukken">
         <div class="pagina-titel">Hoofdstukken</div>
-        <div class="pagina-ondertitel">Wordt geladen...</div>
+        <div class="pagina-ondertitel">Beheer de hoofdstukken en hun paragrafen.</div>
+
+        <div id="melding-hoofdstukken" class="melding"></div>
+
+        <!-- Formulier -->
+        <div class="kaart">
+          <div class="kaart-titel">
+            <span id="formulier-hoofdstuk-titel">Nieuw hoofdstuk toevoegen</span>
+            <button class="knop knop-secundair knop-klein" id="annuleer-hoofdstuk" style="display:none" onclick="window._annuleerHoofdstuk()">Annuleren</button>
+          </div>
+
+          <div class="formulier-rij">
+            <div class="formulier-groep" style="flex:0 0 120px;min-width:120px;">
+              <label>Nummer</label>
+              <input type="number" id="hst-nummer" placeholder="6" min="1">
+            </div>
+            <div class="formulier-groep">
+              <label>Titel</label>
+              <input type="text" id="hst-titel" placeholder="Breuken">
+            </div>
+          </div>
+
+          <!-- Bronnen -->
+          <div style="margin-top:8px;margin-bottom:14px;">
+            <label>Bronnen</label>
+            <div class="formulier-rij" style="margin-top:8px;">
+              <div class="formulier-groep">
+                <label>📄 Cursus (link)</label>
+                <input type="url" id="hst-cursus" placeholder="https://...">
+              </div>
+              <div class="formulier-groep">
+                <label>📖 Theorie (link)</label>
+                <input type="url" id="hst-theorie" placeholder="https://...">
+              </div>
+              <div class="formulier-groep">
+                <label>✅ Correctiesleutel (link)</label>
+                <input type="url" id="hst-correctiesleutel" placeholder="https://...">
+              </div>
+            </div>
+          </div>
+
+          <!-- Paragrafen -->
+          <div style="margin-top:8px;">
+            <label>Paragrafen</label>
+            <div class="subdoel-blok" id="paragraaf-container" style="margin-top:8px;">
+              <div id="geen-paragrafen" style="font-size:9.5pt;color:var(--tekst-licht);">Nog geen paragrafen.</div>
+            </div>
+            <button class="knop knop-secundair knop-klein" style="margin-top:8px;" onclick="window._voegParagraafToe()">+ Paragraaf toevoegen</button>
+          </div>
+
+          <div style="margin-top:20px;">
+            <button class="knop knop-primair" onclick="window._slaHoofdstukOp()">💾 Opslaan</button>
+          </div>
+        </div>
+
+        <!-- Overzicht -->
+        <div class="kaart">
+          <div class="kaart-titel">Overzicht hoofdstukken</div>
+          <div id="hst-lader" class="lader">Laden...</div>
+          <div class="tabel-wrapper" id="hst-tabel" style="display:none;">
+            <table>
+              <thead>
+                <tr>
+                  <th>Nr.</th>
+                  <th>Titel</th>
+                  <th>Paragrafen</th>
+                  <th>Bronnen</th>
+                  <th>Acties</th>
+                </tr>
+              </thead>
+              <tbody id="hst-tbody"></tbody>
+            </table>
+          </div>
+          <div class="leeg-staat" id="hst-leeg" style="display:none;">
+            <div class="leeg-icoon">📚</div>
+            <p>Nog geen hoofdstukken ingegeven.</p>
+          </div>
+        </div>
       </div>
 
       <!-- DOELEN -->
@@ -221,6 +298,10 @@
     laadLeerplandoelen, slaLeerplandoelOp, bewerkLeerplandoel, verwijderLeerplandoel,
     annuleerLeerplandoel, berekeningCode, voegSubdoelToe, verwijderSubdoel, importeerCSV
   } from './js/leerplandoelen.js';
+  import {
+    laadHoofdstukken, slaHoofdstukOp, bewerkHoofdstuk, verwijderHoofdstuk,
+    annuleerHoofdstuk, voegParagraafToe, verwijderParagraaf
+  } from './js/hoofdstukken.js';
 
   window._laadLeerplandoelen = laadLeerplandoelen;
   window._slaLeerplandoelOp = slaLeerplandoelOp;
@@ -232,10 +313,19 @@
   window._verwijderSubdoel = verwijderSubdoel;
   window._importeerCSV = importeerCSV;
 
+  window._laadHoofdstukken = laadHoofdstukken;
+  window._slaHoofdstukOp = slaHoofdstukOp;
+  window._bewerkHoofdstuk = bewerkHoofdstuk;
+  window._verwijderHoofdstuk = verwijderHoofdstuk;
+  window._annuleerHoofdstuk = annuleerHoofdstuk;
+  window._voegParagraafToe = voegParagraafToe;
+  window._verwijderParagraaf = verwijderParagraaf;
+
   document.addEventListener('DOMContentLoaded', () => {
     initAuth({
       onIngelogd: (gebruiker) => {
         laadLeerplandoelen();
+        laadHoofdstukken();
       },
       onUitgelogd: () => {},
       onSectie: (naam) => {}
