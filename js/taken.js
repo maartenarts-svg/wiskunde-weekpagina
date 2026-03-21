@@ -180,11 +180,14 @@ export function initTaken() {
 
 function toonStap(nr) {
   huidigStap = nr;
-  document.querySelectorAll('.taak-stap').forEach((s, i) => {
+  // Scope tot taak-formulier zodat andere .taak-stap elementen niet geraakt worden
+  const formulier = document.getElementById('taak-formulier');
+  if (!formulier) return;
+  formulier.querySelectorAll('.taak-stap').forEach((s, i) => {
     s.style.display = i === nr ? 'block' : 'none';
   });
   // Voortgangsbalk
-  document.querySelectorAll('.stap-indicator').forEach((el, i) => {
+  formulier.querySelectorAll('.stap-indicator').forEach((el, i) => {
     el.classList.toggle('actief', i === nr);
     el.classList.toggle('klaar', i < nr);
   });
@@ -446,6 +449,7 @@ function renderBestaandeTakenLijst() {
         <div class="doel-keuze-meta">
           ${t.schooljaar || ''}${t.lesweek ? ' · Week ' + t.lesweek : ''}${t.klas ? ' · ' + t.klas : ''}
           ${(t.referenties || []).length ? ' · §' + t.referenties.join(', ') : ''}
+          ${(t.routes || []).filter(r => r !== 'geen').length ? ' · ' + t.routes.filter(r => r !== 'geen').join('/') : ''}
           · <span class="badge ${t.status === 'actief' ? 'badge-basis' : t.status === 'archief' ? 'badge-bg' : 'badge-verdieping'}">${t.status || 'concept'}</span>
           · v${t.versienummer || 1}
         </div>
@@ -1212,6 +1216,8 @@ export async function slaaTaakOp() {
       const docRef = doc(collection(db, 'taken'));
       await setDoc(docRef, data);
       console.log('Aangemaakt met ID:', docRef.id);
+      bewerkId = docRef.id;  // bewaar ID zodat volgende opslag correct update
+      isBewerkModus = true;
     }
     document.getElementById('taak-preview-wrapper').style.display = 'none';
     document.getElementById('taak-formulier').style.display = 'none';
@@ -1404,6 +1410,7 @@ export async function laadTaken() {
         <td>${t.titel}</td>
         <td>${t.klas || '—'}</td>
         <td style="font-size:9.5pt;">${t.lesweek ? 'Week ' + t.lesweek : '—'}</td>
+        <td style="font-size:9.5pt;">${(t.routes || []).filter(r => r !== 'geen').join(', ') || (t.routes?.includes('geen') ? '—' : '—')}</td>
         <td><span class="badge ${statusKleur[t.status] || 'badge-bg'}">${t.status}</span></td>
         <td style="font-size:9pt;color:var(--tekst-licht);">v${t.versienummer || 1}</td>
         <td>
