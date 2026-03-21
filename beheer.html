@@ -260,7 +260,133 @@
       <!-- DOELEN -->
       <div class="sectie" id="sectie-doelen">
         <div class="pagina-titel">Doelen</div>
-        <div class="pagina-ondertitel">Wordt geladen...</div>
+        <div class="pagina-ondertitel">Beheer voorkennis en succescriteria.</div>
+
+        <div id="melding-doelen" class="melding"></div>
+
+        <!-- Formulier -->
+        <div class="kaart">
+          <div class="kaart-titel">
+            <span id="formulier-doel-titel">Nieuw doel toevoegen</span>
+            <div style="display:flex;gap:8px;align-items:center;">
+              <label class="knop knop-secundair knop-klein" style="cursor:pointer;margin:0;">
+                &#128194; Importeren via CSV
+                <input type="file" id="doelen-csv-import" accept=".csv" style="display:none" onchange="window._importeerDoelenCSV(event)">
+              </label>
+              <button class="knop knop-secundair knop-klein" id="annuleer-doel" style="display:none" onclick="window._annuleerDoel()">Annuleren</button>
+            </div>
+          </div>
+
+          <div id="doelen-import-voortgang" style="display:none;margin-bottom:14px;">
+            <div style="background:var(--grijs-rand);border-radius:4px;height:8px;overflow:hidden;">
+              <div id="doelen-import-balk" style="background:var(--blauw);height:100%;width:0%;transition:width 0.3s;"></div>
+            </div>
+            <div id="doelen-import-tekst" style="font-size:9.5pt;color:var(--tekst-licht);margin-top:6px;"></div>
+          </div>
+
+          <div class="formulier-rij">
+            <div class="formulier-groep vol">
+              <label>Tekst</label>
+              <textarea id="doel-tekst" placeholder="Ik kan breuken optellen en aftrekken."></textarea>
+            </div>
+          </div>
+
+          <div class="formulier-rij">
+            <div class="formulier-groep">
+              <label>Type</label>
+              <select id="doel-type">
+                <option value="succescriterium">Succescriterium</option>
+                <option value="voorkennis">Voorkennis</option>
+              </select>
+            </div>
+            <div class="formulier-groep">
+              <label>Evalueerbaar</label>
+              <select id="doel-evalueerbaar" onchange="window._toggleScores()">
+                <option value="nee">Nee</option>
+                <option value="ja">Ja</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Leerplandoel-codes -->
+          <div style="margin-bottom:14px;">
+            <label>Leerplandoel-codes</label>
+            <div class="subdoel-blok" id="leerplan-container" style="margin-top:8px;">
+              <div id="geen-leerplancodes" style="font-size:9.5pt;color:var(--tekst-licht);">Nog geen leerplandoel-codes toegevoegd.</div>
+            </div>
+            <button class="knop knop-secundair knop-klein" style="margin-top:8px;" onclick="window._voegLeerplancodeToe()">+ Code toevoegen</button>
+          </div>
+
+          <!-- Referenties -->
+          <div style="margin-bottom:14px;">
+            <label>Referenties (hoofdstuk.paragraaf)</label>
+            <div class="subdoel-blok" id="referentie-container" style="margin-top:8px;">
+              <div id="geen-referenties" style="font-size:9.5pt;color:var(--tekst-licht);">Nog geen referenties toegevoegd.</div>
+            </div>
+            <button class="knop knop-secundair knop-klein" style="margin-top:8px;" onclick="window._voegReferentieToe()">+ Referentie toevoegen</button>
+          </div>
+
+          <!-- Scores -->
+          <div id="scores-blok" style="display:none;">
+            <div class="formulier-rij">
+              <div class="formulier-groep vol">
+                <label>Scores <span style="font-weight:400;text-transform:none;">(gebruik ### voor een nieuwe regel)</span></label>
+                <textarea id="doel-scores" placeholder="A+: Omschrijving###A: Omschrijving###B: Omschrijving###C: Omschrijving"></textarea>
+              </div>
+            </div>
+          </div>
+
+          <div class="formulier-rij">
+            <div class="formulier-groep vol">
+              <label>Notities</label>
+              <input type="text" id="doel-notities" placeholder="Optionele notitie...">
+            </div>
+          </div>
+
+          <div style="margin-top:20px;">
+            <button class="knop knop-primair" onclick="window._slaDoelOp()">&#128190; Opslaan</button>
+          </div>
+        </div>
+
+        <!-- Overzicht -->
+        <div class="kaart">
+          <div class="kaart-titel">
+            <span>Overzicht doelen</span>
+            <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+              <select id="filter-doel-type" onchange="window._laadDoelen()" style="font-size:9.5pt;padding:5px 10px;">
+                <option value="">Alle types</option>
+                <option value="succescriterium">Succescriteria</option>
+                <option value="voorkennis">Voorkennis</option>
+              </select>
+              <select id="filter-doel-leerplan" onchange="window._laadDoelen()" style="font-size:9.5pt;padding:5px 10px;">
+                <option value="">Alle leerplandoelen</option>
+              </select>
+              <select id="filter-doel-referentie" onchange="window._laadDoelen()" style="font-size:9.5pt;padding:5px 10px;">
+                <option value="">Alle referenties</option>
+              </select>
+            </div>
+          </div>
+          <div id="doelen-lader" class="lader">Laden...</div>
+          <div class="tabel-wrapper" id="doelen-tabel" style="display:none;">
+            <table>
+              <thead>
+                <tr>
+                  <th>Tekst</th>
+                  <th>Type</th>
+                  <th>Leerplan</th>
+                  <th>Referenties</th>
+                  <th>Eval.</th>
+                  <th>Acties</th>
+                </tr>
+              </thead>
+              <tbody id="doelen-tbody"></tbody>
+            </table>
+          </div>
+          <div class="leeg-staat" id="doelen-leeg" style="display:none;">
+            <div class="leeg-icoon">&#127919;</div>
+            <p>Nog geen doelen ingegeven.</p>
+          </div>
+        </div>
       </div>
 
       <!-- BRONNEN -->
@@ -302,6 +428,13 @@
     laadHoofdstukken, slaHoofdstukOp, bewerkHoofdstuk, verwijderHoofdstuk,
     annuleerHoofdstuk, voegParagraafToe, verwijderParagraaf
   } from './js/hoofdstukken.js';
+  import {
+    laadDoelen, slaDoelOp, bewerkDoel, verwijderDoel, annuleerDoel,
+    voegLeerplancodeToe, verwijderLeerplancode,
+    voegReferentieToe, verwijderReferentie,
+    toggleScores, importeerDoelenCSV, laadDropdownData,
+    cdFilter, cdKies, cdVerberg
+  } from './js/doelen.js';
 
   window._laadLeerplandoelen = laadLeerplandoelen;
   window._slaLeerplandoelOp = slaLeerplandoelOp;
@@ -321,11 +454,28 @@
   window._voegParagraafToe = voegParagraafToe;
   window._verwijderParagraaf = verwijderParagraaf;
 
+  window._laadDoelen = laadDoelen;
+  window._slaDoelOp = slaDoelOp;
+  window._bewerkDoel = bewerkDoel;
+  window._verwijderDoel = verwijderDoel;
+  window._annuleerDoel = annuleerDoel;
+  window._voegLeerplancodeToe = voegLeerplancodeToe;
+  window._verwijderLeerplancode = verwijderLeerplancode;
+  window._voegReferentieToe = voegReferentieToe;
+  window._verwijderReferentie = verwijderReferentie;
+  window._toggleScores = toggleScores;
+  window._importeerDoelenCSV = importeerDoelenCSV;
+  window._cdFilter = cdFilter;
+  window._cdKies = cdKies;
+  window._cdVerberg = cdVerberg;
+
   document.addEventListener('DOMContentLoaded', () => {
     initAuth({
       onIngelogd: (gebruiker) => {
         laadLeerplandoelen();
         laadHoofdstukken();
+        laadDoelen();
+        laadDropdownData();
       },
       onUitgelogd: () => {},
       onSectie: (naam) => {}
