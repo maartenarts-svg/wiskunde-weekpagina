@@ -30,7 +30,7 @@ export let cacheBronnen = { alle: null };
 
 window.annuleerBron = resetBronFormulier;
 
-export async function slaBronOp = async () => {
+export async function slaBronOp() {
     const label = document.getElementById('bron-label').value.trim();
     const link = document.getElementById('bron-link').value.trim();
     if (!label) { toonMelding('bronnen', 'Vul minstens een label in.', 'fout'); return; }
@@ -54,7 +54,7 @@ export async function slaBronOp = async () => {
     }
   };
 
-export async function laadBronnen = async () => {
+export async function laadBronnen() {
     document.getElementById('bronnen-lader').style.display = 'block';
     document.getElementById('bronnen-tabel').style.display = 'none';
     document.getElementById('bronnen-leeg').style.display = 'none';
@@ -94,7 +94,7 @@ export async function laadBronnen = async () => {
     }
   };
 
-export async function bewerkBron = async (id) => {
+export async function bewerkBron(id) {
     try {
       const snap = await getDoc(doc(db, 'bronnen', id));
       if (!snap.exists()) return;
@@ -114,7 +114,7 @@ export async function bewerkBron = async (id) => {
     }
   };
 
-export async function verwijderBron = async (id) => {
+export async function verwijderBron(id) {
     if (!confirm('Ben je zeker dat je deze bron wil verwijderen?')) return;
     try {
       await deleteDoc(doc(db, 'bronnen', id));
@@ -125,6 +125,3 @@ export async function verwijderBron = async (id) => {
       toonMelding('bronnen', 'Fout bij verwijderen: ' + e.message, 'fout');
     }
   };
-
-
-
