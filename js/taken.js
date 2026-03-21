@@ -1,0 +1,1315 @@
+import { db, auth } from './firebase-config.js';
+import {
+  collection, doc, setDoc, getDoc, getDocs, updateDoc
+} from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
+import { toonMelding } from './ui.js';
+import { parseMarkdown, zorgCache as zorgTemplatesCache } from './templates.js';
+import { laadDropdownData, cdFilter, cdKies, cdVerberg } from './doelen.js';
+import { zorgCache as zorgHoofdstukkenCache } from './hoofdstukken.js';
+
+// ===== STATE =====
+let huidigeTaak = {};           // werkkopie doorheen de stappen
+let bewerkId = null;            // Firestore doc-ID bij aanpassen
+let isBewerkModus = false;
+let huidigStap = 0;
+
+// Per-stap state
+let geselecteerdeVK = [];       // [{id, tekst, ...}]
+let geselecteerdeSC = {
+  leren: [],                    // [{id, tekst, ...}]
+  eval: [],                     // [{id, tekst, ...}]
+};
+let alleDoelen = null;          // cache
+let alleBronnen = null;         // cache
+let geselecteerdeBronnen = [];  // [{id, label, ...}]
+let templateData = null;        // {id, inhoud, parameters:{}, naam}
+
+// ===== SCHOOLJAAR =====
+function huidigSchooljaar() {
+  const nu = new Date();
+  const jaar = nu.getFullYear();
+  return nu.getMonth() >= 6 ? `${jaar}-${jaar + 1}` : `${jaar - 1}-${jaar}`;
+}
+
+// ===== PASEN BEREKENING (Meeus/Jones/Butcher) =====
+function berekenPasen(jaar) {
+  const a = jaar % 19;
+  const b = Math.floor(jaar / 100);
+  const c = jaar % 100;
+  const d = Math.floor(b / 4);
+  const e = b % 4;
+  const f = Math.floor((b + 8) / 25);
+  const g = Math.floor((b - f + 1) / 3);
+  const h = (19 * a + b - d - g + 15) % 30;
+  const i = Math.floor(c / 4);
+  const k = c % 4;
+  const l = (32 + 2 * e + 2 * i - h - k) % 7;
+  const m = Math.floor((a + 11 * h + 22 * l) / 451);
+  const maand = Math.floor((h + l - 7 * m + 114) / 31); // 3=maart, 4=april
+  const dag = ((h + l - 7 * m + 114) % 31) + 1;
+  return new Date(jaar, maand - 1, dag);
+}
+
+// ===== VAKANTIEWEKEN BEREKENEN =====
+function berekenVakantieWeken(schooljaar) {
+  const [startJaar, eindJaar] = schooljaar.split('-').map(Number);
+  const vakantieWeken = new Set(); // Set van 'YYYY-MM-DD' van maandagen
+
+  function maandag(datum) {
+    const d = new Date(datum);
+    const dag = d.getDay();
+    const diff = dag === 0 ? -6 : 1 - dag;
+    d.setDate(d.getDate() + diff);
+    d.setHours(0, 0, 0, 0);
+    return d;
+  }
+
+  function voegWeekToe(datum) {
+    vakantieWeken.add(maandag(datum).toISOString().slice(0, 10));
+  }
+
+  // Herfstvakantie: week van 1 november
+  const nov1 = new Date(startJaar, 10, 1);
+  voegWeekToe(nov1.getDay() === 0 ? new Date(startJaar, 10, 2) : nov1);
+
+  // Kerstvakantie: 2 weken, start maandag van week met 25 dec
+  const dec25 = new Date(startJaar, 11, 25);
+  let kerstStart = maandag(dec25);
+  if (dec25.getDay() === 6) kerstStart = new Date(startJaar + 1, 0, 0); // zondag → week na 25/12... maar zat = maandag erna
+  if (dec25.getDay() === 6) { kerstStart = new Date(startJaar, 11, 28); kerstStart = maandag(kerstStart); }
+  voegWeekToe(kerstStart);
+  const kerstWeek2 = new Date(kerstStart); kerstWeek2.setDate(kerstStart.getDate() + 7);
+  voegWeekToe(kerstWeek2);
+
+  // Krokusvakantie: week van Aswoensdag (Pasen - 46 dagen)
+  const pasen = berekenPasen(eindJaar);
+  const aswoensdag = new Date(pasen); aswoensdag.setDate(pasen.getDate() - 46);
+  voegWeekToe(aswoensdag);
+
+  // Paasvakantie: 2 weken
+  let paasStart;
+  const april1 = new Date(eindJaar, 3, 1);
+  if (pasen.getMonth() === 2) {
+    // Pasen in maart → start maandag na Pasen
+    paasStart = new Date(pasen); paasStart.setDate(pasen.getDate() + 1);
+    paasStart = maandag(paasStart);
+  } else if (pasen.getDate() > 15) {
+    // Pasen na 15 april → tweede maandag vóór Pasen
+    paasStart = maandag(pasen); paasStart.setDate(paasStart.getDate() - 7);
+  } else {
+    // Normaal: eerste maandag van april
+    paasStart = maandag(april1);
+    if (paasStart < april1) paasStart.setDate(paasStart.getDate() + 7);
+  }
+  voegWeekToe(paasStart);
+  const paasWeek2 = new Date(paasStart); paasWeek2.setDate(paasStart.getDate() + 7);
+  voegWeekToe(paasWeek2);
+
+  // Zomervakantie: 1 juli t/m 31 augustus (meerdere weken)
+  let zomerDatum = new Date(eindJaar, 6, 1);
+  const zomerEinde = new Date(eindJaar, 8, 1);
+  while (zomerDatum < zomerEinde) {
+    voegWeekToe(zomerDatum);
+    zomerDatum.setDate(zomerDatum.getDate() + 7);
+  }
+
+  return vakantieWeken;
+}
+
+// ===== SCHOOLWEKEN GENEREREN =====
+function genereerSchoolweken(schooljaar) {
+  const [startJaar, eindJaar] = schooljaar.split('-').map(Number);
+  const vakantieWeken = berekenVakantieWeken(schooljaar);
+
+  // Schooljaar start eerste september, einde 30 juni
+  // Eerste week = week die de eerste schooldag van september bevat
+  let datum = new Date(startJaar, 8, 1); // 1 september
+  // Ga naar de maandag van die week
+  const dag = datum.getDay();
+  const diff = dag === 0 ? -6 : 1 - dag;
+  datum.setDate(datum.getDate() + diff);
+
+  const einde = new Date(eindJaar, 5, 30); // 30 juni
+  const weken = [];
+  let weekNr = 0;
+
+  while (datum <= einde) {
+    const sleutel = datum.toISOString().slice(0, 10);
+    if (!vakantieWeken.has(sleutel)) {
+      weekNr++;
+      const zondag = new Date(datum); zondag.setDate(datum.getDate() + 6);
+      weken.push({
+        nr: weekNr,
+        maandag: new Date(datum),
+        zondag,
+        label: `Week ${weekNr} — ${formatDatum(datum)} t/m ${formatDatum(zondag)}`
+      });
+    }
+    datum.setDate(datum.getDate() + 7);
+  }
+  return weken;
+}
+
+function formatDatum(d) {
+  return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}`;
+}
+
+// ===== DOELEN CACHE =====
+async function zorgDoelenCache() {
+  if (!alleDoelen) {
+    const snap = await getDocs(collection(db, 'doelen'));
+    alleDoelen = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  }
+  return alleDoelen;
+}
+
+async function zorgBronnenCache() {
+  if (!alleBronnen) {
+    const snap = await getDocs(collection(db, 'bronnen'));
+    alleBronnen = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  }
+  return alleBronnen;
+}
+
+// ===== STAP NAVIGATIE =====
+const STAP_TITELS = ['Start', 'Coördinaten', 'Voorkennis', 'Succescriteria', 'Instructie', 'Bronnen', 'Indienen'];
+
+export function initTaken() {
+  toonStap(0);
+}
+
+function toonStap(nr) {
+  huidigStap = nr;
+  document.querySelectorAll('.taak-stap').forEach((s, i) => {
+    s.style.display = i === nr ? 'block' : 'none';
+  });
+  // Voortgangsbalk
+  document.querySelectorAll('.stap-indicator').forEach((el, i) => {
+    el.classList.toggle('actief', i === nr);
+    el.classList.toggle('klaar', i < nr);
+  });
+  // Knoppen
+  document.getElementById('taak-vorige-knop').style.display = nr > 0 ? 'inline-flex' : 'none';
+  document.getElementById('taak-volgende-knop').style.display = nr < 6 ? 'inline-flex' : 'none';
+  document.getElementById('taak-voltooien-knop').style.display = nr === 6 ? 'inline-flex' : 'none';
+  // Stap-specifieke init
+  if (nr === 1) initStap1();
+  if (nr === 2) initStap2();
+  if (nr === 3) initStap3();
+  if (nr === 4) initStap4();
+  if (nr === 5) initStap5();
+}
+
+export function vorigeStap() {
+  if (huidigStap > 0) toonStap(huidigStap - 1);
+}
+
+export function volgendeStap() {
+  if (!valideerStap(huidigStap)) return;
+  verzamelStapData(huidigStap);
+  if (huidigStap < 6) toonStap(huidigStap + 1);
+}
+
+// ===== VALIDATIE =====
+function valideerStap(nr) {
+  const fout = (tekst) => { toonMelding('taken', tekst, 'fout'); return false; };
+
+  if (nr === 0) {
+    const keuze = document.querySelector('input[name="taak-start-keuze"]:checked');
+    if (!keuze) return fout('Kies een optie om te starten.');
+    return true;
+  }
+
+  if (nr === 1) {
+    if (!document.getElementById('taak-code').value.trim()) return fout('Vul een code in.');
+    if (!document.getElementById('taak-titel').value.trim()) return fout('Vul een titel in.');
+    const type = document.getElementById('taak-type').value;
+    if (type === 'taak' && !document.getElementById('taak-tijd').value.trim()) return fout('Vul de tijd in.');
+    if (!document.getElementById('taak-klas').value) return fout('Kies een klas.');
+    if (!document.getElementById('taak-lesweek').value) return fout('Kies een lesweek.');
+    const routes = ['G', 'B', 'Z', 'geen'].filter(r => document.getElementById('route-' + r)?.checked);
+    if (!routes.length) return fout('Kies minstens één route.');
+    const fases = ['verkennen','verwerken','inprenten','evalueren','herhalen'].filter(f => document.getElementById('fase-' + f)?.checked);
+    if (!fases.length) return fout('Kies minstens één leerprocesfase.');
+    return true;
+  }
+
+  if (nr === 2) {
+    const keuze = document.querySelector('input[name="vk-keuze"]:checked')?.value;
+    if (!keuze) return fout('Kies voor "geen voorkennis" of "voorkennis nodig".');
+    if (keuze === 'ja' && !geselecteerdeVK.length) return fout('Voeg minstens één voorkennis-doel toe.');
+    return true;
+  }
+
+  if (nr === 3) {
+    const heeftLeren = document.getElementById('sc-leren-actief')?.checked;
+    const heeftEval = document.getElementById('sc-eval-actief')?.checked;
+    if (!heeftLeren && !heeftEval) return fout('Activeer minstens één type succescriterium.');
+    if (heeftLeren && !geselecteerdeSC.leren.length) return fout('Voeg minstens één "Wat leer je"-doel toe.');
+    if (heeftEval && !geselecteerdeSC.eval.length) return fout('Voeg minstens één "Waarop geëvalueerd"-doel toe.');
+    return true;
+  }
+
+  if (nr === 4) {
+    if (!templateData) return fout('Voeg een instructie toe.');
+    return true;
+  }
+
+  if (nr === 6) {
+    const indienOpties = ['digitaal','map','vakje','anders'].filter(o => document.getElementById('indienen-' + o)?.checked);
+    if (!indienOpties.length) return fout('Kies minstens één indienwijze.');
+    return true;
+  }
+
+  return true;
+}
+
+// ===== DATA VERZAMELEN PER STAP =====
+function verzamelStapData(nr) {
+  if (nr === 0) {
+    huidigeTaak.startKeuze = document.querySelector('input[name="taak-start-keuze"]:checked')?.value;
+  }
+  if (nr === 1) {
+    const type = document.getElementById('taak-type').value;
+    huidigeTaak.code = document.getElementById('taak-code').value.trim();
+    huidigeTaak.titel = document.getElementById('taak-titel').value.trim();
+    huidigeTaak.type = type;
+    huidigeTaak.tijd = type === 'les' ? 'rooster' : document.getElementById('taak-tijd').value.trim();
+    huidigeTaak.vak = document.getElementById('taak-vak').value;
+    huidigeTaak.klas = document.getElementById('taak-klas').value;
+    huidigeTaak.schooljaar = document.getElementById('taak-schooljaar').value.trim();
+    huidigeTaak.lesweek = parseInt(document.getElementById('taak-lesweek').value) || null;
+    huidigeTaak.omschrijving = document.getElementById('taak-omschrijving').value.trim();
+    huidigeTaak.tags = document.getElementById('taak-tags').value.trim().split(',').map(t => t.trim()).filter(Boolean);
+    huidigeTaak.routes = ['G','B','Z','geen'].filter(r => document.getElementById('route-' + r)?.checked);
+    huidigeTaak.referenties = Array.from(document.querySelectorAll('.taak-ref-waarde')).map(i => i.value.trim()).filter(Boolean);
+    huidigeTaak.volgtijdelijkheid = document.getElementById('taak-volgtijdelijkheid').value.trim() || '0.0';
+    huidigeTaak.volgorde = parseInt(document.getElementById('taak-volgorde').value) || null;
+    huidigeTaak.fases = ['verkennen','verwerken','inprenten','evalueren','herhalen'].filter(f => document.getElementById('fase-' + f)?.checked);
+    huidigeTaak.extraPapier = document.getElementById('taak-extra-papier')?.checked ? 'ja' : 'nee';
+    huidigeTaak.status = document.getElementById('taak-status').value;
+  }
+  if (nr === 2) {
+    const keuze = document.querySelector('input[name="vk-keuze"]:checked')?.value;
+    huidigeTaak.heeftVoorkennis = keuze === 'ja';
+    huidigeTaak.voorkennis = keuze === 'ja' ? geselecteerdeVK.map(d => d.id) : [];
+    huidigeTaak.voorkennisData = keuze === 'ja' ? geselecteerdeVK : [];
+  }
+  if (nr === 3) {
+    huidigeTaak.scLeren = document.getElementById('sc-leren-actief')?.checked;
+    huidigeTaak.scEval = document.getElementById('sc-eval-actief')?.checked;
+    huidigeTaak.succescriteria = [
+      ...geselecteerdeSC.leren.map(d => ({ id: d.id, scIndeling: 'leren' })),
+      ...geselecteerdeSC.eval.map(d => ({ id: d.id, scIndeling: 'eval' })),
+    ];
+    huidigeTaak.scData = {
+      leren: geselecteerdeSC.leren,
+      eval: geselecteerdeSC.eval,
+    };
+  }
+  if (nr === 4) {
+    huidigeTaak.templateId = templateData?.id || null;
+    huidigeTaak.templateParams = templateData?.parameters || {};
+    huidigeTaak.templateInhoud = templateData?.inhoud || '';
+  }
+  if (nr === 5) {
+    huidigeTaak.bronnen = geselecteerdeBronnen.map(b => b.id);
+    huidigeTaak.bronnenData = geselecteerdeBronnen;
+  }
+  if (nr === 6) {
+    huidigeTaak.indienwijze = {
+      digitaal: document.getElementById('indienen-digitaal')?.checked || false,
+      map: document.getElementById('indienen-map')?.checked || false,
+      vakje: document.getElementById('indienen-vakje')?.checked || false,
+      anders: document.getElementById('indienen-anders')?.checked || false,
+      andersText: document.getElementById('indienen-anders-tekst')?.value.trim() || '',
+    };
+  }
+}
+
+// ===== STAP 0: START =====
+function renderStap0() {
+  const el = document.getElementById('taak-stap-0');
+  el.innerHTML = `
+    <h3 style="margin-bottom:20px;color:var(--blauw);">Wat wil je doen?</h3>
+    <div style="display:flex;flex-direction:column;gap:14px;max-width:480px;">
+      <label class="start-keuze-optie">
+        <input type="radio" name="taak-start-keuze" value="nieuw">
+        <div class="start-keuze-inhoud">
+          <div class="start-keuze-titel">✨ Nieuwe taak aanmaken</div>
+          <div class="start-keuze-omschrijving">Start van nul met een nieuwe taak of les.</div>
+        </div>
+      </label>
+      <label class="start-keuze-optie">
+        <input type="radio" name="taak-start-keuze" value="aanpassen">
+        <div class="start-keuze-inhoud">
+          <div class="start-keuze-titel">✏️ Bestaande taak aanpassen</div>
+          <div class="start-keuze-omschrijving">Pas een bestaande taak aan. Versienummer wordt verhoogd.</div>
+        </div>
+      </label>
+      <label class="start-keuze-optie">
+        <input type="radio" name="taak-start-keuze" value="kopie">
+        <div class="start-keuze-inhoud">
+          <div class="start-keuze-titel">📋 Bestaande taak kopiëren</div>
+          <div class="start-keuze-omschrijving">Gebruik een bestaande taak als basis voor een nieuwe taak.</div>
+        </div>
+      </label>
+    </div>
+    <div id="bestaande-taak-keuze" style="display:none;margin-top:20px;">
+      <label class="formulier-groep" style="max-width:480px;">
+        <span style="font-size:9.5pt;font-weight:700;color:var(--tekst-licht);text-transform:uppercase;letter-spacing:0.5px;">Kies een bestaande taak</span>
+        <select id="bestaande-taak-select" style="margin-top:5px;">
+          <option value="">Laden...</option>
+        </select>
+      </label>
+    </div>
+  `;
+
+  // Radio change → toon/verberg taaklijst
+  el.querySelectorAll('input[name="taak-start-keuze"]').forEach(radio => {
+    radio.addEventListener('change', async () => {
+      const blok = document.getElementById('bestaande-taak-keuze');
+      if (radio.value === 'aanpassen' || radio.value === 'kopie') {
+        blok.style.display = 'block';
+        await laadBestaandeTaken();
+      } else {
+        blok.style.display = 'none';
+        bewerkId = null;
+        isBewerkModus = false;
+        resetTaakState();
+      }
+    });
+  });
+}
+
+async function laadBestaandeTaken() {
+  const sel = document.getElementById('bestaande-taak-select');
+  if (!sel) return;
+  sel.innerHTML = '<option value="">Laden...</option>';
+  const snap = await getDocs(collection(db, 'taken'));
+  const taken = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  taken.sort((a, b) => a.code?.localeCompare(b.code || '', 'nl') || 0);
+  sel.innerHTML = '<option value="">Kies een taak...</option>' +
+    taken.map(t => `<option value="${t.id}">${t.code} — ${t.titel}</option>`).join('');
+}
+
+// ===== STAP 1: COÖRDINATEN =====
+function initStap1() {
+  // Schooljaar weken vullen
+  const sj = document.getElementById('taak-schooljaar')?.value || huidigSchooljaar();
+  vulLesweekDropdown(sj);
+}
+
+function vulLesweekDropdown(schooljaar) {
+  const sel = document.getElementById('taak-lesweek');
+  if (!sel) return;
+  const huidig = sel.value;
+  const weken = genereerSchoolweken(schooljaar);
+  sel.innerHTML = '<option value="">Kies een week...</option>' +
+    weken.map(w => `<option value="${w.nr}" ${w.nr == huidig ? 'selected' : ''}>${w.label}</option>`).join('');
+}
+
+// Referenties (zelfde patroon als doelen.js)
+let taakRefTeller = 0;
+export function voegTaakRefToe(waarde = '') {
+  const container = document.getElementById('taak-ref-container');
+  document.getElementById('geen-taak-refs').style.display = 'none';
+  taakRefTeller++;
+  const id = 'taak-ref-' + taakRefTeller;
+  const div = document.createElement('div');
+  div.className = 'subdoel-item';
+  div.id = id;
+  div.innerHTML = `
+    <div class="cd-wrapper" style="flex:1;">
+      <input type="text" class="cd-input taak-ref-waarde" placeholder="bv. 7.1" value="${waarde}"
+        autocomplete="off" data-type="referentie"
+        oninput="window._cdFilter(this)" onfocus="window._cdFilter(this)" onblur="window._cdVerberg(this)">
+      <div class="cd-lijst"></div>
+      <div class="cd-waarschuwing">⚠ Onbekende referentie.</div>
+    </div>
+    <button class="subdoel-verwijder" onclick="window._verwijderTaakRef('${id}')">✕</button>
+  `;
+  container.appendChild(div);
+}
+
+export function verwijderTaakRef(id) {
+  document.getElementById(id)?.remove();
+  if (!document.querySelectorAll('.taak-ref-waarde').length)
+    document.getElementById('geen-taak-refs').style.display = 'block';
+}
+
+export function toggleTijdVeld() {
+  const type = document.getElementById('taak-type')?.value;
+  const tijdVeld = document.getElementById('taak-tijd');
+  if (!tijdVeld) return;
+  if (type === 'les') {
+    tijdVeld.value = 'rooster';
+    tijdVeld.readOnly = true;
+    tijdVeld.style.background = '#f4f5f7';
+  } else {
+    tijdVeld.value = '';
+    tijdVeld.readOnly = false;
+    tijdVeld.style.background = '';
+  }
+}
+
+// ===== STAP 2: VOORKENNIS =====
+async function initStap2() {
+  await laadDropdownData();
+  await zorgDoelenCache();
+  renderDoelSectie('vk');
+}
+
+// ===== STAP 3: SUCCESCRITERIA =====
+async function initStap3() {
+  await zorgDoelenCache();
+  renderDoelSectie('sc');
+}
+
+// ===== HERBRUIKBAAR DOEL-KEUZE PANEL =====
+function renderDoelSectie(modus) {
+  // modus = 'vk' | 'sc'
+  const container = document.getElementById(`taak-stap-${modus === 'vk' ? 2 : 3}`);
+
+  if (modus === 'vk') {
+    container.querySelector('.doel-keuze-sectie').innerHTML = renderDoelKeuzeBlok('vk', 'voorkennis');
+    container.querySelector('.gekozen-doelen-sectie').innerHTML = renderGekozenDoelenBlok('vk');
+    bindDoelKeuzeEvents('vk');
+  } else {
+    container.querySelector('.doel-keuze-sectie-leren').innerHTML = renderDoelKeuzeBlok('sc-leren', 'succescriterium');
+    container.querySelector('.doel-keuze-sectie-eval').innerHTML = renderDoelKeuzeBlok('sc-eval', 'succescriterium');
+    container.querySelector('.gekozen-doelen-sectie-leren').innerHTML = renderGekozenDoelenBlok('sc-leren');
+    container.querySelector('.gekozen-doelen-sectie-eval').innerHTML = renderGekozenDoelenBlok('sc-eval');
+    bindDoelKeuzeEvents('sc-leren');
+    bindDoelKeuzeEvents('sc-eval');
+  }
+}
+
+function renderDoelKeuzeBlok(prefix, typeFilter) {
+  const doelen = (alleDoelen || []).filter(d => d.type === typeFilter);
+  return `
+    <div class="doel-zoek-blok" id="${prefix}-zoek-blok">
+      <div class="doel-zoek-rij">
+        <input type="text" placeholder="Zoeken op tekst..." id="${prefix}-zoek" oninput="window._filterDoelen('${prefix}')"
+          style="flex:2;padding:7px 10px;border:1.5px solid var(--grijs-rand);border-radius:7px;font-size:10pt;">
+        <select id="${prefix}-filter-ref" onchange="window._filterDoelen('${prefix}')"
+          style="flex:1;padding:7px 10px;border:1.5px solid var(--grijs-rand);border-radius:7px;font-size:9.5pt;">
+          <option value="">Alle referenties</option>
+          ${[...new Set(doelen.flatMap(d => d.referenties || []))].sort().map(r => `<option value="${r}">${r}</option>`).join('')}
+        </select>
+        <select id="${prefix}-filter-lp" onchange="window._filterDoelen('${prefix}')"
+          style="flex:1;padding:7px 10px;border:1.5px solid var(--grijs-rand);border-radius:7px;font-size:9.5pt;">
+          <option value="">Alle leerplandoelen</option>
+          ${[...new Set(doelen.flatMap(d => d.leerplandoel_codes || []))].sort().map(c => `<option value="${c}">${c}</option>`).join('')}
+        </select>
+      </div>
+      <div class="doel-lijst-container" id="${prefix}-lijst">
+        ${renderDoelLijst(prefix, doelen)}
+      </div>
+    </div>
+    <div style="margin-top:8px;">
+      <button class="knop knop-secundair knop-klein" onclick="window._toggleNieuwDoelFormulier('${prefix}')">+ Nieuw doel toevoegen</button>
+    </div>
+    <div id="${prefix}-nieuw-formulier" style="display:none;background:var(--grijs);border-radius:8px;padding:14px;margin-top:10px;">
+      <div class="formulier-rij">
+        <div class="formulier-groep vol">
+          <label>Tekst</label>
+          <textarea id="${prefix}-nieuw-tekst" rows="2" placeholder="Tekst van het doel..."></textarea>
+        </div>
+      </div>
+      <div class="formulier-rij">
+        <div class="formulier-groep">
+          <label>Leerplandoel-code</label>
+          <input type="text" id="${prefix}-nieuw-lp" placeholder="bv. 6.1">
+        </div>
+        <div class="formulier-groep">
+          <label>Referentie</label>
+          <input type="text" id="${prefix}-nieuw-ref" placeholder="bv. 7.1">
+        </div>
+        ${typeFilter === 'succescriterium' ? `
+        <div class="formulier-groep">
+          <label>Evalueerbaar</label>
+          <select id="${prefix}-nieuw-eval" onchange="window._toggleNieuwDoelScores('${prefix}')">
+            <option value="nee">Nee</option><option value="ja">Ja</option>
+          </select>
+        </div>` : ''}
+      </div>
+      ${typeFilter === 'succescriterium' ? `
+      <div id="${prefix}-nieuw-scores-blok" style="display:none;" class="formulier-rij">
+        <div class="formulier-groep vol">
+          <label>Scores <span style="font-weight:400;text-transform:none;">(gebruik ### voor nieuwe regel)</span></label>
+          <textarea id="${prefix}-nieuw-scores" rows="2"></textarea>
+        </div>
+      </div>` : ''}
+      <div style="margin-top:10px;display:flex;gap:8px;">
+        <button class="knop knop-primair knop-klein" onclick="window._slaaNieuwDoelOp('${prefix}', '${typeFilter}')">Opslaan</button>
+        <button class="knop knop-secundair knop-klein" onclick="window._toggleNieuwDoelFormulier('${prefix}')">Annuleren</button>
+      </div>
+    </div>
+  `;
+}
+
+function renderDoelLijst(prefix, doelen) {
+  if (!doelen.length) return '<div style="padding:10px;color:var(--tekst-licht);font-size:9.5pt;">Geen doelen gevonden.</div>';
+  return doelen.map(d => {
+    const codes = (d.leerplandoel_codes || []).join(', ');
+    const refs = (d.referenties || []).join(', ');
+    return `
+      <div class="doel-keuze-item" data-id="${d.id}" data-ref="${refs}" data-lp="${codes}">
+        <div class="doel-keuze-tekst">
+          ${d.tekst}
+          <div class="doel-keuze-meta">${codes ? `(${codes})` : ''} ${refs ? `§${refs}` : ''}</div>
+        </div>
+        <button class="knop knop-primair knop-klein" style="flex-shrink:0;" onclick="window._kiesDoel('${prefix}', '${d.id}')">+</button>
+      </div>
+    `;
+  }).join('');
+}
+
+function renderGekozenDoelenBlok(prefix) {
+  return `
+    <div style="margin-top:14px;">
+      <label style="font-size:9.5pt;font-weight:700;color:var(--tekst-licht);text-transform:uppercase;letter-spacing:0.5px;">Gekozen doelen</label>
+      <div id="${prefix}-gekozen" style="margin-top:8px;min-height:40px;"></div>
+      <div id="${prefix}-geen-gekozen" style="font-size:9.5pt;color:var(--tekst-licht);padding:8px 0;">Nog geen doelen gekozen.</div>
+    </div>
+  `;
+}
+
+function bindDoelKeuzeEvents(prefix) {
+  // Drag-and-drop voor volgorde komt via renderGekozenDoelen
+  renderGekozenDoelen(prefix);
+}
+
+export function filterDoelen(prefix) {
+  const zoek = document.getElementById(`${prefix}-zoek`)?.value.toLowerCase() || '';
+  const filterRef = document.getElementById(`${prefix}-filter-ref`)?.value || '';
+  const filterLp = document.getElementById(`${prefix}-filter-lp`)?.value || '';
+  const typeFilter = prefix.startsWith('sc') ? 'succescriterium' : 'voorkennis';
+
+  const gefilterd = (alleDoelen || []).filter(d => {
+    if (d.type !== typeFilter) return false;
+    if (zoek && !d.tekst.toLowerCase().includes(zoek)) return false;
+    if (filterRef && !(d.referenties || []).includes(filterRef)) return false;
+    if (filterLp && !(d.leerplandoel_codes || []).includes(filterLp)) return false;
+    return true;
+  });
+
+  const lijst = document.getElementById(`${prefix}-lijst`);
+  if (lijst) lijst.innerHTML = renderDoelLijst(prefix, gefilterd);
+}
+
+export function kiesDoel(prefix, id) {
+  const doel = alleDoelen?.find(d => d.id === id);
+  if (!doel) return;
+  const lijst = prefix === 'vk' ? geselecteerdeVK
+    : prefix === 'sc-leren' ? geselecteerdeSC.leren
+    : geselecteerdeSC.eval;
+  if (lijst.find(d => d.id === id)) return; // al gekozen
+  lijst.push({ ...doel });
+  renderGekozenDoelen(prefix);
+}
+
+export function verwijderGekozenDoel(prefix, id) {
+  if (prefix === 'vk') {
+    geselecteerdeVK = geselecteerdeVK.filter(d => d.id !== id);
+  } else if (prefix === 'sc-leren') {
+    geselecteerdeSC.leren = geselecteerdeSC.leren.filter(d => d.id !== id);
+  } else {
+    geselecteerdeSC.eval = geselecteerdeSC.eval.filter(d => d.id !== id);
+  }
+  renderGekozenDoelen(prefix);
+}
+
+function renderGekozenDoelen(prefix) {
+  const lijst = prefix === 'vk' ? geselecteerdeVK
+    : prefix === 'sc-leren' ? geselecteerdeSC.leren
+    : geselecteerdeSC.eval;
+
+  const container = document.getElementById(`${prefix}-gekozen`);
+  const geen = document.getElementById(`${prefix}-geen-gekozen`);
+  if (!container) return;
+
+  if (!lijst.length) {
+    container.innerHTML = '';
+    if (geen) geen.style.display = 'block';
+    return;
+  }
+  if (geen) geen.style.display = 'none';
+
+  container.innerHTML = lijst.map((d, idx) => `
+    <div class="geselecteerd-doel-item" draggable="true" data-id="${d.id}" data-prefix="${prefix}" data-idx="${idx}">
+      <span style="cursor:grab;color:var(--tekst-licht);margin-right:6px;">⠿</span>
+      <span style="flex:1;font-size:10.5pt;">${d.tekst}</span>
+      <button class="verwijder-doel" onclick="window._verwijderGekozenDoel('${prefix}', '${d.id}')">✕</button>
+    </div>
+  `).join('');
+
+  // Drag-and-drop
+  container.querySelectorAll('.geselecteerd-doel-item').forEach(el => {
+    el.addEventListener('dragstart', e => { e.dataTransfer.setData('drag-id', el.dataset.id); el.style.opacity = '0.5'; });
+    el.addEventListener('dragend', e => { el.style.opacity = '1'; });
+    el.addEventListener('dragover', e => { e.preventDefault(); el.style.background = 'var(--blauw-licht)'; });
+    el.addEventListener('dragleave', () => { el.style.background = ''; });
+    el.addEventListener('drop', e => {
+      e.preventDefault(); el.style.background = '';
+      const vanId = e.dataTransfer.getData('drag-id');
+      if (vanId === el.dataset.id) return;
+      const lijst2 = prefix === 'vk' ? geselecteerdeVK : prefix === 'sc-leren' ? geselecteerdeSC.leren : geselecteerdeSC.eval;
+      const vanIdx = lijst2.findIndex(d => d.id === vanId);
+      const naarIdx = lijst2.findIndex(d => d.id === el.dataset.id);
+      const [item] = lijst2.splice(vanIdx, 1);
+      lijst2.splice(naarIdx, 0, item);
+      renderGekozenDoelen(prefix);
+    });
+  });
+}
+
+export function toggleNieuwDoelFormulier(prefix) {
+  const formulier = document.getElementById(`${prefix}-nieuw-formulier`);
+  if (formulier) formulier.style.display = formulier.style.display === 'none' ? 'block' : 'none';
+}
+
+export function toggleNieuwDoelScores(prefix) {
+  const eval_ = document.getElementById(`${prefix}-nieuw-eval`)?.value;
+  const blok = document.getElementById(`${prefix}-nieuw-scores-blok`);
+  if (blok) blok.style.display = eval_ === 'ja' ? 'block' : 'none';
+}
+
+export async function slaaNieuwDoelOp(prefix, typeFilter) {
+  const tekst = document.getElementById(`${prefix}-nieuw-tekst`)?.value.trim();
+  if (!tekst) { alert('Vul de tekst in.'); return; }
+  const lp = document.getElementById(`${prefix}-nieuw-lp`)?.value.trim();
+  const ref = document.getElementById(`${prefix}-nieuw-ref`)?.value.trim();
+  const evalueerbaar = document.getElementById(`${prefix}-nieuw-eval`)?.value || 'nee';
+  const scores = document.getElementById(`${prefix}-nieuw-scores`)?.value.trim().replace(/###/g, '\n') || '';
+
+  const data = {
+    tekst, type: typeFilter,
+    leerplandoel_codes: lp ? [lp] : [],
+    referenties: ref ? [ref] : [],
+    evalueerbaar, scores, notities: '',
+    aangepastOp: new Date().toISOString(),
+  };
+
+  try {
+    const docRef = doc(collection(db, 'doelen'));
+    await setDoc(docRef, data);
+    const nieuw = { id: docRef.id, ...data };
+    if (alleDoelen) alleDoelen.push(nieuw);
+
+    // Koppel meteen
+    const lijst = prefix === 'vk' ? geselecteerdeVK : prefix === 'sc-leren' ? geselecteerdeSC.leren : geselecteerdeSC.eval;
+    lijst.push(nieuw);
+    renderGekozenDoelen(prefix);
+
+    // Reset formulier
+    document.getElementById(`${prefix}-nieuw-tekst`).value = '';
+    if (document.getElementById(`${prefix}-nieuw-lp`)) document.getElementById(`${prefix}-nieuw-lp`).value = '';
+    if (document.getElementById(`${prefix}-nieuw-ref`)) document.getElementById(`${prefix}-nieuw-ref`).value = '';
+    if (document.getElementById(`${prefix}-nieuw-eval`)) document.getElementById(`${prefix}-nieuw-eval`).value = 'nee';
+    if (document.getElementById(`${prefix}-nieuw-scores`)) document.getElementById(`${prefix}-nieuw-scores`).value = '';
+    if (document.getElementById(`${prefix}-nieuw-scores-blok`)) document.getElementById(`${prefix}-nieuw-scores-blok`).style.display = 'none';
+    document.getElementById(`${prefix}-nieuw-formulier`).style.display = 'none';
+  } catch (e) { alert('Fout bij opslaan: ' + e.message); }
+}
+
+// ===== STAP 4: INSTRUCTIE =====
+let taakEditorInhoud = '';
+
+async function initStap4() {
+  const templates = await zorgTemplatesCache();
+  const container = document.getElementById('stap4-template-lijst');
+  if (container) {
+    container.innerHTML = templates.map(t => `
+      <div class="doel-keuze-item" data-id="${t.id}">
+        <div class="doel-keuze-tekst">
+          <strong>${t.naam}</strong>
+          <div class="doel-keuze-meta">${t.type}${t.notities ? ' — ' + t.notities : ''}</div>
+        </div>
+        <button class="knop knop-primair knop-klein" style="flex-shrink:0;" onclick="window._kiesTemplate('${t.id}')">+</button>
+      </div>
+    `).join('') || '<div style="padding:10px;color:var(--tekst-licht);">Geen templates beschikbaar.</div>';
+  }
+
+  // Als er al templateData is, laad die in
+  if (templateData) {
+    document.getElementById('taak-instructies-inhoud').value = templateData.inhoud || '';
+    updatePreviewTaak();
+    renderTemplateParams(templateData.parameters || {});
+  }
+}
+
+export function kiesTemplate(id) {
+  const templates = zorgTemplatesCache();
+  templates.then(lijst => {
+    const t = lijst.find(x => x.id === id);
+    if (!t) return;
+    templateData = { id: t.id, naam: t.naam, inhoud: t.inhoud, parameters: { ...t.parameters } };
+    document.getElementById('taak-instructies-inhoud').value = t.inhoud;
+    updatePreviewTaak();
+    renderTemplateParams(t.parameters || {});
+    toonMelding('taken', `Template "${t.naam}" geladen.`, 'succes');
+  });
+}
+
+function renderTemplateParams(params) {
+  const container = document.getElementById('taak-template-params');
+  const blok = document.getElementById('taak-template-params-blok');
+  if (!Object.keys(params).length) { blok.style.display = 'none'; return; }
+  blok.style.display = 'block';
+  container.innerHTML = Object.entries(params).map(([naam, std]) => `
+    <div class="param-rij">
+      <div class="param-naam">{${naam}}</div>
+      <input type="text" class="param-input taak-param" data-param="${naam}"
+        value="${std}" placeholder="Waarde voor ${naam}..."
+        oninput="window._updatePreviewTaak()">
+    </div>
+  `).join('');
+}
+
+export function updatePreviewTaak() {
+  const ta = document.getElementById('taak-instructies-inhoud');
+  if (!ta) return;
+  let tekst = ta.value;
+  // Parameters invullen in preview
+  document.querySelectorAll('.taak-param').forEach(inp => {
+    tekst = tekst.replace(new RegExp(`\\{${inp.dataset.param}\\}`, 'g'), inp.value || `{${inp.dataset.param}}`);
+  });
+  const preview = document.getElementById('taak-instructies-preview');
+  if (preview) preview.innerHTML = parseMarkdown(tekst);
+  // Hoogte sync
+  ta.style.height = 'auto';
+  const hoogte = Math.max(320, ta.scrollHeight);
+  ta.style.height = hoogte + 'px';
+  if (preview) preview.style.minHeight = hoogte + 'px';
+
+  // Update templateData
+  if (!templateData) templateData = { id: null, naam: '', inhoud: '', parameters: {} };
+  templateData.inhoud = ta.value;
+  document.querySelectorAll('.taak-param').forEach(inp => {
+    templateData.parameters[inp.dataset.param] = inp.value;
+  });
+}
+
+export function detecteerParametersTaak() {
+  const inhoud = document.getElementById('taak-instructies-inhoud')?.value || '';
+  const gevonden = [...new Set([...inhoud.matchAll(/\{(\w+)\}/g)].map(m => m[1]))];
+  const huidige = templateData?.parameters || {};
+  const nieuw = {};
+  gevonden.forEach(p => { nieuw[p] = huidige[p] || ''; });
+  if (templateData) templateData.parameters = nieuw;
+  renderTemplateParams(nieuw);
+  updatePreviewTaak();
+}
+
+export async function slaInstructieOp() {
+  const inhoud = document.getElementById('taak-instructies-inhoud')?.value.trim();
+  if (!inhoud) { toonMelding('taken', 'Vul eerst instructies in.', 'fout'); return; }
+
+  if (!templateData?.id) {
+    // Nieuwe instructie → opslaan als template
+    const naam = prompt('Geef een naam voor deze template (of annuleer om niet op te slaan als template):');
+    if (naam) {
+      const type = 'les'; // default
+      const params = {};
+      document.querySelectorAll('.taak-param').forEach(inp => { params[inp.dataset.param] = inp.value; });
+      const data = { naam, type, inhoud, parameters: params, aangepastOp: new Date().toISOString() };
+      const docRef = doc(collection(db, 'templates'));
+      await setDoc(docRef, data);
+      templateData = { id: docRef.id, naam, inhoud, parameters: params };
+      toonMelding('taken', `Template "${naam}" opgeslagen.`, 'succes');
+    } else {
+      // Niet als template opslaan: bewaar inline
+      if (!templateData) templateData = {};
+      templateData.id = null;
+      templateData.inhoud = inhoud;
+    }
+  }
+  updatePreviewTaak();
+  toonMelding('taken', 'Instructie opgeslagen.', 'succes');
+}
+
+// ===== STAP 5: BRONNEN =====
+async function initStap5() {
+  await zorgBronnenCache();
+  // Standaardbronnen detecteren op basis van referenties
+  const refs = huidigeTaak.referenties || [];
+  const hoofdstukken = await zorgHoofdstukkenCache();
+  const stap5 = document.getElementById('stap5-standaard-bronnen');
+
+  const hoofdstukNrs = [...new Set(refs.map(r => parseInt(r.split('.')[0])).filter(Boolean))];
+  let standaardHtml = '';
+  for (const nr of hoofdstukNrs) {
+    const hst = hoofdstukken.find(h => h.nummer === nr);
+    if (!hst) continue;
+    const beschikbaar = [];
+    if (hst.bronnen?.cursus) beschikbaar.push({ label: `Cursus H${nr}`, type: 'bestand', link: hst.bronnen.cursus, icoon: '📄' });
+    if (hst.bronnen?.theorie) beschikbaar.push({ label: `Theorie H${nr}`, type: 'bestand', link: hst.bronnen.theorie, icoon: '📖' });
+    if (hst.bronnen?.correctiesleutel) beschikbaar.push({ label: `Correctiesleutel H${nr}`, type: 'bestand', link: hst.bronnen.correctiesleutel, icoon: '✅' });
+    if (!beschikbaar.length) continue;
+    standaardHtml += `
+      <div style="margin-bottom:12px;">
+        <div style="font-weight:700;font-size:10.5pt;margin-bottom:6px;">Hoofdstuk ${nr}: ${hst.titel}</div>
+        ${beschikbaar.map(b => `
+          <label style="display:flex;align-items:center;gap:8px;margin-bottom:4px;cursor:pointer;font-size:10.5pt;">
+            <input type="checkbox" class="standaard-bron-check" data-label="${b.label}" data-type="${b.type}" data-link="${b.link}" data-icoon="${b.icoon}" checked>
+            ${b.icoon} ${b.label}
+          </label>
+        `).join('')}
+      </div>
+    `;
+  }
+
+  if (stap5) stap5.innerHTML = standaardHtml || '<div style="color:var(--tekst-licht);font-size:9.5pt;">Geen standaardbronnen gevonden voor de gekozen referenties.</div>';
+
+  // Overige bronnen lijst
+  renderBronLijst();
+  renderGekozenBronnen();
+}
+
+function renderBronLijst() {
+  const zoek = document.getElementById('bron-zoek')?.value.toLowerCase() || '';
+  const filterType = document.getElementById('bron-filter-type')?.value || '';
+  let bronnen = (alleBronnen || []).filter(b => {
+    if (zoek && !b.label.toLowerCase().includes(zoek)) return false;
+    if (filterType && b.type !== filterType) return false;
+    return true;
+  });
+  const container = document.getElementById('stap5-bron-lijst');
+  if (!container) return;
+  const typeIconen = { website: '🌐', video: '▶️', classroom: '🎓', bestand: '📄', andere: '📎' };
+  container.innerHTML = bronnen.map(b => `
+    <div class="doel-keuze-item">
+      <div class="doel-keuze-tekst">
+        ${typeIconen[b.type] || '📎'} <strong>${b.label}</strong>
+        ${b.referentie ? `<div class="doel-keuze-meta">§${b.referentie}</div>` : ''}
+      </div>
+      <button class="knop knop-primair knop-klein" style="flex-shrink:0;" onclick="window._kiesBron('${b.id}')">+</button>
+    </div>
+  `).join('') || '<div style="padding:10px;color:var(--tekst-licht);">Geen bronnen gevonden.</div>';
+}
+
+export function kiesBron(id) {
+  const bron = alleBronnen?.find(b => b.id === id);
+  if (!bron || geselecteerdeBronnen.find(b => b.id === id)) return;
+  geselecteerdeBronnen.push({ ...bron });
+  renderGekozenBronnen();
+}
+
+export function verwijderGekozenBron(id) {
+  geselecteerdeBronnen = geselecteerdeBronnen.filter(b => b.id !== id);
+  renderGekozenBronnen();
+}
+
+function renderGekozenBronnen() {
+  const container = document.getElementById('stap5-gekozen-bronnen');
+  const geen = document.getElementById('stap5-geen-bronnen');
+  if (!container) return;
+  if (!geselecteerdeBronnen.length) {
+    container.innerHTML = '';
+    if (geen) geen.style.display = 'block';
+    return;
+  }
+  if (geen) geen.style.display = 'none';
+  const typeIconen = { website: '🌐', video: '▶️', classroom: '🎓', bestand: '📄', andere: '📎' };
+  container.innerHTML = geselecteerdeBronnen.map(b => `
+    <div class="geselecteerd-doel-item">
+      <span style="flex:1;">${typeIconen[b.type] || '📎'} ${b.label}</span>
+      <button class="verwijder-doel" onclick="window._verwijderGekozenBron('${b.id}')">✕</button>
+    </div>
+  `).join('');
+}
+
+export function filterBronnen() {
+  renderBronLijst();
+}
+
+// ===== VOLTOOIEN & PREVIEW =====
+export async function voltooiTaak() {
+  if (!valideerStap(6)) return;
+  verzamelStapData(6);
+
+  // Standaardbronnen samenvoegen
+  const standaard = [];
+  document.querySelectorAll('.standaard-bron-check:checked').forEach(cb => {
+    standaard.push({ id: 'std-' + cb.dataset.label, label: cb.dataset.label, type: cb.dataset.type, link: cb.dataset.link, icoon: cb.dataset.icoon, standaard: true });
+  });
+  huidigeTaak.bronnenData = [...standaard, ...geselecteerdeBronnen];
+
+  // Preview tonen
+  const previewEl = document.getElementById('taak-preview-inhoud');
+  if (previewEl) previewEl.innerHTML = renderTaakPreview(huidigeTaak);
+  document.getElementById('taak-stappen-wrapper').style.display = 'none';
+  document.getElementById('taak-preview-wrapper').style.display = 'block';
+}
+
+export function bewerkPreview() {
+  document.getElementById('taak-stappen-wrapper').style.display = 'block';
+  document.getElementById('taak-preview-wrapper').style.display = 'none';
+  toonStap(huidigStap);
+}
+
+export async function slaaTaakOp() {
+  const uid = auth.currentUser?.uid;
+  const nu = new Date().toISOString();
+
+  let versie = 1;
+  if (isBewerkModus && bewerkId) {
+    const snap = await getDoc(doc(db, 'taken', bewerkId));
+    versie = (snap.data()?.versienummer || 0) + 1;
+  }
+
+  const isKopie = huidigeTaak.startKeuze === 'kopie';
+
+  const data = {
+    code: huidigeTaak.code,
+    titel: huidigeTaak.titel,
+    type: huidigeTaak.type,
+    tijd: huidigeTaak.tijd,
+    vak: huidigeTaak.vak,
+    klas: huidigeTaak.klas,
+    schooljaar: huidigeTaak.schooljaar,
+    lesweek: huidigeTaak.lesweek,
+    omschrijving: huidigeTaak.omschrijving || '',
+    tags: huidigeTaak.tags || [],
+    routes: huidigeTaak.routes || [],
+    referenties: huidigeTaak.referenties || [],
+    volgtijdelijkheid: huidigeTaak.volgtijdelijkheid || '0.0',
+    volgorde: huidigeTaak.volgorde || null,
+    fases: huidigeTaak.fases || [],
+    extraPapier: huidigeTaak.extraPapier || 'nee',
+    status: huidigeTaak.status || 'concept',
+    heeftVoorkennis: huidigeTaak.heeftVoorkennis || false,
+    voorkennis: huidigeTaak.voorkennis || [],
+    succescriteria: huidigeTaak.succescriteria || [],
+    scLeren: huidigeTaak.scLeren || false,
+    scEval: huidigeTaak.scEval || false,
+    templateId: huidigeTaak.templateId || null,
+    templateParams: huidigeTaak.templateParams || {},
+    templateInhoud: huidigeTaak.templateInhoud || '',
+    bronnen: huidigeTaak.bronnenData?.map(b => ({ id: b.id, label: b.label, type: b.type, link: b.link || '', standaard: b.standaard || false })) || [],
+    indienwijze: huidigeTaak.indienwijze || {},
+    leerkrachtId: uid,
+    versienummer: isKopie ? 1 : versie,
+    aangepastOp: nu,
+  };
+
+  try {
+    if (isBewerkModus && bewerkId && !isKopie) {
+      await setDoc(doc(db, 'taken', bewerkId), data);
+    } else {
+      await setDoc(doc(collection(db, 'taken')), data);
+    }
+    toonMelding('taken', `Taak "${data.code}" opgeslagen.`, 'succes');
+    document.getElementById('taak-preview-wrapper').style.display = 'none';
+    document.getElementById('taak-formulier').style.display = 'none';
+    resetTaakState();
+    laadTaken();
+  } catch (e) {
+    toonMelding('taken', 'Fout bij opslaan: ' + e.message, 'fout');
+  }
+}
+
+// ===== PREVIEW RENDERER =====
+function renderTaakPreview(taak) {
+  const typeIconen = { website: '🌐', video: '▶️', classroom: '🎓', bestand: '📄', andere: '📎', std: '📄' };
+  const basisUrl = './pictures/';
+
+  // Instructie renderen met parameters ingevuld
+  let instructieHtml = '';
+  if (taak.templateInhoud) {
+    let tekst = taak.templateInhoud;
+    const params = taak.templateParams || {};
+    Object.entries(params).forEach(([k, v]) => {
+      tekst = tekst.replace(new RegExp(`\\{${k}\\}`, 'g'), v || `{${k}}`);
+    });
+    // Zet parseMarkdown output om naar instructie-stappen stijl
+    const regels = tekst.split('\n');
+    let stappen = '';
+    let numTeller = 0;
+    for (const regel of regels) {
+      const g = regel.trimStart();
+      if (!g) { stappen += '<div style="height:5px;"></div>'; numTeller = 0; continue; }
+      if (g.match(/^\d+\|\s*/)) {
+        numTeller++;
+        const inhoud = g.replace(/^\d+\|\s*/, '');
+        stappen += `<div class="instructie-stap"><div class="stap-nr">${numTeller}|</div><div class="stap-tekst">${inlineOpmaken(inhoud)}</div></div>`;
+      } else if (g.startsWith('## ')) {
+        numTeller = 0;
+        stappen += `<div style="font-weight:700;font-size:12pt;text-decoration:underline;color:var(--oranje);margin:10px 0 4px;">${g.slice(3)}</div>`;
+      } else if (g.startsWith('- ')) {
+        stappen += `<div style="display:flex;gap:8px;margin-bottom:4px;"><span style="color:var(--blauw);">•</span><span>${inlineOpmaken(g.slice(2))}</span></div>`;
+      } else {
+        stappen += `<div style="margin-bottom:4px;">${inlineOpmaken(g)}</div>`;
+      }
+    }
+    instructieHtml = `
+      <div class="sectie wit">
+        <div class="sectie-icoon"><img src="${basisUrl}instructies.png" alt="Instructies"></div>
+        <div class="sectie-inhoud">
+          <div class="sectie-titel">Instructies</div>
+          <div class="instructie-stappen">${stappen}</div>
+        </div>
+      </div>`;
+  }
+
+  // Voorkennis
+  let voorkennisHtml = '';
+  if (taak.heeftVoorkennis && taak.voorkennisData?.length) {
+    const items = taak.voorkennisData.map(d => `<li>${d.tekst}</li>`).join('');
+    voorkennisHtml = `
+      <div class="sectie wit">
+        <div class="sectie-icoon"><img src="${basisUrl}voorkennis.png" alt="Voorkennis"></div>
+        <div class="sectie-inhoud">
+          <div class="sectie-titel">Welke voorkennis heb je nodig?</div>
+          <ul class="doel-lijst">${items}</ul>
+        </div>
+      </div>`;
+  }
+
+  // Succescriteria
+  let scHtml = '';
+  const scData = taak.scData || {};
+  const lerenItems = (scData.leren || []);
+  const evalItems = (scData.eval || []);
+  if (lerenItems.length || evalItems.length) {
+    let scInhoud = '';
+    if (lerenItems.length) {
+      scInhoud += `<div class="sc-subtitel">Wat leer je met deze taak?</div><ul class="doel-lijst">`;
+      scInhoud += lerenItems.map(d => {
+        const codes = (d.leerplandoel_codes || []).join(', ');
+        return `<li>${d.tekst}${codes ? ` <span class="leerplandoel">(${codes})</span>` : ''}</li>`;
+      }).join('');
+      scInhoud += '</ul>';
+    }
+    if (evalItems.length) {
+      scInhoud += `<div class="sc-subtitel">Waarop word je geëvalueerd bij deze taak?</div><ul class="doel-lijst">`;
+      scInhoud += evalItems.map(d => {
+        const codes = (d.leerplandoel_codes || []).join(', ');
+        let scoreHtml = '';
+        if (d.scores) scoreHtml = `<div class="score-tekst">${d.scores.replace(/\n/g, '<br>')}</div>`;
+        return `<li>${d.tekst}${codes ? ` <span class="leerplandoel">(${codes})</span>` : ''}${scoreHtml}</li>`;
+      }).join('');
+      scInhoud += '</ul>';
+    }
+    scHtml = `
+      <div class="sectie grijs">
+        <div class="sectie-icoon"><img src="${basisUrl}succescriteria.png" alt="Succescriteria"></div>
+        <div class="sectie-inhoud">
+          <div class="sectie-titel">Succescriteria</div>
+          ${scInhoud}
+        </div>
+      </div>`;
+  }
+
+  // Bronnen
+  let bronnenHtml = '';
+  const allBronnen = taak.bronnenData || [];
+  if (allBronnen.length) {
+    const tegels = allBronnen.map(b => {
+      const icoon = b.icoon || typeIconen[b.type] || '📎';
+      const href = b.link ? `href="${b.link}" target="_blank"` : 'href="#"';
+      return `<a ${href} class="bron-tegel"><span class="bron-icoon">${icoon}</span>${b.label}</a>`;
+    }).join('');
+    bronnenHtml = `
+      <div class="sectie grijs">
+        <div class="sectie-icoon"><img src="${basisUrl}bronnen.png" alt="Bronnen"></div>
+        <div class="sectie-inhoud">
+          <div class="sectie-titel">Te gebruiken bronnen</div>
+          <div class="bron-tegels">${tegels}</div>
+        </div>
+      </div>`;
+  }
+
+  // Indienwijze
+  let indienHtml = '';
+  const ind = taak.indienwijze || {};
+  const rijen = [];
+  if (ind.map) rijen.push(`<div class="indienen-rij"><div class="indienen-rij-icoon">📁</div><div class="indienen-rij-tekst">Bewaar alles in je map.</div></div>`);
+  if (ind.digitaal) rijen.push(`<div class="indienen-rij"><div class="indienen-rij-icoon"><img src="${basisUrl}digitaal.png" style="width:32px;height:32px;object-fit:contain;"></div><div class="indienen-rij-tekst">Indienen in Google Classroom.</div></div>`);
+  if (ind.vakje) rijen.push(`<div class="indienen-rij"><div class="indienen-rij-icoon">📥</div><div class="indienen-rij-tekst">In het vakje van ${taak.vak || 'het vak'}.</div></div>`);
+  if (ind.anders && ind.andersText) rijen.push(`<div class="indienen-rij"><div class="indienen-rij-icoon">📌</div><div class="indienen-rij-tekst">${ind.andersText}</div></div>`);
+  if (rijen.length) {
+    indienHtml = `
+      <div class="sectie geel">
+        <div class="sectie-icoon"><img src="${basisUrl}indienen.png" alt="Indienen"></div>
+        <div class="sectie-inhoud">
+          <div class="sectie-titel">Indienen</div>
+          <div class="indienen-rijen">${rijen.join('')}</div>
+        </div>
+      </div>`;
+  }
+
+  const tijd = taak.tijd === 'rooster' ? 'rooster' : `${taak.tijd}'`;
+  return `
+    <div class="taak-blok">
+      <div class="titelbalk">${taak.code}: ${taak.titel} (${tijd})</div>
+      ${voorkennisHtml}${scHtml}${instructieHtml}${bronnenHtml}${indienHtml}
+    </div>`;
+}
+
+function inlineOpmaken(t) {
+  return t
+    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\*(.+?)\*/g, '<em>$1</em>')
+    .replace(/__(.+?)__/g, '<u>$1</u>')
+    .replace(/\[kleur:(\w+|#[0-9a-fA-F]{3,6})\](.+?)\[\/kleur\]/g, (m, k, t) => `<span style="color:${k};">${t}</span>`)
+    .replace(/\[(.+?)\]\((.+?)\)/g, '<a href="$2" target="_blank" style="color:var(--blauw);">$1</a>')
+    .replace(/\+\+/g, '<br>');
+}
+
+// ===== TAKEN OVERZICHT LADEN =====
+export async function laadTaken() {
+  const lader = document.getElementById('taken-lader');
+  const tabel = document.getElementById('taken-tabel');
+  const leeg = document.getElementById('taken-leeg');
+  if (!lader) return;
+
+  lader.style.display = 'block';
+  if (tabel) tabel.style.display = 'none';
+  if (leeg) leeg.style.display = 'none';
+
+  try {
+    const snap = await getDocs(collection(db, 'taken'));
+    let taken = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+
+    const filterSj = document.getElementById('filter-taak-schooljaar')?.value || '';
+    const filterWeek = document.getElementById('filter-taak-week')?.value || '';
+    const filterStatus = document.getElementById('filter-taak-status')?.value || '';
+
+    if (filterSj) taken = taken.filter(t => t.schooljaar === filterSj);
+    if (filterWeek) taken = taken.filter(t => t.lesweek == filterWeek);
+    if (filterStatus) taken = taken.filter(t => t.status === filterStatus);
+
+    taken.sort((a, b) => {
+      if (a.lesweek !== b.lesweek) return (a.lesweek || 0) - (b.lesweek || 0);
+      return (a.volgorde || 0) - (b.volgorde || 0);
+    });
+
+    lader.style.display = 'none';
+    if (!taken.length) { if (leeg) leeg.style.display = 'block'; return; }
+
+    const statusKleur = { concept: 'badge-verdieping', actief: 'badge-basis', archief: 'badge-bg' };
+    const tbody = document.getElementById('taken-tbody');
+    if (tbody) tbody.innerHTML = taken.map(t => `
+      <tr>
+        <td><strong>${t.code}</strong></td>
+        <td>${t.titel}</td>
+        <td>${t.klas || '—'}</td>
+        <td style="font-size:9.5pt;">${t.lesweek ? 'Week ' + t.lesweek : '—'}</td>
+        <td><span class="badge ${statusKleur[t.status] || 'badge-bg'}">${t.status}</span></td>
+        <td style="font-size:9pt;color:var(--tekst-licht);">v${t.versienummer || 1}</td>
+        <td>
+          <button class="knop knop-secundair knop-klein" onclick="window._bewerkTaak('${t.id}')">✏️</button>
+          <button class="knop knop-secundair knop-klein" onclick="window._kopieerTaak('${t.id}')">📋</button>
+        </td>
+      </tr>
+    `).join('');
+    if (tabel) tabel.style.display = 'block';
+  } catch (e) {
+    toonMelding('taken', 'Fout bij laden: ' + e.message, 'fout');
+    lader.style.display = 'none';
+  }
+}
+
+// ===== NIEUW / BEWERKEN / KOPIE =====
+export function nieuweTaak() {
+  resetTaakState();
+  document.getElementById('taak-formulier').style.display = 'block';
+  document.getElementById('taak-preview-wrapper').style.display = 'none';
+  renderStap0();
+  toonStap(0);
+}
+
+export async function bewerkTaak(id) {
+  const snap = await getDoc(doc(db, 'taken', id));
+  if (!snap.exists()) return;
+  laadTaakInFormulier(id, snap.data(), false);
+}
+
+export async function kopieerTaak(id) {
+  const snap = await getDoc(doc(db, 'taken', id));
+  if (!snap.exists()) return;
+  laadTaakInFormulier(null, snap.data(), true);
+}
+
+async function laadTaakInFormulier(id, data, isKopie) {
+  resetTaakState();
+  bewerkId = isKopie ? null : id;
+  isBewerkModus = !isKopie;
+  huidigeTaak = { ...data, startKeuze: isKopie ? 'kopie' : 'aanpassen' };
+
+  // Doelen herladen
+  await zorgDoelenCache();
+  geselecteerdeVK = (data.voorkennis || []).map(vkId => alleDoelen?.find(d => d.id === vkId)).filter(Boolean);
+  const scLijst = data.succescriteria || [];
+  geselecteerdeSC.leren = scLijst.filter(s => s.scIndeling === 'leren').map(s => alleDoelen?.find(d => d.id === s.id)).filter(Boolean);
+  geselecteerdeSC.eval = scLijst.filter(s => s.scIndeling === 'eval').map(s => alleDoelen?.find(d => d.id === s.id)).filter(Boolean);
+
+  // Bronnen
+  await zorgBronnenCache();
+  geselecteerdeBronnen = (data.bronnen || []).filter(b => !b.standaard).map(b => alleBronnen?.find(x => x.id === b.id) || b).filter(Boolean);
+
+  // Template
+  if (data.templateId) {
+    const templates = await zorgTemplatesCache();
+    const t = templates.find(x => x.id === data.templateId);
+    templateData = { id: data.templateId, naam: t?.naam || '', inhoud: data.templateInhoud || t?.inhoud || '', parameters: data.templateParams || {} };
+  }
+
+  document.getElementById('taak-formulier').style.display = 'block';
+  document.getElementById('taak-preview-wrapper').style.display = 'none';
+  renderStap0();
+
+  // Stel radio in
+  setTimeout(() => {
+    const radio = document.querySelector(`input[name="taak-start-keuze"][value="${isKopie ? 'kopie' : 'aanpassen'}"]`);
+    if (radio) radio.checked = true;
+  }, 50);
+
+  toonStap(1);
+  vulFormulierStap1(data, isKopie);
+}
+
+function vulFormulierStap1(data, isKopie) {
+  setTimeout(() => {
+    const set = (id, val) => { const el = document.getElementById(id); if (el) el.value = val || ''; };
+    set('taak-code', isKopie ? '' : (data.code || ''));
+    set('taak-titel', data.titel || '');
+    set('taak-type', data.type || 'taak');
+    toggleTijdVeld();
+    set('taak-tijd', data.tijd === 'rooster' ? '' : (data.tijd || ''));
+    set('taak-vak', data.vak || 'Wiskunde');
+    set('taak-klas', data.klas || '1a');
+    set('taak-schooljaar', data.schooljaar || huidigSchooljaar());
+    set('taak-omschrijving', data.omschrijving || '');
+    set('taak-tags', (data.tags || []).join(', '));
+    set('taak-volgtijdelijkheid', data.volgtijdelijkheid || '0.0');
+    set('taak-volgorde', data.volgorde || '');
+    set('taak-status', isKopie ? 'concept' : (data.status || 'concept'));
+    vulLesweekDropdown(data.schooljaar || huidigSchooljaar());
+    setTimeout(() => set('taak-lesweek', isKopie ? '' : (data.lesweek || '')), 50);
+    // Routes
+    ['G','B','Z','geen'].forEach(r => { const el = document.getElementById('route-' + r); if (el) el.checked = (data.routes || []).includes(r); });
+    // Fases
+    ['verkennen','verwerken','inprenten','evalueren','herhalen'].forEach(f => { const el = document.getElementById('fase-' + f); if (el) el.checked = (data.fases || []).includes(f); });
+    // Extra papier
+    const ep = document.getElementById('taak-extra-papier'); if (ep) ep.checked = data.extraPapier === 'ja';
+    // Referenties
+    (data.referenties || []).forEach(r => voegTaakRefToe(r));
+  }, 100);
+}
+
+// ===== RESET =====
+function resetTaakState() {
+  huidigeTaak = {};
+  bewerkId = null;
+  isBewerkModus = false;
+  geselecteerdeVK = [];
+  geselecteerdeSC = { leren: [], eval: [] };
+  geselecteerdeBronnen = [];
+  templateData = null;
+  taakRefTeller = 0;
+  alleDoelen = null;
+}
