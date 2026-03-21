@@ -510,13 +510,19 @@ function renderWeekpaginaHTML(actueleKolommen, weekNr, isExport) {
       </div>`;
     }
 
-    // Bronnen
+    // Bronnen — combineer opgeslagen bronnen + verrijk met Firestore-brondata indien nodig
     const typeIconen = { website: '🌐', video: '▶️', classroom: '🎓', bestand: '📄', andere: '📎' };
+    const bronIcoonen = { cursus: '📄', theorie: '📖', correctiesleutel: '✅' };
     let bronnenHtml = '';
     const bronnen = taak.bronnen || [];
+    console.log('Bronnen voor taak', taak.code, ':', bronnen);
     if (bronnen.length) {
       const tegels = bronnen.map(b => {
-        const icoon = b.icoon || typeIconen[b.type] || '📎';
+        // icoon: expliciet opgeslagen > type-mapping > standaard
+        const icoon = b.icoon
+          || bronIcoonen[Object.keys(bronIcoonen).find(k => b.label?.toLowerCase().includes(k))]
+          || typeIconen[b.type]
+          || '📎';
         const href = b.link ? `href="${b.link}" target="_blank"` : 'href="#"';
         return `<a ${href} class="bron-tegel"><span class="bron-icoon">${icoon}</span>${b.label}</a>`;
       }).join('');
