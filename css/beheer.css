@@ -177,3 +177,24 @@ tr:hover td { background: var(--blauw-licht); }
   .zijmenu { display: none; }
   .hoofdinhoud { padding: 16px; }
 }
+
+/* ===== CUSTOM DROPDOWN ===== */
+.cd-wrapper { position: relative; width: 100%; }
+.cd-input { width: 100%; }
+.cd-lijst {
+  display: none; position: absolute; left: 0; right: 0; top: calc(100% + 2px);
+  background: var(--wit); border: 1.5px solid var(--blauw); border-radius: 8px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.15); z-index: 500;
+  max-height: 220px; overflow-y: auto;
+}
+.cd-lijst.zichtbaar { display: block; }
+.cd-item {
+  padding: 8px 12px; cursor: pointer; font-size: 10pt; line-height: 1.4;
+  border-bottom: 1px solid var(--grijs-rand);
+}
+.cd-item:last-child { border-bottom: none; }
+.cd-item:hover { background: var(--blauw-licht); }
+.cd-code { font-weight: 700; color: var(--blauw); margin-right: 8px; }
+.cd-omschrijving { color: var(--tekst-licht); font-size: 9.5pt; }
+.cd-geen { padding: 10px 12px; color: var(--tekst-licht); font-size: 9.5pt; font-style: italic; }
+.cd-waarschuwing { font-size: 8.5pt; color: var(--oranje); margin-top: 3px; display: none; }
