@@ -134,6 +134,23 @@ export async function laadWeekoverzicht() {
       .sort((a, b) => (a.volgorde || 999) - (b.volgorde || 999));
     console.log('Gefilterde taken:', alleTakenVanWeek.length, alleTakenVanWeek.map(t => t.code));
 
+    // Haal alle doelen op voor verrijking
+    const doelenSnap = await getDocs(collection(db, 'doelen'));
+    const alleDoelen = {};
+    doelenSnap.docs.forEach(d => { alleDoelen[d.id] = { id: d.id, ...d.data() }; });
+
+    // Verrijk taken met doeldata (voorkennisData, scData)
+    alleTakenVanWeek = alleTakenVanWeek.map(taak => {
+      const voorkennisData = (taak.voorkennis || [])
+        .map(id => alleDoelen[id]).filter(Boolean);
+      const scLijst = taak.succescriteria || [];
+      const scData = {
+        leren: scLijst.filter(s => s.scIndeling === 'leren').map(s => alleDoelen[s.id]).filter(Boolean),
+        eval: scLijst.filter(s => s.scIndeling === 'eval').map(s => alleDoelen[s.id]).filter(Boolean),
+      };
+      return { ...taak, voorkennisData, scData };
+    });
+
     // Bouw kolomData op
     kolomData = { G: [], B: [], Z: [] };
     for (const taak of alleTakenVanWeek) {
@@ -297,11 +314,12 @@ export async function slaWeekoverzichtOp() {
         const taakRef = doc(db, 'taken', id);
         // Sla volgorde op per route — gebruik een gecombineerde sleutel
         const vt = kolomData[route].find(t => t.id === id)?._volgtijdelijkheid || '0.0';
-        batch.update(taakRef, {
+        const updateData = {
           [`volgordePerRoute.${route}`]: idx + 1,
           volgtijdelijkheid: vt,
-          volgorde: route === 'G' ? idx + 1 : undefined, // hoofdvolgorde op basis van G
-        });
+        };
+        if (route === 'G') updateData.volgorde = idx + 1;
+        batch.update(taakRef, updateData);
       });
     });
     await batch.commit();
@@ -349,9 +367,6 @@ function berekenVtTekst(taak, kolomLijst) {
 
 // ===== PREVIEW =====
 export function toonWeekoverzichtPreview() {
-  const previewEl = document.getElementById('wo-preview-inhoud');
-  if (!previewEl) return;
-
   // Lees actuele DOM-volgorde voor elke kolom
   const actueleKolommen = {};
   ['G', 'B', 'Z'].forEach(route => {
@@ -360,26 +375,11 @@ export function toonWeekoverzichtPreview() {
     actueleKolommen[route] = ids.map(id => kolomData[route].find(t => t.id === id)).filter(Boolean);
   });
 
-  previewEl.innerHTML = renderWeekpaginaHTML(actueleKolommen, huidigWeekWO, false);
-
-  // Koppel routeknoppen in de preview
-  previewEl.querySelectorAll('.route-tegel').forEach(tegel => {
-    tegel.addEventListener('click', () => {
-      const route = tegel.classList[1]; // G, B of Z
-      previewEl.querySelectorAll('.route-tegel').forEach(t => t.classList.remove('actief'));
-      tegel.classList.add('actief');
-      const welkom = previewEl.querySelector('#welkom-bericht');
-      const inhoudstafel = previewEl.querySelector('#inhoudstafel');
-      if (welkom) welkom.classList.add('verborgen');
-      if (inhoudstafel) inhoudstafel.classList.remove('verborgen');
-      previewEl.querySelectorAll('.taak-blok').forEach(blok => {
-        blok.classList.toggle('verborgen', blok.dataset.routes !== route);
-      });
-      previewEl.querySelectorAll('.inhoudslink').forEach(link => {
-        link.style.display = link.dataset.routes === route ? 'block' : 'none';
-      });
-    });
-  });
+  // Genereer volledige HTML (zelfde als export) en toon in iframe
+  const volledigeHTML = bouwVolledigeHTML(actueleKolommen, huidigWeekWO);
+  const iframe = document.getElementById('wo-preview-iframe');
+  if (!iframe) return;
+  iframe.srcdoc = volledigeHTML;
 
   document.getElementById('wo-beheer-wrapper').style.display = 'none';
   document.getElementById('wo-preview-wrapper').style.display = 'block';
@@ -400,21 +400,7 @@ export function exporteerWeekpagina() {
     actueleKolommen[route] = ids.map(id => kolomData[route].find(t => t.id === id)).filter(Boolean);
   });
 
-  const html = renderWeekpaginaHTML(actueleKolommen, huidigWeekWO, true);
-  const volledigeHTML = `<!DOCTYPE html>
-<html lang="nl">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Week ${huidigWeekWO}</title>
-<link href="https://fonts.googleapis.com/css2?family=Lato:wght@300;400;700;900&display=swap" rel="stylesheet">
-${weekpaginaCSS()}
-</head>
-<body>
-${html}
-${weekpaginaScript()}
-</body>
-</html>`;
+  const volledigeHTML = bouwVolledigeHTML(actueleKolommen, huidigWeekWO);
 
   const blob = new Blob([volledigeHTML], { type: 'text/html;charset=utf-8' });
   const url = URL.createObjectURL(blob);
@@ -423,6 +409,25 @@ ${weekpaginaScript()}
   a.download = `week-${huidigWeekWO}-${huidigSchooljaarWO}.html`;
   a.click();
   URL.revokeObjectURL(url);
+}
+
+// ===== VOLLEDIGE HTML BOUWEN (voor preview én export) =====
+function bouwVolledigeHTML(actueleKolommen, weekNr) {
+  const body = renderWeekpaginaHTML(actueleKolommen, weekNr, true);
+  return `<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Week ${weekNr}</title>
+<link href="https://fonts.googleapis.com/css2?family=Lato:wght@300;400;700;900&display=swap" rel="stylesheet">
+${weekpaginaCSS()}
+</head>
+<body>
+${body}
+${weekpaginaScript()}
+</body>
+</html>`;
 }
 
 // ===== WEEKPAGINA HTML RENDERER =====
