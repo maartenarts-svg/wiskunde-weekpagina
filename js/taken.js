@@ -778,25 +778,29 @@ function renderTemplateParams(params, volgorde) {
 export function updatePreviewTaak() {
   const ta = document.getElementById('taak-instructies-inhoud');
   if (!ta) return;
+
+  // Zorg dat templateData altijd bestaat
+  if (!templateData) templateData = { id: null, naam: '', inhoud: '', parameters: {}, paramVolgorde: [] };
+  templateData.inhoud = ta.value;
+
+  // Parameters bijwerken
+  document.querySelectorAll('.taak-param').forEach(inp => {
+    templateData.parameters[inp.dataset.param] = inp.value;
+  });
+
+  // Preview: parameters invullen in tekst
   let tekst = ta.value;
-  // Parameters invullen in preview
   document.querySelectorAll('.taak-param').forEach(inp => {
     tekst = tekst.replace(new RegExp(`\\{${inp.dataset.param}\\}`, 'g'), inp.value || `{${inp.dataset.param}}`);
   });
   const preview = document.getElementById('taak-instructies-preview');
   if (preview) preview.innerHTML = parseMarkdown(tekst);
+
   // Hoogte sync
   ta.style.height = 'auto';
   const hoogte = Math.max(320, ta.scrollHeight);
   ta.style.height = hoogte + 'px';
   if (preview) preview.style.minHeight = hoogte + 'px';
-
-  // Update templateData
-  if (!templateData) templateData = { id: null, naam: '', inhoud: '', parameters: {} };
-  templateData.inhoud = ta.value;
-  document.querySelectorAll('.taak-param').forEach(inp => {
-    templateData.parameters[inp.dataset.param] = inp.value;
-  });
 }
 
 export function detecteerParametersTaak() {
@@ -1070,7 +1074,7 @@ function renderTaakPreview(taak) {
   const typeIconen = { website: '🌐', video: '▶️', classroom: '🎓', bestand: '📄', andere: '📎', std: '📄' };
   const basisUrl = './pictures/';
 
-  // Instructie renderen met parameters ingevuld
+  // Instructie renderen met parameters ingevuld — gebruik parseMarkdown voor identieke output
   let instructieHtml = '';
   if (taak.templateInhoud) {
     let tekst = taak.templateInhoud;
@@ -1078,32 +1082,12 @@ function renderTaakPreview(taak) {
     Object.entries(params).forEach(([k, v]) => {
       tekst = tekst.replace(new RegExp(`\\{${k}\\}`, 'g'), v || `{${k}}`);
     });
-    // Zet parseMarkdown output om naar instructie-stappen stijl
-    const regels = tekst.split('\n');
-    let stappen = '';
-    let numTeller = 0;
-    for (const regel of regels) {
-      const g = regel.trimStart();
-      if (!g) { stappen += '<div style="height:5px;"></div>'; numTeller = 0; continue; }
-      if (g.match(/^\d+\|\s*/)) {
-        numTeller++;
-        const inhoud = g.replace(/^\d+\|\s*/, '');
-        stappen += `<div class="instructie-stap"><div class="stap-nr">${numTeller}|</div><div class="stap-tekst">${inlineOpmaken(inhoud)}</div></div>`;
-      } else if (g.startsWith('## ')) {
-        numTeller = 0;
-        stappen += `<div style="font-weight:700;font-size:12pt;text-decoration:underline;color:var(--oranje);margin:10px 0 4px;">${g.slice(3)}</div>`;
-      } else if (g.startsWith('- ')) {
-        stappen += `<div style="display:flex;gap:8px;margin-bottom:4px;"><span style="color:var(--blauw);">•</span><span>${inlineOpmaken(g.slice(2))}</span></div>`;
-      } else {
-        stappen += `<div style="margin-bottom:4px;">${inlineOpmaken(g)}</div>`;
-      }
-    }
     instructieHtml = `
       <div class="sectie wit">
         <div class="sectie-icoon"><img src="${basisUrl}instructies.png" alt="Instructies"></div>
         <div class="sectie-inhoud">
           <div class="sectie-titel">Instructies</div>
-          <div class="instructie-stappen">${stappen}</div>
+          <div class="preview-instructie-wrapper">${parseMarkdown(tekst)}</div>
         </div>
       </div>`;
   }
