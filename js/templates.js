@@ -8,10 +8,10 @@ export let actievEditor = null;
   // ===== TEMPLATES =====
 
   let bewerkTemplateId = null;
-  let actievEditor = null;
-  const cacheTemplates = { alle: null };
 
-  // ===== MARKDOWN PARSER ====
+
+
+  // ===== MARKDOWN PARSER =====
 
 export function parseMarkdown(tekst) {
     if (!tekst) return '';
