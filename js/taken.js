@@ -270,24 +270,25 @@ function verzamelStapData(nr) {
     huidigeTaak.startKeuze = document.querySelector('input[name="taak-start-keuze"]:checked')?.value;
   }
   if (nr === 1) {
-    const type = document.getElementById('taak-type').value;
-    huidigeTaak.code = document.getElementById('taak-code').value.trim();
-    huidigeTaak.titel = document.getElementById('taak-titel').value.trim();
+    const typeEl = document.getElementById('taak-type');
+    const type = typeEl?.value || 'taak';
+    huidigeTaak.code = document.getElementById('taak-code')?.value.trim() || '';
+    huidigeTaak.titel = document.getElementById('taak-titel')?.value.trim() || '';
     huidigeTaak.type = type;
-    huidigeTaak.tijd = type === 'les' ? 'rooster' : document.getElementById('taak-tijd').value.trim();
-    huidigeTaak.vak = document.getElementById('taak-vak').value;
-    huidigeTaak.klas = document.getElementById('taak-klas').value;
-    huidigeTaak.schooljaar = document.getElementById('taak-schooljaar').value.trim();
-    huidigeTaak.lesweek = parseInt(document.getElementById('taak-lesweek').value) || null;
-    huidigeTaak.omschrijving = document.getElementById('taak-omschrijving').value.trim();
-    huidigeTaak.tags = document.getElementById('taak-tags').value.trim().split(',').map(t => t.trim()).filter(Boolean);
+    huidigeTaak.tijd = type === 'les' ? 'rooster' : (document.getElementById('taak-tijd')?.value.trim() || '');
+    huidigeTaak.vak = document.getElementById('taak-vak')?.value || 'Wiskunde';
+    huidigeTaak.klas = document.getElementById('taak-klas')?.value || '1a';
+    huidigeTaak.schooljaar = document.getElementById('taak-schooljaar')?.value.trim() || huidigSchooljaar();
+    huidigeTaak.lesweek = parseInt(document.getElementById('taak-lesweek')?.value) || null;
+    huidigeTaak.omschrijving = document.getElementById('taak-omschrijving')?.value.trim() || '';
+    huidigeTaak.tags = (document.getElementById('taak-tags')?.value.trim() || '').split(',').map(t => t.trim()).filter(Boolean);
     huidigeTaak.routes = ['G','B','Z','geen'].filter(r => document.getElementById('route-' + r)?.checked);
     huidigeTaak.referenties = Array.from(document.querySelectorAll('.taak-ref-waarde')).map(i => i.value.trim()).filter(Boolean);
-    huidigeTaak.volgtijdelijkheid = document.getElementById('taak-volgtijdelijkheid').value.trim() || '0.0';
-    huidigeTaak.volgorde = parseInt(document.getElementById('taak-volgorde').value) || null;
+    huidigeTaak.volgtijdelijkheid = document.getElementById('taak-volgtijdelijkheid')?.value.trim() || '0.0';
+    huidigeTaak.volgorde = parseInt(document.getElementById('taak-volgorde')?.value) || null;
     huidigeTaak.fases = ['verkennen','verwerken','inprenten','evalueren','herhalen'].filter(f => document.getElementById('fase-' + f)?.checked);
     huidigeTaak.extraPapier = document.getElementById('taak-extra-papier')?.checked ? 'ja' : 'nee';
-    huidigeTaak.status = document.getElementById('taak-status').value;
+    huidigeTaak.status = document.getElementById('taak-status')?.value || 'concept';
   }
   if (nr === 2) {
     const keuze = document.querySelector('input[name="vk-keuze"]:checked')?.value;
@@ -376,28 +377,132 @@ function renderStap0() {
         blok.style.display = 'none';
         bewerkId = null;
         isBewerkModus = false;
-        resetTaakState();
+        // Geen resetTaakState hier — dat wist huidigeTaak te vroeg
       }
     });
   });
 }
 
+let alleBestaandeTaken = [];
+
 async function laadBestaandeTaken() {
-  const sel = document.getElementById('bestaande-taak-select');
-  if (!sel) return;
-  sel.innerHTML = '<option value="">Laden...</option>';
+  const blok = document.getElementById('bestaande-taak-keuze');
+  if (!blok) return;
+
+  blok.innerHTML = '<div style="color:var(--tekst-licht);font-size:9.5pt;margin-top:8px;">Laden...</div>';
+
   const snap = await getDocs(collection(db, 'taken'));
-  const taken = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-  taken.sort((a, b) => a.code?.localeCompare(b.code || '', 'nl') || 0);
-  sel.innerHTML = '<option value="">Kies een taak...</option>' +
-    taken.map(t => `<option value="${t.id}">${t.code} — ${t.titel}</option>`).join('');
+  alleBestaandeTaken = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  alleBestaandeTaken.sort((a, b) => {
+    if (a.schooljaar !== b.schooljaar) return (b.schooljaar || '').localeCompare(a.schooljaar || '');
+    if ((a.lesweek || 0) !== (b.lesweek || 0)) return (a.lesweek || 0) - (b.lesweek || 0);
+    return (a.code || '').localeCompare(b.code || '', 'nl');
+  });
+
+  // Unieke schooljaren en weken voor filters
+  const schooljaren = [...new Set(alleBestaandeTaken.map(t => t.schooljaar).filter(Boolean))].sort().reverse();
+  const weken = [...new Set(alleBestaandeTaken.map(t => t.lesweek).filter(Boolean))].sort((a,b) => a-b);
+  const referenties = [...new Set(alleBestaandeTaken.flatMap(t => t.referenties || []))].sort();
+
+  blok.innerHTML = `
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;margin-bottom:8px;">
+      <select id="bt-filter-sj" onchange="window._filterBestaandeTaken()" style="padding:5px 8px;border:1.5px solid var(--grijs-rand);border-radius:6px;font-size:9.5pt;">
+        <option value="">Alle schooljaren</option>
+        ${schooljaren.map(s => `<option value="${s}">${s}</option>`).join('')}
+      </select>
+      <select id="bt-filter-week" onchange="window._filterBestaandeTaken()" style="padding:5px 8px;border:1.5px solid var(--grijs-rand);border-radius:6px;font-size:9.5pt;">
+        <option value="">Alle weken</option>
+        ${weken.map(w => `<option value="${w}">Week ${w}</option>`).join('')}
+      </select>
+      <select id="bt-filter-ref" onchange="window._filterBestaandeTaken()" style="padding:5px 8px;border:1.5px solid var(--grijs-rand);border-radius:6px;font-size:9.5pt;">
+        <option value="">Alle referenties</option>
+        ${referenties.map(r => `<option value="${r}">${r}</option>`).join('')}
+      </select>
+      <input type="text" id="bt-filter-zoek" placeholder="Zoeken op code/titel..." oninput="window._filterBestaandeTaken()"
+        style="padding:5px 8px;border:1.5px solid var(--grijs-rand);border-radius:6px;font-size:9.5pt;flex:1;min-width:140px;">
+    </div>
+    <div class="doel-lijst-container" id="bt-lijst" style="max-height:260px;"></div>
+  `;
+  renderBestaandeTakenLijst();
+}
+
+function renderBestaandeTakenLijst() {
+  const filterSj = document.getElementById('bt-filter-sj')?.value || '';
+  const filterWeek = document.getElementById('bt-filter-week')?.value || '';
+  const filterRef = document.getElementById('bt-filter-ref')?.value || '';
+  const zoek = document.getElementById('bt-filter-zoek')?.value.toLowerCase() || '';
+
+  let lijst = alleBestaandeTaken.filter(t => {
+    if (filterSj && t.schooljaar !== filterSj) return false;
+    if (filterWeek && String(t.lesweek) !== filterWeek) return false;
+    if (filterRef && !(t.referenties || []).includes(filterRef)) return false;
+    if (zoek && !`${t.code} ${t.titel}`.toLowerCase().includes(zoek)) return false;
+    return true;
+  });
+
+  const container = document.getElementById('bt-lijst');
+  if (!container) return;
+  if (!lijst.length) {
+    container.innerHTML = '<div style="padding:10px;color:var(--tekst-licht);font-size:9.5pt;">Geen taken gevonden.</div>';
+    return;
+  }
+  container.innerHTML = lijst.map(t => `
+    <div class="doel-keuze-item" style="cursor:pointer;" onclick="window._kiesBestaandeTaak('${t.id}')">
+      <div class="doel-keuze-tekst">
+        <strong>${t.code}</strong> — ${t.titel}
+        <div class="doel-keuze-meta">
+          ${t.schooljaar || ''}${t.lesweek ? ' · Week ' + t.lesweek : ''}${t.klas ? ' · ' + t.klas : ''}
+          ${(t.referenties || []).length ? ' · §' + t.referenties.join(', ') : ''}
+          · <span class="badge ${t.status === 'actief' ? 'badge-basis' : t.status === 'archief' ? 'badge-bg' : 'badge-verdieping'}">${t.status || 'concept'}</span>
+          · v${t.versienummer || 1}
+        </div>
+      </div>
+    </div>
+  `).join('');
+}
+
+export function filterBestaandeTaken() {
+  renderBestaandeTakenLijst();
+}
+
+export function kiesBestaandeTaak(id) {
+  const keuze = document.querySelector('input[name="taak-start-keuze"]:checked')?.value;
+  if (!keuze) return;
+  const taak = alleBestaandeTaken.find(t => t.id === id);
+  if (!taak) return;
+  // Markeer de geselecteerde rij
+  document.querySelectorAll('#bt-lijst .doel-keuze-item').forEach(el => el.style.background = '');
+  event?.currentTarget?.style && (event.currentTarget.style.background = 'var(--blauw-licht)');
+  if (keuze === 'aanpassen') {
+    laadTaakInFormulier(id, taak, false);
+  } else {
+    laadTaakInFormulier(null, taak, true);
+  }
 }
 
 // ===== STAP 1: COÖRDINATEN =====
 function initStap1() {
+  // Zet standaardwaarden als het veld leeg is (= nieuwe taak)
+  const sjVeld = document.getElementById('taak-schooljaar');
+  if (sjVeld && !sjVeld.value) sjVeld.value = huidigSchooljaar();
+
+  const vakVeld = document.getElementById('taak-vak');
+  if (vakVeld && !vakVeld.value) vakVeld.value = 'Wiskunde';
+
+  const klasVeld = document.getElementById('taak-klas');
+  if (klasVeld && !klasVeld.value) klasVeld.value = '1a';
+
+  const statusVeld = document.getElementById('taak-status');
+  if (statusVeld && !statusVeld.value) statusVeld.value = 'concept';
+
+  const typeVeld = document.getElementById('taak-type');
+  if (typeVeld && !typeVeld.value) typeVeld.value = 'taak';
+
+  const vtVeld = document.getElementById('taak-volgtijdelijkheid');
+  if (vtVeld && !vtVeld.value) vtVeld.value = '0.0';
+
   // Schooljaar weken vullen
-  const sj = document.getElementById('taak-schooljaar')?.value || huidigSchooljaar();
-  vulLesweekDropdown(sj);
+  vulLesweekDropdown(sjVeld?.value || huidigSchooljaar());
 }
 
 export function vulLesweekDropdown(schooljaar) {
@@ -1040,7 +1145,7 @@ export async function slaaTaakOp() {
     tijd: huidigeTaak.tijd || '',
     vak: huidigeTaak.vak || 'Wiskunde',
     klas: huidigeTaak.klas || '',
-    schooljaar: huidigeTaak.schooljaar || '',
+    schooljaar: huidigeTaak.schooljaar || huidigSchooljaar(),
     lesweek: huidigeTaak.lesweek || null,
     omschrijving: huidigeTaak.omschrijving || '',
     tags: huidigeTaak.tags || [],
@@ -1283,8 +1388,11 @@ export async function laadTaken() {
 // ===== NIEUW / BEWERKEN / KOPIE =====
 export function nieuweTaak() {
   resetTaakState();
+  taakRefTeller = 0;
   document.getElementById('taak-formulier').style.display = 'block';
   document.getElementById('taak-preview-wrapper').style.display = 'none';
+  // Stap 0 opnieuw renderen zodat de radio's altijd vers zijn
+  huidigStap = -1; // forceer re-render
   renderStap0();
   toonStap(0);
 }
@@ -1387,5 +1495,5 @@ function resetTaakState() {
   geselecteerdeBronnen = [];
   templateData = null;
   taakRefTeller = 0;
-  alleDoelen = null;
+  // alleDoelen niet wissen — cache herbruiken voor performantie
 }
