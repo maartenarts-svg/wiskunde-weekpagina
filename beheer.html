@@ -615,8 +615,328 @@
 
       <!-- TAKEN -->
       <div class="sectie" id="sectie-taken">
-        <div class="pagina-titel">Taken & Lessen</div>
-        <div class="pagina-ondertitel">Wordt geladen...</div>
+        <div class="pagina-titel">Taken &amp; Lessen</div>
+        <div class="pagina-ondertitel">Stel taken en lessen samen voor de weekpagina.</div>
+
+        <div id="melding-taken" class="melding"></div>
+
+        <div class="kaart" style="padding:16px 24px;">
+          <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;">
+            <select id="filter-taak-schooljaar" onchange="window._laadTaken()" style="font-size:9.5pt;padding:5px 10px;">
+              <option value="2025-2026">2025-2026</option>
+              <option value="2024-2025">2024-2025</option>
+            </select>
+            <select id="filter-taak-week" onchange="window._laadTaken()" style="font-size:9.5pt;padding:5px 10px;">
+              <option value="">Alle weken</option>
+            </select>
+            <select id="filter-taak-status" onchange="window._laadTaken()" style="font-size:9.5pt;padding:5px 10px;">
+              <option value="">Alle statussen</option>
+              <option value="concept">Concept</option>
+              <option value="actief">Actief</option>
+              <option value="archief">Archief</option>
+            </select>
+            <button class="knop knop-primair" onclick="window._nieuweTaak()">+ Nieuwe taak</button>
+          </div>
+        </div>
+
+        <div class="kaart" id="taken-overzicht">
+          <div id="taken-lader" class="lader">Laden...</div>
+          <div class="tabel-wrapper" id="taken-tabel" style="display:none;">
+            <table>
+              <thead>
+                <tr><th>Code</th><th>Titel</th><th>Klas</th><th>Week</th><th>Status</th><th>Versie</th><th>Acties</th></tr>
+              </thead>
+              <tbody id="taken-tbody"></tbody>
+            </table>
+          </div>
+          <div class="leeg-staat" id="taken-leeg" style="display:none;">
+            <div class="leeg-icoon">&#128197;</div>
+            <p>Nog geen taken aangemaakt.</p>
+          </div>
+        </div>
+
+        <div class="kaart" id="taak-formulier" style="display:none;">
+          <div class="stap-voortgang">
+            <div class="stap-indicator" data-stap="0">Start</div>
+            <div class="stap-pijl">&#8250;</div>
+            <div class="stap-indicator" data-stap="1">Co&#246;rdinaten</div>
+            <div class="stap-pijl">&#8250;</div>
+            <div class="stap-indicator" data-stap="2">Voorkennis</div>
+            <div class="stap-pijl">&#8250;</div>
+            <div class="stap-indicator" data-stap="3">Succescriteria</div>
+            <div class="stap-pijl">&#8250;</div>
+            <div class="stap-indicator" data-stap="4">Instructie</div>
+            <div class="stap-pijl">&#8250;</div>
+            <div class="stap-indicator" data-stap="5">Bronnen</div>
+            <div class="stap-pijl">&#8250;</div>
+            <div class="stap-indicator" data-stap="6">Indienen</div>
+          </div>
+
+          <div id="taak-stappen-wrapper">
+
+            <div class="taak-stap" id="taak-stap-0"></div>
+
+            <div class="taak-stap" id="taak-stap-1">
+              <h3 class="stap-titel">Stap 1 &mdash; Co&#246;rdinaten</h3>
+              <div class="formulier-rij">
+                <div class="formulier-groep"><label>Code <span style="color:var(--rood);">*</span></label><input type="text" id="taak-code" placeholder="bv. WI T6.1"></div>
+                <div class="formulier-groep"><label>Titel <span style="color:var(--rood);">*</span></label><input type="text" id="taak-titel" placeholder="bv. Breuken"></div>
+              </div>
+              <div class="formulier-rij">
+                <div class="formulier-groep"><label>Type <span style="color:var(--rood);">*</span></label>
+                  <select id="taak-type" onchange="window._toggleTijdVeld()"><option value="taak">Taak</option><option value="les">Les</option></select>
+                </div>
+                <div class="formulier-groep"><label>Tijd <span style="color:var(--rood);">*</span></label><input type="text" id="taak-tijd" placeholder="50"></div>
+                <div class="formulier-groep"><label>Vak <span style="color:var(--rood);">*</span></label>
+                  <select id="taak-vak"><option value="Wiskunde">Wiskunde</option><option value="Frans">Frans</option><option value="Nederlands">Nederlands</option></select>
+                </div>
+                <div class="formulier-groep"><label>Klas <span style="color:var(--rood);">*</span></label>
+                  <select id="taak-klas"><option value="1a">1a</option><option value="1b">1b</option></select>
+                </div>
+              </div>
+              <div class="formulier-rij">
+                <div class="formulier-groep"><label>Schooljaar <span style="color:var(--rood);">*</span></label>
+                  <input type="text" id="taak-schooljaar" placeholder="2025-2026" oninput="window._vulLesweekDropdown(this.value)">
+                </div>
+                <div class="formulier-groep"><label>Lesweek <span style="color:var(--rood);">*</span></label>
+                  <select id="taak-lesweek"><option value="">Kies een week...</option></select>
+                </div>
+              </div>
+              <div class="formulier-rij">
+                <div class="formulier-groep vol"><label>Korte omschrijving</label>
+                  <textarea id="taak-omschrijving" style="min-height:60px;" placeholder="Optionele omschrijving..."></textarea>
+                </div>
+              </div>
+              <div class="formulier-rij">
+                <div class="formulier-groep vol"><label>Tags (kommagescheiden)</label>
+                  <input type="text" id="taak-tags" placeholder="bv. breuken, optellen">
+                </div>
+              </div>
+              <div class="formulier-rij">
+                <div class="formulier-groep">
+                  <label>Routes <span style="color:var(--rood);">*</span></label>
+                  <div style="display:flex;flex-wrap:wrap;gap:12px;margin-top:4px;">
+                    <label class="check-label"><input type="checkbox" id="route-G" value="G"> G-route</label>
+                    <label class="check-label"><input type="checkbox" id="route-B" value="B"> B-route</label>
+                    <label class="check-label"><input type="checkbox" id="route-Z" value="Z"> Z-route</label>
+                    <label class="check-label"><input type="checkbox" id="route-geen" value="geen"> Geen route</label>
+                  </div>
+                </div>
+              </div>
+              <div class="formulier-rij">
+                <div class="formulier-groep">
+                  <label>Referentie (optioneel)</label>
+                  <div class="subdoel-blok" id="taak-ref-container" style="padding:8px;">
+                    <div id="geen-taak-refs" style="font-size:9.5pt;color:var(--tekst-licht);">Nog geen referenties.</div>
+                  </div>
+                  <button class="knop knop-secundair knop-klein" style="margin-top:6px;" onclick="window._voegTaakRefToe()">+ Referentie</button>
+                </div>
+                <div class="formulier-groep">
+                  <label>Volgtijdelijkheid</label>
+                  <input type="text" id="taak-volgtijdelijkheid" placeholder="0.0" value="0.0">
+                  <span style="font-size:8.5pt;color:var(--tekst-licht);">x.y = reeks x, positie y. 0.0 = geen.</span>
+                </div>
+                <div class="formulier-groep">
+                  <label>Volgorde op weekpagina</label>
+                  <input type="number" id="taak-volgorde" placeholder="1" min="1">
+                </div>
+              </div>
+              <div class="formulier-rij">
+                <div class="formulier-groep">
+                  <label>Leerprocesfase <span style="color:var(--rood);">*</span></label>
+                  <div style="display:flex;flex-wrap:wrap;gap:12px;margin-top:4px;">
+                    <label class="check-label"><input type="checkbox" id="fase-verkennen"> Verkennen</label>
+                    <label class="check-label"><input type="checkbox" id="fase-verwerken"> Verwerken</label>
+                    <label class="check-label"><input type="checkbox" id="fase-inprenten"> Inprenten</label>
+                    <label class="check-label"><input type="checkbox" id="fase-evalueren"> Evalueren</label>
+                    <label class="check-label"><input type="checkbox" id="fase-herhalen"> Herhalen</label>
+                  </div>
+                </div>
+              </div>
+              <div class="formulier-rij">
+                <div class="formulier-groep">
+                  <label>Extra papier</label>
+                  <label class="check-label" style="margin-top:4px;"><input type="checkbox" id="taak-extra-papier"> Ja, extra papier nodig</label>
+                </div>
+                <div class="formulier-groep"><label>Status <span style="color:var(--rood);">*</span></label>
+                  <select id="taak-status"><option value="concept">Concept</option><option value="actief">Actief</option><option value="archief">Archief</option></select>
+                </div>
+              </div>
+            </div>
+
+            <div class="taak-stap" id="taak-stap-2">
+              <h3 class="stap-titel">Stap 2 &mdash; Voorkennis</h3>
+              <div style="margin-bottom:16px;">
+                <label class="check-label" style="font-size:11pt;"><input type="radio" name="vk-keuze" value="nee"> Geen voorkennis nodig.</label><br>
+                <label class="check-label" style="font-size:11pt;margin-top:8px;"><input type="radio" name="vk-keuze" value="ja" checked> Voorkennis nodig.</label>
+              </div>
+              <div class="doel-keuze-sectie"></div>
+              <div class="gekozen-doelen-sectie"></div>
+            </div>
+
+            <div class="taak-stap" id="taak-stap-3">
+              <h3 class="stap-titel">Stap 3 &mdash; Succescriteria</h3>
+              <div class="tabbladen">
+                <button class="tabblad-knop actief" onclick="window._toonScTabblad('leren', this)">&#128218; Wat leer je?</button>
+                <button class="tabblad-knop" onclick="window._toonScTabblad('eval', this)">&#128202; Waarop ge&#235;valueerd?</button>
+              </div>
+              <div class="tabblad-inhoud actief" id="sc-tab-leren">
+                <div style="margin-bottom:12px;">
+                  <label class="check-label" style="font-size:11pt;"><input type="checkbox" id="sc-leren-actief" checked> Dit type succescriterium is van toepassing.</label>
+                </div>
+                <div class="doel-keuze-sectie-leren"></div>
+                <div class="gekozen-doelen-sectie-leren"></div>
+              </div>
+              <div class="tabblad-inhoud" id="sc-tab-eval">
+                <div style="margin-bottom:12px;">
+                  <label class="check-label" style="font-size:11pt;"><input type="checkbox" id="sc-eval-actief"> Dit type succescriterium is van toepassing.</label>
+                </div>
+                <div class="doel-keuze-sectie-eval"></div>
+                <div class="gekozen-doelen-sectie-eval"></div>
+              </div>
+            </div>
+
+            <div class="taak-stap" id="taak-stap-4">
+              <h3 class="stap-titel">Stap 4 &mdash; Instructie</h3>
+              <div style="display:grid;grid-template-columns:240px 1fr;gap:20px;">
+                <div>
+                  <div class="editor-label">Kies een template</div>
+                  <div class="doel-lijst-container" id="stap4-template-lijst" style="max-height:320px;"></div>
+                </div>
+                <div>
+                  <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;" id="stap4-editor-wrapper">
+                    <div class="editor-panel">
+                      <div class="editor-label">Instructies</div>
+                      <textarea class="editor-textarea" id="taak-instructies-inhoud" style="min-height:300px;"
+                        oninput="window._updatePreviewTaak(); window._detecteerParametersTaak()"
+                        placeholder="Typ hier of kies een template links..."></textarea>
+                    </div>
+                    <div class="editor-panel">
+                      <div class="editor-label">Preview</div>
+                      <div class="preview-vak" id="taak-instructies-preview" style="min-height:300px;"></div>
+                    </div>
+                  </div>
+                  <div id="taak-template-params-blok" style="display:none;" class="param-blok">
+                    <div class="param-blok-titel">&#128295; Parameters</div>
+                    <div id="taak-template-params"></div>
+                  </div>
+                  <div style="margin-top:12px;">
+                    <button class="knop knop-primair knop-klein" onclick="window._slaInstructieOp()">&#128190; Instructie opslaan</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="taak-stap" id="taak-stap-5">
+              <h3 class="stap-titel">Stap 5 &mdash; Bronnen</h3>
+              <div class="kaart" style="background:var(--blauw-licht);box-shadow:none;margin-bottom:16px;">
+                <div style="font-weight:700;margin-bottom:10px;">Standaardbronnen uit de databank</div>
+                <div id="stap5-standaard-bronnen"></div>
+              </div>
+              <div>
+                <div class="editor-label" style="margin-bottom:8px;">Extra bronnen toevoegen</div>
+                <div class="doel-zoek-blok">
+                  <div class="doel-zoek-rij">
+                    <input type="text" id="bron-zoek" placeholder="Zoeken op label..." oninput="window._filterBronnen()"
+                      style="flex:2;padding:7px 10px;border:1.5px solid var(--grijs-rand);border-radius:7px;font-size:10pt;">
+                    <select id="bron-filter-type" onchange="window._filterBronnen()"
+                      style="flex:1;padding:7px 10px;border:1.5px solid var(--grijs-rand);border-radius:7px;font-size:9.5pt;">
+                      <option value="">Alle types</option>
+                      <option value="website">Website</option>
+                      <option value="video">Video</option>
+                      <option value="classroom">Google Classroom</option>
+                      <option value="bestand">PDF/Bestand</option>
+                      <option value="andere">Andere</option>
+                    </select>
+                  </div>
+                  <div class="doel-lijst-container" id="stap5-bron-lijst" style="max-height:240px;"></div>
+                </div>
+              </div>
+              <div style="margin-top:14px;">
+                <div class="editor-label">Gekozen bronnen</div>
+                <div id="stap5-gekozen-bronnen" style="margin-top:8px;"></div>
+                <div id="stap5-geen-bronnen" style="font-size:9.5pt;color:var(--tekst-licht);padding:8px 0;">Nog geen bronnen gekozen.</div>
+              </div>
+            </div>
+
+            <div class="taak-stap" id="taak-stap-6">
+              <h3 class="stap-titel">Stap 6 &mdash; Indienwijze</h3>
+              <p style="color:var(--tekst-licht);margin-bottom:16px;font-size:10.5pt;">Kies minstens &#233;&#233;n indienwijze.</p>
+              <div style="display:flex;flex-direction:column;gap:14px;max-width:500px;">
+                <label class="indienen-optie"><input type="checkbox" id="indienen-map">
+                  <div class="indienen-optie-inhoud"><div class="indienen-optie-label">&#128193; In de map bewaren</div></div>
+                </label>
+                <label class="indienen-optie"><input type="checkbox" id="indienen-digitaal">
+                  <div class="indienen-optie-inhoud"><div class="indienen-optie-label">&#128187; Digitaal indienen (Google Classroom)</div></div>
+                </label>
+                <label class="indienen-optie"><input type="checkbox" id="indienen-vakje">
+                  <div class="indienen-optie-inhoud"><div class="indienen-optie-label">&#128089; In het vakje</div></div>
+                </label>
+                <label class="indienen-optie">
+                  <input type="checkbox" id="indienen-anders" onchange="document.getElementById('indienen-anders-extra').style.display=this.checked?'block':'none'">
+                  <div class="indienen-optie-inhoud">
+                    <div class="indienen-optie-label">&#128204; Anders</div>
+                    <div id="indienen-anders-extra" style="display:none;margin-top:8px;">
+                      <input type="text" id="indienen-anders-tekst" placeholder="Omschrijf de indienwijze..." style="width:100%;">
+                    </div>
+                  </div>
+                </label>
+              </div>
+            </div>
+
+          </div>
+
+          <div style="display:flex;gap:10px;margin-top:24px;padding-top:16px;border-top:1px solid var(--grijs-rand);">
+            <button class="knop knop-secundair" id="taak-vorige-knop" style="display:none;" onclick="window._vorigeStap()">&#8592; Vorige</button>
+            <button class="knop knop-primair" id="taak-volgende-knop" onclick="window._volgendeStap()">Volgende &#8594;</button>
+            <button class="knop knop-primair" id="taak-voltooien-knop" style="display:none;" onclick="window._voltooiTaak()">&#10003; Voltooien &amp; preview</button>
+            <button class="knop knop-secundair" onclick="window._annuleerTaak()" style="margin-left:auto;">Annuleren</button>
+          </div>
+        </div>
+
+        <div id="taak-preview-wrapper" style="display:none;">
+          <div class="kaart">
+            <div class="kaart-titel">
+              <span>Preview taak</span>
+              <button class="knop knop-secundair knop-klein" onclick="window._bewerkPreview()">&#9998; Aanpassen</button>
+            </div>
+            <style>
+              #taak-preview-inhoud .taak-blok{border-top:4px solid #1e3a56}
+              #taak-preview-inhoud .titelbalk{background:#2c4a6e;color:white;padding:16px 40px;font-size:19pt;font-weight:700}
+              #taak-preview-inhoud .sectie{display:flex;align-items:flex-start;gap:24px;padding:28px 40px}
+              #taak-preview-inhoud .sectie.grijs{background:#f2f2f2}
+              #taak-preview-inhoud .sectie.wit{background:#fff}
+              #taak-preview-inhoud .sectie.geel{background:#fffacd}
+              #taak-preview-inhoud .sectie-icoon{width:56px;min-width:56px;height:56px;display:flex;align-items:center;justify-content:center}
+              #taak-preview-inhoud .sectie-icoon img{width:56px;height:56px;object-fit:contain}
+              #taak-preview-inhoud .sectie-inhoud{flex:1}
+              #taak-preview-inhoud .sectie-titel{font-size:15pt;font-weight:700;margin-bottom:12px}
+              #taak-preview-inhoud .doel-lijst{list-style:disc;padding-left:22px;line-height:1.7}
+              #taak-preview-inhoud .doel-lijst li{margin-bottom:4px}
+              #taak-preview-inhoud .sc-subtitel{font-size:11pt;font-weight:700;color:#e07b00;margin:14px 0 6px;text-decoration:underline}
+              #taak-preview-inhoud .sc-subtitel:first-child{margin-top:0}
+              #taak-preview-inhoud .leerplandoel{color:#555;font-size:10pt}
+              #taak-preview-inhoud .score-tekst{font-size:9pt;color:#555;margin-left:4px;line-height:1.6;margin-top:2px}
+              #taak-preview-inhoud .instructie-stappen{display:flex;flex-direction:column;gap:6px}
+              #taak-preview-inhoud .instructie-stap{display:flex;align-items:flex-start;line-height:1.7}
+              #taak-preview-inhoud .stap-nr{min-width:28px;font-size:11pt;flex-shrink:0;padding-top:1px;font-weight:700}
+              #taak-preview-inhoud .stap-tekst{flex:1}
+              #taak-preview-inhoud .bron-tegels{display:flex;flex-wrap:wrap;gap:14px;margin-top:6px}
+              #taak-preview-inhoud .bron-tegel{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;width:110px;height:110px;padding:12px 8px;background:white;border:1.5px solid #ccc;border-radius:10px;text-decoration:none;color:#222;font-size:10pt;font-weight:700;text-align:center;line-height:1.3}
+              #taak-preview-inhoud .bron-icoon{font-size:28px}
+              #taak-preview-inhoud .indienen-rijen{display:flex;flex-direction:column;gap:18px;margin-top:4px}
+              #taak-preview-inhoud .indienen-rij{display:flex;align-items:flex-start;gap:16px}
+              #taak-preview-inhoud .indienen-rij-icoon{font-size:28px;min-width:40px;text-align:center}
+              #taak-preview-inhoud .indienen-rij-tekst{font-size:11pt;line-height:1.6}
+            </style>
+            <div id="taak-preview-inhoud" style="border:1.5px solid var(--grijs-rand);border-radius:8px;overflow:hidden;margin-top:12px;"></div>
+          </div>
+          <div style="display:flex;gap:10px;margin-top:16px;">
+            <button class="knop knop-primair" onclick="window._slaaTaakOp()">&#128190; Taak opslaan</button>
+            <button class="knop knop-secundair" onclick="window._bewerkPreview()">&#9998; Aanpassen</button>
+          </div>
+        </div>
+
       </div>
 
       <!-- WEEKOVERZICHT -->
@@ -655,6 +975,16 @@
     updatePreview, detecteerParameters, toggleSyntax, voegSyntaxIn, parseMarkdown,
     zorgCache as zorgTemplatesCache
   } from './js/templates.js';
+  import {
+    laadTaken, nieuweTaak, bewerkTaak, kopieerTaak, annuleerTaak,
+    volgendeStap, vorigeStap, voltooiTaak, slaaTaakOp, bewerkPreview,
+    voegTaakRefToe, verwijderTaakRef, toggleTijdVeld,
+    filterDoelen, kiesDoel, verwijderGekozenDoel,
+    toggleNieuwDoelFormulier, toggleNieuwDoelScores, slaaNieuwDoelOp,
+    kiesTemplate, updatePreviewTaak, detecteerParametersTaak, slaInstructieOp,
+    kiesBron, verwijderGekozenBron, filterBronnen,
+    vulLesweekDropdown
+  } from './js/taken.js';
 
   window._laadLeerplandoelen = laadLeerplandoelen;
   window._slaLeerplandoelOp = slaLeerplandoelOp;
@@ -705,6 +1035,40 @@
   window._toggleSyntax = toggleSyntax;
   window._voegSyntaxIn = voegSyntaxIn;
 
+  window._laadTaken = laadTaken;
+  window._nieuweTaak = nieuweTaak;
+  window._bewerkTaak = bewerkTaak;
+  window._kopieerTaak = kopieerTaak;
+  window._annuleerTaak = () => { document.getElementById('taak-formulier').style.display='none'; document.getElementById('taak-preview-wrapper').style.display='none'; };
+  window._volgendeStap = volgendeStap;
+  window._vorigeStap = vorigeStap;
+  window._voltooiTaak = voltooiTaak;
+  window._slaaTaakOp = slaaTaakOp;
+  window._bewerkPreview = bewerkPreview;
+  window._voegTaakRefToe = voegTaakRefToe;
+  window._verwijderTaakRef = verwijderTaakRef;
+  window._toggleTijdVeld = toggleTijdVeld;
+  window._filterDoelen = filterDoelen;
+  window._kiesDoel = kiesDoel;
+  window._verwijderGekozenDoel = verwijderGekozenDoel;
+  window._toggleNieuwDoelFormulier = toggleNieuwDoelFormulier;
+  window._toggleNieuwDoelScores = toggleNieuwDoelScores;
+  window._slaaNieuwDoelOp = slaaNieuwDoelOp;
+  window._kiesTemplate = kiesTemplate;
+  window._updatePreviewTaak = updatePreviewTaak;
+  window._detecteerParametersTaak = detecteerParametersTaak;
+  window._slaInstructieOp = slaInstructieOp;
+  window._kiesBron = kiesBron;
+  window._verwijderGekozenBron = verwijderGekozenBron;
+  window._filterBronnen = filterBronnen;
+  window._vulLesweekDropdown = vulLesweekDropdown;
+  window._toonScTabblad = (id, knop) => {
+    document.querySelectorAll('#taak-stap-3 .tabblad-inhoud').forEach(t => t.classList.remove('actief'));
+    document.querySelectorAll('#taak-stap-3 .tabblad-knop').forEach(k => k.classList.remove('actief'));
+    document.getElementById('sc-tab-' + id).classList.add('actief');
+    knop.classList.add('actief');
+  };
+
   document.addEventListener('DOMContentLoaded', () => {
     initAuth({
       onIngelogd: (gebruiker) => {
@@ -714,6 +1078,7 @@
         laadDropdownData();
         laadBronnen();
         laadTemplates();
+        laadTaken();
       },
       onUitgelogd: () => {},
       onSectie: (naam) => {}
