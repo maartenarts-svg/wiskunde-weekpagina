@@ -4,7 +4,7 @@ import { toonMelding } from './ui.js';
 
 export let cacheDoelen = { alle: null };
 
-  // ===== CUSTOM DROPDOWN =====
+  // ===== CUSTOM DROPDOWN ====
 
   let alleLeerplancodes = []; // [{code, omschrijving}]
   let alleReferentieCodes = []; // [{code, omschrijving}]
