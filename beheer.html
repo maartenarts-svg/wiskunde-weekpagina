@@ -1174,7 +1174,18 @@
   import { laadDoelen, slaDoelOp, bewerkDoel, verwijderDoel, vulDatalijsten, cdFilter, cdKies, cdVerberg, voegReferentieToe, voegLeerplancodeToe, annuleerDoel } from './js/doelen.js';
   import { laadBronnen, slaBronOp, bewerkBron, verwijderBron } from './js/bronnen.js';
   import { laadTemplates, slaTemplateOp, bewerkTemplate, verwijderTemplate, updatePreview, detecteerParameters, toggleSyntax, voegSyntaxIn, parseMarkdown } from './js/templates.js';
-  import { laadTaken, laadWeekOverzicht, vulWeekDropdowns } from './js/taken.js';
+  import { 
+    laadTaken, laadWeekOverzicht, vulWeekDropdowns,
+    nieuweTaak, annuleerTaak, bewerkTaak, kopieerTaak, verwijderTaak, slaaTaakOp,
+    previewTaak, toonTabblad, toggleInstructieType, laadTemplateParams,
+    toggleIndienenExtra, voegEvalToe, verwijderEval, voegTaakRefToe, verwijderTaakRef,
+    filterDoelKeuzes, toggleDoel, nieuwDoelInline, filterBronKeuzes, toggleBron,
+    updatePreviewTaak, detecteerParametersTaak, toggleSyntaxTaak,
+    slaInstructiesAlsTemplateOp, slaVolgordeOp, exporteerWeekpagina, previewWeekpagina,
+    sleepStart, sleepOver, sleepLeave, sleepDrop, updateVolgorde,
+    toggleTaakType, updateScIndeling, toggleNieuwDoelFormulier, toggleNieuwScScores,
+    slaaNieuwDoelOp, toggleBron as toggleBronTaak
+  } from './js/taken.js';
 
   // Maak functies globaal beschikbaar voor onclick handlers in HTML
   const provider = new GoogleAuthProvider();
@@ -1221,6 +1232,42 @@
   window.voegSyntaxIn = voegSyntaxIn;
   window.laadTaken = laadTaken;
   window.laadWeekOverzicht = laadWeekOverzicht;
+  window.nieuweTaak = nieuweTaak;
+  window.annuleerTaak = annuleerTaak;
+  window.bewerkTaak = bewerkTaak;
+  window.kopieerTaak = kopieerTaak;
+  window.verwijderTaak = verwijderTaak;
+  window.slaaTaakOp = slaaTaakOp;
+  window.previewTaak = previewTaak;
+  window.toonTabblad = toonTabblad;
+  window.toggleInstructieType = toggleInstructieType;
+  window.laadTemplateParams = laadTemplateParams;
+  window.toggleIndienenExtra = toggleIndienenExtra;
+  window.voegEvalToe = voegEvalToe;
+  window.verwijderEval = verwijderEval;
+  window.voegTaakRefToe = voegTaakRefToe;
+  window.verwijderTaakRef = verwijderTaakRef;
+  window.filterDoelKeuzes = filterDoelKeuzes;
+  window.toggleDoel = toggleDoel;
+  window.filterBronKeuzes = filterBronKeuzes;
+  window.toggleBron = toggleBron;
+  window.updatePreviewTaak = updatePreviewTaak;
+  window.detecteerParametersTaak = detecteerParametersTaak;
+  window.toggleSyntaxTaak = toggleSyntaxTaak;
+  window.slaInstructiesAlsTemplateOp = slaInstructiesAlsTemplateOp;
+  window.slaVolgordeOp = slaVolgordeOp;
+  window.exporteerWeekpagina = exporteerWeekpagina;
+  window.previewWeekpagina = previewWeekpagina;
+  window.sleepStart = sleepStart;
+  window.sleepOver = sleepOver;
+  window.sleepLeave = sleepLeave;
+  window.sleepDrop = sleepDrop;
+  window.updateVolgorde = updateVolgorde;
+  window.toggleTaakType = toggleTaakType;
+  window.updateScIndeling = updateScIndeling;
+  window.toggleNieuwDoelFormulier = toggleNieuwDoelFormulier;
+  window.toggleNieuwScScores = toggleNieuwScScores;
+  window.slaaNieuwDoelOp = slaaNieuwDoelOp;
 
   // Auth
   document.addEventListener('DOMContentLoaded', () => {
