@@ -342,7 +342,9 @@ function renderStap0() {
 }
 
 export function initStap0Listeners() {
-  document.querySelectorAll('input[name="taak-start-keuze"]').forEach(radio => {
+  const stap0 = document.getElementById('taak-stap-0');
+  if (!stap0) return;
+  stap0.querySelectorAll('input[name="taak-start-keuze"]').forEach(radio => {
     radio.addEventListener('change', async () => {
       const blok = document.getElementById('bestaande-taak-keuze');
       if (radio.value === 'aanpassen' || radio.value === 'kopie') {
@@ -1399,9 +1401,11 @@ export function nieuweTaak() {
   resetTaakState();
   taakRefTeller = 0;
   alleBestaandeTaken = [];
-  document.getElementById('taak-formulier').style.display = 'block';
+  // Zorg dat wrapper altijd zichtbaar is, ongeacht vorige staat
+  document.getElementById('taak-stappen-wrapper').style.display = 'block';
   document.getElementById('taak-preview-wrapper').style.display = 'none';
-  renderStap0(); // altijd opnieuw renderen zodat radio's leeg zijn
+  document.getElementById('taak-formulier').style.display = 'block';
+  renderStap0();
   toonStap(0);
 }
 
