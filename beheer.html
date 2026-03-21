@@ -1020,7 +1020,7 @@
     toggleNieuwDoelFormulier, toggleNieuwDoelScores, slaaNieuwDoelOp,
     kiesTemplate, updatePreviewTaak, detecteerParametersTaak, slaInstructieOp,
     kiesBron, verwijderGekozenBron, filterBronnen, toggleNieuwBronFormulier, slaaNieuwBronOp,
-    vulLesweekDropdown, filterBestaandeTaken, kiesBestaandeTaak
+    vulLesweekDropdown, filterBestaandeTaken, kiesBestaandeTaak, verwijderTaak
   } from './js/taken.js';
 
   window._laadLeerplandoelen = laadLeerplandoelen;
@@ -1103,6 +1103,7 @@
   window._vulLesweekDropdown = vulLesweekDropdown;
   window._filterBestaandeTaken = filterBestaandeTaken;
   window._kiesBestaandeTaak = kiesBestaandeTaak;
+  window._verwijderTaak = verwijderTaak;
   window._toonScTabblad = (id, knop) => {
     document.querySelectorAll('#taak-stap-3 .tabblad-inhoud').forEach(t => t.classList.remove('actief'));
     document.querySelectorAll('#taak-stap-3 .tabblad-knop').forEach(k => k.classList.remove('actief'));
