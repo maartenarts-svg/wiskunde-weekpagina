@@ -3,6 +3,7 @@ import {
   collection, doc, setDoc, getDoc, getDocs, deleteDoc
 } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
 import { toonMelding } from './ui.js';
+import { haalCache, wisCache } from './appCache.js';
 
 // ===== STATE =====
 let cache = null;
@@ -45,7 +46,7 @@ export async function slaBronOp() {
   try {
     const docRef = bewerkId ? doc(db, 'bronnen', bewerkId) : doc(collection(db, 'bronnen'));
     await setDoc(docRef, data);
-    cache = null;
+    cache = null; wisCache('bronnen');
     toonMelding('bronnen', 'Bron opgeslagen.', 'succes');
     annuleerBron();
     laadBronnen();
@@ -62,9 +63,7 @@ export async function laadBronnen() {
 
   try {
     if (!cache) {
-      const snap = await getDocs(collection(db, 'bronnen'));
-      cache = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-      cache.sort((a, b) => a.label.localeCompare(b.label, 'nl'));
+      cache = (await haalCache('bronnen', db)).slice().sort((a, b) => a.label.localeCompare(b.label, 'nl'));
     }
 
     let bronnen = cache;
@@ -121,7 +120,7 @@ export async function verwijderBron(id) {
   if (!confirm('Ben je zeker dat je deze bron wil verwijderen?')) return;
   try {
     await deleteDoc(doc(db, 'bronnen', id));
-    cache = null;
+    cache = null; wisCache('bronnen');
     toonMelding('bronnen', 'Bron verwijderd.', 'succes');
     laadBronnen();
   } catch (e) {
