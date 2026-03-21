@@ -250,3 +250,70 @@ tr:hover td { background: var(--blauw-licht); }
 .param-rij { display: flex; gap: 10px; align-items: center; margin-bottom: 8px; }
 .param-naam { font-family: 'Courier New', monospace; font-size: 9.5pt; color: #92400e; min-width: 120px; }
 .param-input { flex: 1; padding: 6px 10px; border: 1px solid #f59e0b; border-radius: 6px; font-size: 10pt; background: white; }
+
+/* ===== TAKEN: STAP VOORTGANG ===== */
+.stap-voortgang {
+  display: flex; align-items: center; flex-wrap: wrap; gap: 4px;
+  margin-bottom: 24px; padding-bottom: 16px; border-bottom: 1px solid var(--grijs-rand);
+}
+.stap-indicator {
+  padding: 5px 12px; border-radius: 20px; font-size: 9pt; font-weight: 700;
+  background: var(--grijs); color: var(--tekst-licht); border: 1.5px solid var(--grijs-rand);
+  transition: all 0.2s;
+}
+.stap-indicator.actief { background: var(--blauw); color: white; border-color: var(--blauw); }
+.stap-indicator.klaar { background: var(--groen); color: white; border-color: var(--groen); }
+.stap-pijl { color: var(--tekst-licht); font-size: 14pt; }
+.stap-titel { font-size: 13pt; font-weight: 700; color: var(--blauw); margin-bottom: 20px; }
+
+/* ===== TAKEN: START KEUZE ===== */
+.start-keuze-optie {
+  display: flex; align-items: flex-start; gap: 12px; padding: 14px 16px;
+  border: 1.5px solid var(--grijs-rand); border-radius: 10px; cursor: pointer;
+  transition: all 0.15s;
+}
+.start-keuze-optie:hover { border-color: var(--blauw); background: var(--blauw-licht); }
+.start-keuze-optie input[type="radio"] { margin-top: 3px; flex-shrink: 0; }
+.start-keuze-titel { font-weight: 700; font-size: 11pt; margin-bottom: 3px; }
+.start-keuze-omschrijving { font-size: 9.5pt; color: var(--tekst-licht); }
+
+/* ===== TAKEN: CHECK LABELS ===== */
+.check-label {
+  display: flex; align-items: center; gap: 6px;
+  font-size: 10.5pt; cursor: pointer;
+  text-transform: none; letter-spacing: 0; font-weight: 400; color: var(--tekst);
+}
+
+/* ===== TAKEN: INDIENEN OPTIES ===== */
+.indienen-optie {
+  display: flex; align-items: flex-start; gap: 12px; padding: 12px 14px;
+  background: var(--grijs); border-radius: 8px; cursor: pointer;
+}
+.indienen-optie input[type="checkbox"] { margin-top: 3px; flex-shrink: 0; width:16px; height:16px; cursor:pointer; }
+.indienen-optie-inhoud { flex: 1; }
+.indienen-optie-label { font-weight: 700; font-size: 10.5pt; }
+
+/* ===== TAKEN: TABBLADEN ===== */
+.tabbladen { display: flex; gap: 0; border-bottom: 2px solid var(--grijs-rand); margin-bottom: 20px; }
+.tabblad-knop {
+  padding: 10px 20px; cursor: pointer; font-family: var(--font); font-size: 10.5pt;
+  font-weight: 700; color: var(--tekst-licht); background: none; border: none;
+  border-bottom: 3px solid transparent; margin-bottom: -2px; transition: all 0.15s;
+}
+.tabblad-knop:hover { color: var(--blauw); }
+.tabblad-knop.actief { color: var(--blauw); border-bottom-color: var(--blauw); }
+.tabblad-inhoud { display: none; }
+.tabblad-inhoud.actief { display: block; }
+
+/* ===== DOEL KEUZE BLOK ===== */
+.doel-zoek-blok { background: var(--grijs); border-radius: 8px; padding: 14px; margin-bottom: 12px; }
+.doel-zoek-rij { display: flex; gap: 8px; margin-bottom: 10px; flex-wrap: wrap; }
+.doel-lijst-container { max-height: 280px; overflow-y: auto; border: 1.5px solid var(--grijs-rand); border-radius: 8px; background: white; }
+.doel-keuze-item { display: flex; align-items: flex-start; gap: 10px; padding: 10px 12px; border-bottom: 1px solid var(--grijs-rand); transition: background 0.15s; }
+.doel-keuze-item:last-child { border-bottom: none; }
+.doel-keuze-item:hover { background: var(--blauw-licht); }
+.doel-keuze-tekst { font-size: 10.5pt; flex: 1; line-height: 1.5; }
+.doel-keuze-meta { font-size: 8.5pt; color: var(--tekst-licht); margin-top: 2px; }
+.geselecteerde-doelen { margin-top: 10px; }
+.geselecteerd-doel-item { display: flex; align-items: center; gap: 8px; padding: 8px 10px; background: var(--grijs); border-radius: 6px; margin-bottom: 4px; font-size: 10.5pt; }
+.geselecteerd-doel-item .verwijder-doel { background: none; border: none; color: var(--rood); cursor: pointer; font-size: 14px; margin-left: auto; }
