@@ -3,7 +3,7 @@ import {
   collection, doc, setDoc, getDoc, getDocs, updateDoc, deleteDoc
 } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
 import { toonMelding } from './ui.js';
-import { haalCache, wisCache } from './appCache.js';
+import { haalCache, wisCache, checkResetSignaal } from './appCache.js';
 import { parseMarkdown, zorgCache as zorgTemplatesCache } from './templates.js';
 import { laadDropdownData, cdFilter, cdKies, cdVerberg } from './doelen.js';
 import { zorgCache as zorgHoofdstukkenCache } from './hoofdstukken.js';
@@ -807,6 +807,8 @@ export async function slaaNieuwDoelOp(prefix, typeFilter) {
 let taakEditorInhoud = '';
 
 async function initStap4() {
+  // Check of templates gewijzigd zijn
+  if (checkResetSignaal('templateDropdown')) wisCache('templates');
   const templates = await zorgTemplatesCache();
   const container = document.getElementById('stap4-template-lijst');
   if (container) {
