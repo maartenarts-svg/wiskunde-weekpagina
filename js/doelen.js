@@ -3,7 +3,7 @@ import {
   collection, doc, setDoc, getDoc, getDocs, deleteDoc
 } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
 import { toonMelding } from './ui.js';
-import { haalCache, wisCache } from './appCache.js';
+import { haalCache, wisCache, checkResetSignaal } from './appCache.js';
 
 // ===== STATE =====
 let cache = null;
@@ -16,6 +16,9 @@ let alleLeerplancodes = [];
 let alleReferentieCodes = [];
 
 export async function laadDropdownData() {
+  // Check of andere modules een reset aangevraagd hebben
+  if (checkResetSignaal('leerplanDropdown')) alleLeerplancodes = [];
+  if (checkResetSignaal('referentieDropdown')) alleReferentieCodes = [];
   try {
     if (!alleLeerplancodes.length) {
       const lp = await haalCache('leerplandoelen', db);
