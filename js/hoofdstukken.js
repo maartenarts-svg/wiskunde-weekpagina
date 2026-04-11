@@ -3,7 +3,7 @@ import {
   collection, doc, setDoc, getDoc, getDocs, deleteDoc
 } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
 import { toonMelding } from './ui.js';
-import { haalCache, wisCache } from './appCache.js';
+import { haalCache, wisCache, zetResetSignaal } from './appCache.js';
 
 // ===== STATE =====
 let cache = null;
@@ -83,7 +83,7 @@ export async function slaHoofdstukOp() {
   try {
     const docId = bewerkId || 'H' + nummer;
     await setDoc(doc(db, 'hoofdstukken', docId), data);
-    cache = null; wisCache('hoofdstukken');
+    cache = null; wisCache('hoofdstukken'); zetResetSignaal('referentieDropdown');
     toonMelding('hoofdstukken', `Hoofdstuk ${nummer} opgeslagen.`, 'succes');
     annuleerHoofdstuk();
     laadHoofdstukken();
@@ -163,7 +163,7 @@ export async function verwijderHoofdstuk(id, nummer) {
   if (!confirm(`Ben je zeker dat je hoofdstuk ${nummer} wil verwijderen?`)) return;
   try {
     await deleteDoc(doc(db, 'hoofdstukken', id));
-    cache = null; wisCache('hoofdstukken');
+    cache = null; wisCache('hoofdstukken'); zetResetSignaal('referentieDropdown');
     toonMelding('hoofdstukken', `Hoofdstuk ${nummer} verwijderd.`, 'succes');
     laadHoofdstukken();
   } catch (e) {
