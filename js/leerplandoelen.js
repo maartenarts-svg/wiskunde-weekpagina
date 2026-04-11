@@ -3,6 +3,7 @@ import {
   collection, doc, setDoc, getDoc, getDocs, deleteDoc
 } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
 import { toonMelding, niveauBadge } from './ui.js';
+import { wisCache, zetResetSignaal } from './appCache.js';
 
 // ===== STATE =====
 let cache = null;
@@ -154,7 +155,7 @@ export async function importeerCSV(event) {
     if (i % 5 === 4) await new Promise(r => setTimeout(r, 200));
   }
 
-  cache = null;
+  cache = null; wisCache('leerplandoelen'); zetResetSignaal('leerplanDropdown');
   voortgang.style.display = 'none';
   event.target.value = '';
   toonMelding('leerplandoelen',
@@ -183,7 +184,7 @@ export async function slaLeerplandoelOp() {
 
   try {
     await setDoc(doc(db, 'leerplandoelen', bewerkId || code), data);
-    cache = null;
+    cache = null; wisCache('leerplandoelen'); zetResetSignaal('leerplanDropdown');
     toonMelding('leerplandoelen', `Leerplandoel ${code} opgeslagen.`, 'succes');
     annuleerLeerplandoel();
     laadLeerplandoelen();
@@ -271,7 +272,7 @@ export async function verwijderLeerplandoel(id, code) {
   if (!confirm(`Ben je zeker dat je leerplandoel ${code} wil verwijderen?`)) return;
   try {
     await deleteDoc(doc(db, 'leerplandoelen', id));
-    cache = null;
+    cache = null; wisCache('leerplandoelen'); zetResetSignaal('leerplanDropdown');
     toonMelding('leerplandoelen', `Leerplandoel ${code} verwijderd.`, 'succes');
     laadLeerplandoelen();
   } catch (e) {
