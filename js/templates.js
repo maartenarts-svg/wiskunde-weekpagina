@@ -3,7 +3,7 @@ import {
   collection, doc, setDoc, getDoc, getDocs, deleteDoc
 } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
 import { toonMelding } from './ui.js';
-import { haalCache, wisCache } from './appCache.js';
+import { haalCache, wisCache, zetResetSignaal } from './appCache.js';
 
 // ===== STATE =====
 let cache = null;
@@ -189,7 +189,7 @@ export async function slaTemplateOp() {
   try {
     const docRef = bewerkId ? doc(db, 'templates', bewerkId) : doc(collection(db, 'templates'));
     await setDoc(docRef, data);
-    cache = null; wisCache('templates');
+    cache = null; wisCache('templates'); zetResetSignaal('templateDropdown');
     toonMelding('templates', 'Template opgeslagen.', 'succes');
     annuleerTemplate();
     laadTemplates();
@@ -270,7 +270,7 @@ export async function verwijderTemplate(id) {
   if (!confirm('Ben je zeker dat je deze template wil verwijderen?')) return;
   try {
     await deleteDoc(doc(db, 'templates', id));
-    cache = null; wisCache('templates');
+    cache = null; wisCache('templates'); zetResetSignaal('templateDropdown');
     toonMelding('templates', 'Template verwijderd.', 'succes');
     laadTemplates();
   } catch (e) {
