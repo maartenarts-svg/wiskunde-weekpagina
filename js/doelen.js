@@ -3,7 +3,7 @@ import {
   collection, doc, setDoc, getDoc, getDocs, deleteDoc
 } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
 import { toonMelding } from './ui.js';
-import { haalCache, wisCache, checkResetSignaal } from './appCache.js';
+import { haalCache, wisCache, checkResetSignaal, zetResetSignaal } from './appCache.js';
 
 // ===== STATE =====
 let cache = null;
@@ -12,46 +12,47 @@ let leerplanTeller = 0;
 let referentieTeller = 0;
 
 // ===== CUSTOM DROPDOWN DATA =====
-let alleLeerplancodes = [];
-let alleReferentieCodes = [];
+// Geen lokale cache — altijd rechtstreeks uit appCache zodat wijzigingen meteen zichtbaar zijn
+
+async function getLeerplancodes() {
+  // Wis appCache als signaal gezet is
+  if (checkResetSignaal('leerplanDropdown')) wisCache('leerplandoelen');
+  const lp = await haalCache('leerplandoelen', db);
+  return lp
+    .map(d => ({ code: d.code, omschrijving: d.doel || '' }))
+    .filter(d => d.code)
+    .sort((a, b) => {
+      const v = c => c.startsWith('BG') ? 2 : c.startsWith('V') ? 1 : 0;
+      if (v(a.code) !== v(b.code)) return v(a.code) - v(b.code);
+      return a.code.localeCompare(b.code, 'nl', { numeric: true });
+    });
+}
+
+async function getReferentieCodes() {
+  if (checkResetSignaal('referentieDropdown')) wisCache('hoofdstukken');
+  const hst = await haalCache('hoofdstukken', db);
+  const refs = [];
+  hst.forEach(h => {
+    refs.push({ code: h.nummer + '.0', omschrijving: 'Hoofdstuk ' + h.nummer + ': ' + h.titel });
+    (h.paragrafen || []).forEach(p => refs.push({ code: p.nummer, omschrijving: '§' + p.nummer + ' ' + p.titel }));
+  });
+  return refs.sort((a, b) => a.code.localeCompare(b.code, 'nl', { numeric: true }));
+}
 
 export async function laadDropdownData() {
-  // Check of andere modules een reset aangevraagd hebben
-  if (checkResetSignaal('leerplanDropdown')) alleLeerplancodes = [];
-  if (checkResetSignaal('referentieDropdown')) alleReferentieCodes = [];
-  try {
-    if (!alleLeerplancodes.length) {
-      const lp = await haalCache('leerplandoelen', db);
-      alleLeerplancodes = lp
-        .map(d => ({ code: d.code, omschrijving: d.doel || '' }))
-        .filter(d => d.code)
-        .sort((a, b) => {
-          const v = c => c.startsWith('BG') ? 2 : c.startsWith('V') ? 1 : 0;
-          if (v(a.code) !== v(b.code)) return v(a.code) - v(b.code);
-          return a.code.localeCompare(b.code, 'nl', { numeric: true });
-        });
-    }
-    if (!alleReferentieCodes.length) {
-      const hst = await haalCache('hoofdstukken', db);
-      const refs = [];
-      hst.forEach(h => {
-        refs.push({ code: h.nummer + '.0', omschrijving: 'Hoofdstuk ' + h.nummer + ': ' + h.titel });
-        (h.paragrafen || []).forEach(p => refs.push({ code: p.nummer, omschrijving: '§' + p.nummer + ' ' + p.titel }));
-      });
-      alleReferentieCodes = refs.sort((a, b) => a.code.localeCompare(b.code, 'nl', { numeric: true }));
-    }
-  } catch (e) {
-    console.error('Fout bij laden dropdown data:', e);
-  }
+  // Geen actie nodig — data wordt per aanroep opgehaald via appCache
 }
 
 // ===== CUSTOM DROPDOWN FUNCTIES =====
-export function cdFilter(input) {
+export async function cdFilter(input) {
   const wrapper = input.closest('.cd-wrapper');
   const lijst = wrapper.querySelector('.cd-lijst');
   const type = input.dataset.type;
   const zoek = input.value.trim().toLowerCase();
-  const data = type === 'leerplan' ? alleLeerplancodes : alleReferentieCodes;
+
+  // Haal altijd vers op via appCache — geen lokale arrays meer
+  const data = type === 'leerplan' ? await getLeerplancodes() : await getReferentieCodes();
+
   const gefilterd = zoek
     ? data.filter(d => d.code.toLowerCase().includes(zoek) || d.omschrijving.toLowerCase().includes(zoek))
     : data;
@@ -60,7 +61,7 @@ export function cdFilter(input) {
     lijst.innerHTML = '<div class="cd-geen">Geen resultaten — eigen invoer wordt bewaard.</div>';
   } else {
     lijst.innerHTML = gefilterd.slice(0, 50).map(d => `
-      <div class="cd-item" onmousedown="window._cdKies(event, this, '${d.code.replace(/'/g, "\\'")}')">
+      <div class="cd-item" onmousedown="window._cdKies(event, this, '${d.code.replace(/'/g, "\'")}')">
         <span class="cd-code">${d.code}</span>
         <span class="cd-omschrijving">${d.omschrijving.length > 60 ? d.omschrijving.slice(0, 60) + '…' : d.omschrijving}</span>
       </div>
@@ -289,7 +290,7 @@ export async function slaDoelOp() {
   try {
     const docRef = bewerkId ? doc(db, 'doelen', bewerkId) : doc(collection(db, 'doelen'));
     await setDoc(docRef, data);
-    cache = null; wisCache('doelen');
+    cache = null; wisCache('doelen'); zetResetSignaal('leerplanDropdown');
     toonMelding('doelen', 'Doel opgeslagen.', 'succes');
     annuleerDoel();
     laadDoelen();
