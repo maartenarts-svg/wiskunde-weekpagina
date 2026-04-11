@@ -70,3 +70,19 @@ export function cacheStatus() {
     Object.entries(cache).map(([k, v]) => [k, v?.length ?? 'null'])
   );
 }
+
+// ===== RESET SIGNALEN =====
+// Modules kunnen hier flags zetten die andere modules checken
+const resetSignalen = {};
+
+export function zetResetSignaal(naam) {
+  resetSignalen[naam] = true;
+}
+
+export function checkResetSignaal(naam) {
+  if (resetSignalen[naam]) {
+    delete resetSignalen[naam];
+    return true;
+  }
+  return false;
+}
