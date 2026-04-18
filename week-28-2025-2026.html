@@ -1,0 +1,1019 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Week 28</title>
+<link href="https://fonts.googleapis.com/css2?family=Lato:wght@300;400;700;900&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --blauw: #2c4a6e; --blauw-donker: #1e3a56;
+    --grijs-licht: #f2f2f2; --wit: #ffffff; --geel: #fffacd;
+    --oranje: #e07b00; --tekst: #222222; --tekst-licht: #555555;
+    --font: 'Lato', sans-serif;
+  }
+  body { font-family: var(--font); font-size: 11pt; color: var(--tekst); background: #fff; }
+  .site-header {
+    background: linear-gradient(135deg, #1e3a56 0%, #2c4a6e 50%, #3a5f8a 100%);
+    color: white; text-align: center; padding: 60px 20px 50px; position: relative;
+  }
+  .site-header h1 { font-size: 48pt; font-weight: 900; letter-spacing: 2px; }
+  .route-sectie { background: #fff; padding: 28px 40px 24px; border-bottom: 1px solid #ddd; }
+  .route-label { font-size: 10pt; color: var(--tekst-licht); margin-bottom: 14px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; }
+  .route-tegels { display: flex; gap: 14px; flex-wrap: wrap; }
+  .route-tegel { padding: 14px 32px; border-radius: 8px; font-size: 15pt; font-weight: 900; cursor: pointer; border: 3px solid transparent; transition: all 0.2s ease; letter-spacing: 1px; opacity: 0.72; }
+  .route-tegel.G { background: #d4edda; color: #1a6b2f; border-color: #a8d5b5; }
+  .route-tegel.B { background: #cce5ff; color: #0d47a1; border-color: #90c4f9; }
+  .route-tegel.Z { background: #f8d7da; color: #8b1a1a; border-color: #f0a8ae; }
+  .route-tegel:hover, .route-tegel.actief { opacity: 1; box-shadow: 0 4px 16px rgba(0,0,0,0.18); transform: translateY(-2px); }
+  .welkom-bericht { padding: 56px 40px; text-align: center; color: var(--tekst-licht); font-size: 13pt; line-height: 1.8; }
+  .welkom-bericht strong { color: var(--blauw); font-size: 15pt; display: block; margin-bottom: 8px; }
+  .inhoudstafel { padding: 16px 40px 20px; background: #fff; border-bottom: 2px solid #eee; }
+  .inhoudstafel-titel { font-size: 10pt; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: var(--tekst-licht); margin-bottom: 8px; }
+  .inhoudstafel a { color: var(--blauw); text-decoration: underline; font-size: 11pt; display: block; margin-bottom: 4px; line-height: 1.6; }
+  .taak-blok { margin: 0; border-top: 4px solid var(--blauw-donker); }
+  .verborgen { display: none !important; }
+  .titelbalk { background: var(--blauw); color: white; padding: 16px 40px; font-size: 19pt; font-weight: 700; scroll-margin-top: 20px; }
+  .sectie { display: flex; align-items: flex-start; gap: 24px; padding: 28px 40px; }
+  .sectie.grijs { background: var(--grijs-licht); }
+  .sectie.wit { background: var(--wit); }
+  .sectie.geel { background: var(--geel); }
+  .sectie-icoon { width: 56px; min-width: 56px; height: 56px; display: flex; align-items: center; justify-content: center; }
+  .sectie-icoon img { width: 56px; height: 56px; object-fit: contain; }
+  .sectie-inhoud { flex: 1; }
+  .sectie-titel { font-size: 15pt; font-weight: 700; color: var(--tekst); margin-bottom: 12px; }
+  ul.doel-lijst { list-style: disc; padding-left: 22px; line-height: 1.7; }
+  ul.doel-lijst li { margin-bottom: 4px; }
+  .instructie-stappen { display: flex; flex-direction: column; gap: 6px; }
+  .instructie-stap { display: flex; align-items: flex-start; line-height: 1.7; }
+  .stap-nr { min-width: 28px; font-size: 11pt; font-weight: 700; flex-shrink: 0; padding-top: 1px; }
+  .stap-tekst { flex: 1; }
+  .sc-subtitel { font-size: 11pt; font-weight: 700; color: var(--oranje); margin: 14px 0 6px; text-decoration: underline; }
+  .sc-subtitel:first-child { margin-top: 0; }
+  .leerplandoel { color: var(--tekst-licht); font-size: 10pt; }
+  .score-tekst { font-size: 9pt; color: var(--tekst-licht); margin-left: 4px; line-height: 1.6; margin-top: 2px; }
+  .bron-tegels { display: flex; flex-wrap: wrap; gap: 14px; margin-top: 6px; }
+  .bron-tegel { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; width: 110px; height: 110px; padding: 12px 8px; background: white; border: 1.5px solid #ccc; border-radius: 10px; text-decoration: none; color: var(--tekst); font-size: 10pt; font-weight: 700; text-align: center; line-height: 1.3; }
+  .bron-icoon { font-size: 28px; }
+  .indienen-rijen { display: flex; flex-direction: column; gap: 18px; margin-top: 4px; }
+  .indienen-rij { display: flex; align-items: flex-start; gap: 16px; }
+  .indienen-rij-icoon { font-size: 28px; min-width: 40px; text-align: center; }
+  .indienen-rij-tekst { font-size: 11pt; line-height: 1.6; }
+  .afteller-blok {
+    background: rgba(255,255,255,0.15);
+    border-radius: 12px;
+    padding: 16px 24px;
+    min-width: 80px;
+  }
+  .afteller-blok span {
+    display: block;
+    font-size: 36pt;
+    font-weight: 900;
+    line-height: 1;
+    margin-bottom: 4px;
+  }
+  .afteller-label {
+    font-size: 10pt;
+    opacity: 0.75;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+  @media (max-width: 600px) {
+    .sectie { padding: 20px 18px; gap: 14px; }
+    .titelbalk { padding: 14px 18px; font-size: 15pt; }
+    .route-sectie, .inhoudstafel { padding: 18px; }
+    .afteller-blok span { font-size: 24pt; }
+  }
+</style>
+</head>
+<body>
+
+  <div id="wachtscherm" style="display:none;min-height:100vh;background:linear-gradient(135deg,#1e3a56 0%,#2c4a6e 60%,#3a5f8a 100%);color:white;font-family:'Lato',sans-serif;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:40px 20px;">
+    <div style="font-size:48pt;margin-bottom:20px;">⏳</div>
+    <div style="font-size:20pt;font-weight:900;margin-bottom:12px;letter-spacing:1px;">Je bent al nieuwsgierig naar het vervolg!</div>
+    <div style="font-size:14pt;opacity:0.85;margin-bottom:32px;">Super! Helaas moet je nog even wachten.</div>
+    <div style="font-size:11pt;opacity:0.7;margin-bottom:24px;">Beschikbaar op zaterdag 18 april 2026 om 19:17</div>
+    <div id="afteller" style="display:flex;gap:24px;flex-wrap:wrap;justify-content:center;">
+      <div class="afteller-blok"><span id="af-dagen">--</span><div class="afteller-label">dagen</div></div>
+      <div class="afteller-blok"><span id="af-uren">--</span><div class="afteller-label">uren</div></div>
+      <div class="afteller-blok"><span id="af-minuten">--</span><div class="afteller-label">minuten</div></div>
+      <div class="afteller-blok"><span id="af-seconden">--</span><div class="afteller-label">seconden</div></div>
+    </div>
+  </div>
+<div id="weekinhoud" style="display:none;">
+
+<header class="site-header">
+  <h1>week 28</h1>
+</header>
+
+<div class="route-sectie">
+  <div class="route-label">Kies jouw route</div>
+  <div class="route-tegels">
+    <div class="route-tegel G" onclick="kiesRoute('G')">G-route</div>
+    <div class="route-tegel B" onclick="kiesRoute('B')">B-route</div>
+    <div class="route-tegel Z" onclick="kiesRoute('Z')">Z-route</div>
+  </div>
+</div>
+
+<div class="welkom-bericht" id="welkom-bericht">
+  <strong>Welkom op de weekpagina!</strong>
+  Klik hierboven op jouw route om de taken en lessen voor deze week te zien.
+</div>
+
+<nav class="inhoudstafel verborgen" id="inhoudstafel">
+  <div class="inhoudstafel-titel">Deze week</div>
+  <a href="#taak-wbd9RWj9dAkKaZQTip5o-G" class="inhoudslink" data-routes="G">WI A: Rekenvaardigheden (15')</a>
+  <a href="#taak-7e8ecBcQp2suJh7fhuei-G" class="inhoudslink" data-routes="G">WI MC1: Eigenschappen van bewerkingen (rooster)</a>
+  <a href="#taak-HWeAslBLgxDH70AUkwHp-G" class="inhoudslink" data-routes="G">WI MC2: Eigenschappen van bewerkingen en lettervormen (rooster)</a>
+  <a href="#taak-bmkgKSJFuKUMaFG57SgZ-G" class="inhoudslink" data-routes="G">WI D: Eigenschappen van bewerkingen inprenten (25')</a>
+  <a href="#taak-Ug55TAcNcmZFwK8cwHKj-G" class="inhoudslink" data-routes="G">WI E: Statistiek: data verzamelen (20')</a>
+  <a href="#taak-XFokC45qAwpQWn0rQgdj-G" class="inhoudslink" data-routes="G">WI F: Eigenschappen van bewerkingen: opdrachten (25')</a>
+  <a href="#taak-ukgSWVLgh53DPfaa0iTY-G" class="inhoudslink" data-routes="G">WI MC3: Lettervormen (rooster)</a>
+  <a href="#taak-5MqkSt3DNUpDOgqgZbez-G" class="inhoudslink" data-routes="G">WI G: Lettervormen: opdrachten (25')</a>
+  <a href="#taak-wbd9RWj9dAkKaZQTip5o-B" class="inhoudslink" data-routes="B">WI A: Rekenvaardigheden (15')</a>
+  <a href="#taak-7e8ecBcQp2suJh7fhuei-B" class="inhoudslink" data-routes="B">WI MC1: Eigenschappen van bewerkingen (rooster)</a>
+  <a href="#taak-PdwIrZQT6h9CHQUqUgBP-B" class="inhoudslink" data-routes="B">WI MC2: Lettervormen (rooster)</a>
+  <a href="#taak-neIBpimTDGdW5iIh9wCk-B" class="inhoudslink" data-routes="B">WI F: Eigenschappen van bewerkingen: opdrachten (50')</a>
+  <a href="#taak-z53U4cwmpdHKeY0wJ8p7-B" class="inhoudslink" data-routes="B">WI G: Lettervormen: opdrachten (50')</a>
+  <a href="#taak-bmkgKSJFuKUMaFG57SgZ-B" class="inhoudslink" data-routes="B">WI D: Eigenschappen van bewerkingen inprenten (25')</a>
+  <a href="#taak-Ug55TAcNcmZFwK8cwHKj-B" class="inhoudslink" data-routes="B">WI E: Statistiek: data verzamelen (20')</a>
+  <a href="#taak-wbd9RWj9dAkKaZQTip5o-Z" class="inhoudslink" data-routes="Z">WI A: Rekenvaardigheden (15')</a>
+  <a href="#taak-7e8ecBcQp2suJh7fhuei-Z" class="inhoudslink" data-routes="Z">WI MC1: Eigenschappen van bewerkingen (rooster)</a>
+  <a href="#taak-noJbOwsVQXGut6bHWahI-Z" class="inhoudslink" data-routes="Z">WI F: Eigenschappen van bewerkingen: opdrachten (25')</a>
+  <a href="#taak-rhhUAVa50YESSpIeMhyg-Z" class="inhoudslink" data-routes="Z">WI G: Lettervormen: opdrachten (75')</a>
+  <a href="#taak-bmkgKSJFuKUMaFG57SgZ-Z" class="inhoudslink" data-routes="Z">WI D: Eigenschappen van bewerkingen inprenten (25')</a>
+  <a href="#taak-Ug55TAcNcmZFwK8cwHKj-Z" class="inhoudslink" data-routes="Z">WI E: Statistiek: data verzamelen (20')</a>
+</nav>
+
+
+  <div class="taak-blok verborgen" id="taak-wbd9RWj9dAkKaZQTip5o-G" data-routes="G">
+    <div class="titelbalk">WI A: Rekenvaardigheden (15')</div>
+    
+      <div class="sectie wit">
+        <div class="sectie-icoon"><img src="./pictures/voorkennis.png" alt="Voorkennis"></div>
+        <div class="sectie-inhoud">
+          <div class="sectie-titel">Welke voorkennis heb je nodig?</div>
+          <ul class="doel-lijst"><li>Ik kan rekenen met rationale getallen.</li></ul>
+        </div>
+      </div>
+      <div class="sectie grijs">
+        <div class="sectie-icoon"><img src="./pictures/succescriteria.png" alt="Succescriteria"></div>
+        <div class="sectie-inhoud">
+          <div class="sectie-titel">Succescriteria</div>
+          <div class="sc-subtitel">Wat leer je met deze taak?</div><ul class="doel-lijst"><li>Ik reken met gehele getallen. <span class="leerplandoel">(6.01)</span></li><li>Ik reken met breuken. <span class="leerplandoel">(6.1)</span></li></ul><div class="sc-subtitel">Waarop word je geëvalueerd bij deze taak?</div><ul class="doel-lijst"><li>Ik oefen mijn rekenvaardigheden door minstens drie keer te oefenen. <span class="leerplandoel">(13.2)</span><div class="score-tekst">A: Ik doe dit.<br>C: Ik oefen, maar maak geen drie oefeningen.</div></li><li>Ik oefen mijn rekenvaardigheden door op minstens drie verschillende onderwerpen te oefenen. <span class="leerplandoel">(13.2)</span><div class="score-tekst">A: Ik doe dit.<br>C: Ik oefen, maar niet op drie verschillende onderwerpen.</div></li><li>Ik oefen mijn rekenvaardigheden en werk aan de onderdelen die ik nog niet zo goed beheers. <span class="leerplandoel">(13.2)</span><div class="score-tekst">A: Ik doe dit.<br>C: Ik oefen, maar werk niet altijd aan de onderdelen die ik nog niet zo goed beheers.</div></li></ul>
+        </div>
+      </div>
+  <div class="sectie wit">
+    <div class="sectie-icoon"><img src="./pictures/instructies.png" alt="Instructies"></div>
+    <div class="sectie-inhoud">
+      <div class="sectie-titel">Instructies</div>
+      <div class="instructie-stappen"><div class="sc-subtitel" style="margin-top:10px;">Algemene uitleg</div><div style="margin-bottom:4px;">Je oefent elke week minstens drie keer. (Dat mag drie keer op één dag zijn, dat mag ook op drie verschillende dagen.)</div><div style="margin-bottom:4px;">Je respecteert daarbij de volgende afspraken.</div><div style="display:flex;gap:8px;margin-bottom:4px;"><span style="color:#2c4a6e;">•</span><span>Je oefent per week minstens drie verschillende onderwerpen.</span></div><div style="display:flex;gap:8px;margin-bottom:4px;"><span style="color:#2c4a6e;">•</span><span>Tegen het einde van project 5 moet je elk onderwerp minstens één keer geoefend hebben.</span></div><div style="display:flex;gap:8px;margin-bottom:4px;"><span style="color:#2c4a6e;">•</span><span>Je kiest vooral onderwerpen waarin je nog moet groeien.</span></div><div style="height:5px;"></div><div style="height:5px;"></div><div style="margin-bottom:4px;"><strong>Tip!</strong></div><div style="display:flex;gap:8px;margin-bottom:4px;"><span style="color:#2c4a6e;">•</span><span>Bij "groei" zie je de scores die je al behaald hebt.</span></div><div style="display:flex;gap:8px;margin-bottom:4px;"><span style="color:#2c4a6e;">•</span><span>Bekijk eerst nog eens de theorie en de voorbeelden die bij een onderwerp horen. (zie bronnen)</span></div><div style="height:5px;"></div><div style="height:5px;"></div><div class="sc-subtitel" style="margin-top:10px;">Werkwijze voor één oefening</div><div class="instructie-stap"><div class="stap-nr">1|</div><div class="stap-tekst">Open het bestand met de verschillende oefenmogelijkheden. (zie bronnen)</div></div><div class="instructie-stap"><div class="stap-nr">2|</div><div class="stap-tekst">Kies één van de onderwerpen. Respecteer daarbij de afspraken!</div></div><div class="instructie-stap"><div class="stap-nr">3|</div><div class="stap-tekst">Maak de oefening.</div></div><div style="display:flex;gap:8px;padding-left:28px;margin-bottom:4px;"><span style="color:#2c4a6e;">•</span><span>Probeer opnieuw als het niet van de eerste keer lukt. <br>Bekijk de feedback die je daarbij krijgt.</span></div><div style="display:flex;gap:8px;padding-left:28px;margin-bottom:4px;"><span style="color:#2c4a6e;">•</span><span>Tweede keer ook niet gelukt: onderzoek wat je fout doet!</span></div></div>
+    </div>
+  </div>
+      <div class="sectie grijs">
+        <div class="sectie-icoon"><img src="./pictures/bronnen.png" alt="Bronnen"></div>
+        <div class="sectie-inhoud">
+          <div class="sectie-titel">Te gebruiken bronnen</div>
+          <div class="bron-tegels"><a href="https://maartenarts-svg.github.io/rekenvaardigheden_v01/login.html" target="_blank" class="bron-tegel"><span class="bron-icoon">🌐</span>vaardigheden oefenen: rekenen</a><a href="https://drive.google.com/file/d/1Bao0ubtXBvoM8iamK3MuVri_B8G7AyhC/view?usp=drive_link" target="_blank" class="bron-tegel"><span class="bron-icoon">📄</span>Cursus H3</a><a href="https://drive.google.com/file/d/19H9TfdLxAZQy0oUGghqXusrb8SP4MTKG/view?usp=drive_link" target="_blank" class="bron-tegel"><span class="bron-icoon">📖</span>Theorie H3</a><a href="https://drive.google.com/file/d/1_qHEwa4hR87XPAs_yit9CfxOXSoqk8Cc/view?usp=drive_link" target="_blank" class="bron-tegel"><span class="bron-icoon">✅</span>Correctiesleutel H3</a><a href="https://drive.google.com/file/d/1ZWOX2wv6s_0ohBnQUn-aIqtaS5a9WA59/view?usp=drive_link" target="_blank" class="bron-tegel"><span class="bron-icoon">📄</span>Cursus H7</a><a href="https://drive.google.com/file/d/1QR2jmZrfLZ2-yZKXO_B1HllTEETp-eBK/view?usp=drive_link" target="_blank" class="bron-tegel"><span class="bron-icoon">📖</span>Theorie H7</a><a href="https://drive.google.com/file/d/12DueqblA5x1S1jKrR0jIHkF5jkmG9BQA/view?usp=drive_link" target="_blank" class="bron-tegel"><span class="bron-icoon">✅</span>Correctiesleutel H7</a></div>
+        </div>
+      </div>
+      <div class="sectie geel">
+        <div class="sectie-icoon"><img src="./pictures/indienen.png" alt="Indienen"></div>
+        <div class="sectie-inhoud">
+          <div class="sectie-titel">Indienen</div>
+          <div class="indienen-rijen"><div class="indienen-rij"><div class="indienen-rij-icoon">📌</div><div class="indienen-rij-tekst">Indienen in digitale omgeving.</div></div></div>
+        </div>
+      </div>
+  </div>
+
+  <div class="taak-blok verborgen" id="taak-7e8ecBcQp2suJh7fhuei-G" data-routes="G">
+    <div class="titelbalk">WI MC1: Eigenschappen van bewerkingen (rooster)</div>
+    <div style="background:#fff3f3;border-left:4px solid #c0392b;padding:12px 20px;color:#c0392b;font-size:10.5pt;line-height:1.6;">Opgelet, deze taak moet je maken voor de taak <strong>WI MC2</strong>.</div>
+      <div class="sectie wit">
+        <div class="sectie-icoon"><img src="./pictures/voorkennis.png" alt="Voorkennis"></div>
+        <div class="sectie-inhoud">
+          <div class="sectie-titel">Welke voorkennis heb je nodig?</div>
+          <ul class="doel-lijst"><li>Ik ken de symbolen van de getallenverzamelingen.</li><li>Ik kan verschillende soorten getallen herkennen.</li><li>Ik kan het tegengestelde en het omgekeerde van een getal noteren.</li><li>Ik ken het verband tussen de optelling en de aftrekking en tussen de vermenigvuldiging en de deling.</li><li>Ik kan rekenen met rationale getallen.</li><li>Ik kan werken met regelmaat en formules.</li></ul>
+        </div>
+      </div>
+      <div class="sectie grijs">
+        <div class="sectie-icoon"><img src="./pictures/succescriteria.png" alt="Succescriteria"></div>
+        <div class="sectie-inhoud">
+          <div class="sectie-titel">Succescriteria</div>
+          <div class="sc-subtitel">Wat leer je met deze taak?</div><ul class="doel-lijst"><li>Ik verwoord de eigenschappen van de bewerkingen. <span class="leerplandoel">(6.01)</span></li><li>Ik noteer de eigenschappen van bewerkingen in symbolen. <span class="leerplandoel">(6.11)</span></li><li>Ik ken de betekenis van de eigenschappen van bewerkingen. <span class="leerplandoel">(6.01)</span></li><li>Ik pas de eigenschappen van bewerkingen toe bij het rekenen. <span class="leerplandoel">(6.01)</span></li><li>Ik herken de eigenschappen van bewerkingen. <span class="leerplandoel">(6.01)</span></li></ul>
+        </div>
+      </div>
+  <div class="sectie wit">
+    <div class="sectie-icoon"><img src="./pictures/instructies.png" alt="Instructies"></div>
+    <div class="sectie-inhoud">
+      <div class="sectie-titel">Instructies</div>
+      <div class="instructie-stappen"><div class="instructie-stap"><div class="stap-nr">1|</div><div class="stap-tekst">Maak opdracht 1, cursus blz. 458.</div></div><div class="instructie-stap"><div class="stap-nr">2|</div><div class="stap-tekst">Overloop de theorie bij <strong>10.1 Eigenschappen van bewerkingen</strong> (theorie blz. 80-81).</div></div><div class="instructie-stap"><div class="stap-nr">3|</div><div class="stap-tekst">Maak de voorbeeldopdrachten. (cursus blz. 459-461, opdracht 2-6).</div></div><div class="instructie-stap"><div class="stap-nr">4|</div><div class="stap-tekst">Start met de opdrachten. (cursus blz. 462-465)</div></div><div class="instructie-stap"><div class="stap-nr">5|</div><div class="stap-tekst">Verbeter de opdrachten met de <a href="https://maartenarts-svg.github.io/maarten-svg.github.io/cursus-prototype/dashboard/index.html" target="_blank">online correctiesleutel</a> (zie bronnen).</div></div><div style="display:flex;gap:8px;padding-left:28px;margin-bottom:4px;"><span style="color:#2c4a6e;">•</span><span>Verbeter in kleur!</span></div><div style="display:flex;gap:8px;padding-left:28px;margin-bottom:4px;"><span style="color:#2c4a6e;">•</span><span>Fout gemaakt? Onderzoek je fout: Waarom is het niet juist? Wat kun je de volgende keer doen om die fout niet meer te maken?</span></div><div style="display:flex;gap:8px;padding-left:28px;margin-bottom:4px;"><span style="color:#2c4a6e;">•</span><span>Geef in het <a href="https://maartenarts-svg.github.io/maarten-svg.github.io/cursus-prototype/dashboard/index.html" target="_blank">online correctiesleutel</a> de opdracht de juiste kleur.</span></div></div>
+    </div>
+  </div>
+      <div class="sectie grijs">
+        <div class="sectie-icoon"><img src="./pictures/bronnen.png" alt="Bronnen"></div>
+        <div class="sectie-inhoud">
+          <div class="sectie-titel">Te gebruiken bronnen</div>
+          <div class="bron-tegels"><a href="https://maartenarts-svg.github.io/maarten-svg.github.io/cursus-prototype/dashboard/index.html" target="_blank" class="bron-tegel"><span class="bron-icoon">🌐</span>Hoofdstuk 10</a></div>
+        </div>
+      </div>
+      <div class="sectie geel">
+        <div class="sectie-icoon"><img src="./pictures/indienen.png" alt="Indienen"></div>
+        <div class="sectie-inhoud">
+          <div class="sectie-titel">Indienen</div>
+          <div class="indienen-rijen"><div class="indienen-rij"><div class="indienen-rij-icoon">📁</div><div class="indienen-rij-tekst">Bewaar alles in je map.</div></div></div>
+        </div>
+      </div>
+  </div>
+
+  <div class="taak-blok verborgen" id="taak-HWeAslBLgxDH70AUkwHp-G" data-routes="G">
+    <div class="titelbalk">WI MC2: Eigenschappen van bewerkingen en lettervormen (rooster)</div>
+    <div style="background:#fff3f3;border-left:4px solid #c0392b;padding:12px 20px;color:#c0392b;font-size:10.5pt;line-height:1.6;">Opgelet, deze taak kun je pas maken na de taak <strong>WI MC1</strong> en moet je maken voor de taak <strong>WI D</strong>.</div>
+      <div class="sectie wit">
+        <div class="sectie-icoon"><img src="./pictures/voorkennis.png" alt="Voorkennis"></div>
+        <div class="sectie-inhoud">
+          <div class="sectie-titel">Welke voorkennis heb je nodig?</div>
+          <ul class="doel-lijst"><li>Ik ken de symbolen van de getallenverzamelingen.</li><li>Ik kan verschillende soorten getallen herkennen.</li><li>Ik kan het tegengestelde en het omgekeerde van een getal noteren.</li><li>Ik ken het verband tussen de optelling en de aftrekking en tussen de vermenigvuldiging en de deling.</li><li>Ik kan rekenen met rationale getallen.</li><li>Ik kan werken met regelmaat en formules.</li></ul>
+        </div>
+      </div>
+      <div class="sectie grijs">
+        <div class="sectie-icoon"><img src="./pictures/succescriteria.png" alt="Succescriteria"></div>
+        <div class="sectie-inhoud">
+          <div class="sectie-titel">Succescriteria</div>
+          <div class="sc-subtitel">Wat leer je met deze taak?</div><ul class="doel-lijst"><li>Ik verwoord de eigenschappen van de bewerkingen. <span class="leerplandoel">(6.01)</span></li><li>Ik noteer de eigenschappen van bewerkingen in symbolen. <span class="leerplandoel">(6.11)</span></li><li>Ik ken de betekenis van de eigenschappen van bewerkingen. <span class="leerplandoel">(6.01)</span></li><li>Ik pas de eigenschappen van bewerkingen toe bij het rekenen. <span class="leerplandoel">(6.01)</span></li><li>Ik herken de eigenschappen van bewerkingen. <span class="leerplandoel">(6.01)</span></li><li>Ik herken de coëfficiënt en het letterdeel bij lettervormen. <span class="leerplandoel">(6.12)</span></li><li>Ik gebruik de begrippen coëfficiënt en letterdeel. <span class="leerplandoel">(6.12)</span></li><li>Ik noteer een lettervorm volgens de afspraken. <span class="leerplandoel">(6.12)</span></li><li>Ik bereken de getalwaarde van een lettervorm. <span class="leerplandoel">(6.13)</span></li></ul>
+        </div>
+      </div>
+  <div class="sectie wit">
+    <div class="sectie-icoon"><img src="./pictures/instructies.png" alt="Instructies"></div>
+    <div class="sectie-inhoud">
+      <div class="sectie-titel">Instructies</div>
+      <div class="instructie-stappen"><div class="sc-subtitel" style="margin-top:10px;">10.1 Eigenschappen van bewerkingen</div><div style="margin-bottom:4px;"><strong><span style="color:rood;">Werk verder daar waar je de vorige keer gestopt bent.</span></strong></div><div class="instructie-stap"><div class="stap-nr">1|</div><div class="stap-tekst">Maak opdracht 1, cursus blz. 458.</div></div><div class="instructie-stap"><div class="stap-nr">2|</div><div class="stap-tekst">Overloop de theorie bij <strong>10.1 Eigenschappen van bewerkingen</strong> (theorie blz. 80-81).</div></div><div class="instructie-stap"><div class="stap-nr">3|</div><div class="stap-tekst">Maak de voorbeeldopdrachten. (cursus blz. 459-461, opdracht 2-6).</div></div><div class="instructie-stap"><div class="stap-nr">4|</div><div class="stap-tekst">Start met de opdrachten. (cursus blz. 462-465)</div></div><div class="instructie-stap"><div class="stap-nr">5|</div><div class="stap-tekst">Verbeter de opdrachten met de <a href="https://maartenarts-svg.github.io/maarten-svg.github.io/cursus-prototype/dashboard/index.html" target="_blank">online correctiesleutel</a> (zie bronnen).</div></div><div style="display:flex;gap:8px;padding-left:28px;margin-bottom:4px;"><span style="color:#2c4a6e;">•</span><span>Verbeter in kleur!</span></div><div style="display:flex;gap:8px;padding-left:28px;margin-bottom:4px;"><span style="color:#2c4a6e;">•</span><span>Fout gemaakt? Onderzoek je fout: Waarom is het niet juist? Wat kun je de volgende keer doen om die fout niet meer te maken?</span></div><div style="display:flex;gap:8px;padding-left:28px;margin-bottom:4px;"><span style="color:#2c4a6e;">•</span><span>Geef in het <a href="https://maartenarts-svg.github.io/maarten-svg.github.io/cursus-prototype/dashboard/index.html" target="_blank">online correctiesleutel</a> de opdracht de juiste kleur.</span></div><div style="height:5px;"></div><div class="sc-subtitel" style="margin-top:10px;">10.2 Lettervormen</div><div class="instructie-stap"><div class="stap-nr">1|</div><div class="stap-tekst">Maak opdracht 15, cursus blz. 458.</div></div><div class="instructie-stap"><div class="stap-nr">2|</div><div class="stap-tekst">Overloop de theorie bij <strong>10.2 Lettervormen</strong> (theorie blz. 82-83).</div></div><div class="instructie-stap"><div class="stap-nr">3|</div><div class="stap-tekst">Maak de voorbeeldopdrachten. (cursus blz. 466-467, opdracht 16-18).</div></div><div class="instructie-stap"><div class="stap-nr">4|</div><div class="stap-tekst">Test hoe ver je staat. (cursus blz. 468)</div></div><div class="instructie-stap"><div class="stap-nr">5|</div><div class="stap-tekst">Verbeter met de <a href="https://maartenarts-svg.github.io/maarten-svg.github.io/cursus-prototype/dashboard/index.html" target="_blank">online correctiesleutel</a> en kies welke opdrachtenreeks je maakt.</div></div><div class="instructie-stap"><div class="stap-nr">6|</div><div class="stap-tekst">Start met de opdrachten van jouw reeks. (cursus blz. 469-472)</div></div><div class="instructie-stap"><div class="stap-nr">7|</div><div class="stap-tekst">Verbeter de opdrachten met de <a href="https://maartenarts-svg.github.io/maarten-svg.github.io/cursus-prototype/dashboard/index.html" target="_blank">online correctiesleutel</a> (zie bronnen).</div></div><div style="display:flex;gap:8px;padding-left:28px;margin-bottom:4px;"><span style="color:#2c4a6e;">•</span><span>Verbeter in kleur!</span></div><div style="display:flex;gap:8px;padding-left:28px;margin-bottom:4px;"><span style="color:#2c4a6e;">•</span><span>Fout gemaakt? Onderzoek je fout: Waarom is het niet juist? Wat kun je de volgende keer doen om die fout niet meer te maken?</span></div><div style="display:flex;gap:8px;padding-left:28px;margin-bottom:4px;"><span style="color:#2c4a6e;">•</span><span>Geef in het <a href="https://maartenarts-svg.github.io/maarten-svg.github.io/cursus-prototype/dashboard/index.html" target="_blank">online correctiesleutel</a> de opdracht de juiste kleur.</span></div></div>
+    </div>
+  </div>
+      <div class="sectie grijs">
+        <div class="sectie-icoon"><img src="./pictures/bronnen.png" alt="Bronnen"></div>
+        <div class="sectie-inhoud">
+          <div class="sectie-titel">Te gebruiken bronnen</div>
+          <div class="bron-tegels"><a href="https://maartenarts-svg.github.io/maarten-svg.github.io/cursus-prototype/dashboard/index.html" target="_blank" class="bron-tegel"><span class="bron-icoon">🌐</span>Hoofdstuk 10</a></div>
+        </div>
+      </div>
+      <div class="sectie geel">
+        <div class="sectie-icoon"><img src="./pictures/indienen.png" alt="Indienen"></div>
+        <div class="sectie-inhoud">
+          <div class="sectie-titel">Indienen</div>
+          <div class="indienen-rijen"><div class="indienen-rij"><div class="indienen-rij-icoon">📁</div><div class="indienen-rij-tekst">Bewaar alles in je map.</div></div></div>
+        </div>
+      </div>
+  </div>
+
+  <div class="taak-blok verborgen" id="taak-bmkgKSJFuKUMaFG57SgZ-G" data-routes="G">
+    <div class="titelbalk">WI D: Eigenschappen van bewerkingen inprenten (25')</div>
+    <div style="background:#fff3f3;border-left:4px solid #c0392b;padding:12px 20px;color:#c0392b;font-size:10.5pt;line-height:1.6;">Opgelet, deze taak kun je pas maken na de taak <strong>WI MC2</strong> en moet je maken voor de taak <strong>WI F</strong>.</div>
+      <div class="sectie wit">
+        <div class="sectie-icoon"><img src="./pictures/voorkennis.png" alt="Voorkennis"></div>
+        <div class="sectie-inhoud">
+          <div class="sectie-titel">Welke voorkennis heb je nodig?</div>
+          <ul class="doel-lijst"><li>Ik ken de symbolen van de getallenverzamelingen.</li><li>Ik kan verschillende soorten getallen herkennen.</li><li>Ik kan het tegengestelde en het omgekeerde van een getal noteren.</li><li>Ik kan verbanden tussen grootheden voorstellen met een verhaal, een tabel, een grafiek en een formule.</li><li>Ik kan rekenen met rationale getallen.</li></ul>
+        </div>
+      </div>
+      <div class="sectie grijs">
+        <div class="sectie-icoon"><img src="./pictures/succescriteria.png" alt="Succescriteria"></div>
+        <div class="sectie-inhoud">
+          <div class="sectie-titel">Succescriteria</div>
+          <div class="sc-subtitel">Wat leer je met deze taak?</div><ul class="doel-lijst"><li>Ik verwoord de eigenschappen van de bewerkingen. <span class="leerplandoel">(6.01)</span></li><li>Ik noteer de eigenschappen van bewerkingen in symbolen. <span class="leerplandoel">(6.11)</span></li><li>Ik ken de betekenis van de eigenschappen van bewerkingen. <span class="leerplandoel">(6.01)</span></li><li>Ik herken de eigenschappen van bewerkingen. <span class="leerplandoel">(6.01)</span></li></ul><div class="sc-subtitel">Waarop word je geëvalueerd bij deze taak?</div><ul class="doel-lijst"><li>Ik maak foto's van mijn kladblad met eigenschappen in symbolen en stuur die door. <span class="leerplandoel">(13.2)</span><div class="score-tekst">A: Ik doe dit.<br>C: Ik doe dit, maar niet alle eigenschappen staan op het kladblad.</div></li><li>Ik prent de eigenschappen van bewerkingen in met flashcards. <span class="leerplandoel">(13.2)</span><div class="score-tekst">A: Ik heb alle flashcards gebruikt.<br>C: Ik heb flashcards gebruikt, maar niet in alle richtingen.</div></li><li>Ik duid op het overzicht van de succescriteria aan wat ik al kan. <span class="leerplandoel">(13.2)</span><div class="score-tekst">A: Ik doe dit.<br>C: Ik doe dit niet en weet zo onvoldoende wat ik al kan en waar ik nog extra op moet oefenen.</div></li></ul>
+        </div>
+      </div>
+  <div class="sectie wit">
+    <div class="sectie-icoon"><img src="./pictures/instructies.png" alt="Instructies"></div>
+    <div class="sectie-inhoud">
+      <div class="sectie-titel">Instructies</div>
+      <div class="instructie-stappen"><div class="instructie-stap"><div class="stap-nr">1|</div><div class="stap-tekst">Klik op de link <a href="https://maartenarts-svg.github.io/maarten-svg.github.io/cursus-prototype/weektaken/week_28/WI_D/W28WID_taak.html" target="_blank">W6 WI D</a> bij bronnen.</div></div><div class="instructie-stap"><div class="stap-nr">2|</div><div class="stap-tekst">Volg de instructies die daar gegeven worden.</div></div><div style="margin-bottom:4px;"><strong><span style="color:rood;"> Let op! Je bent pas klaar als je op het einde op ingediend hebt geklikt. </span></strong></div><div style="height:5px;"></div><div style="margin-bottom:4px;">Wil je extra oefenen? Dat kan via de link <a href="https://maartenarts-svg.github.io/maarten-svg.github.io/cursus-prototype/weektaken/week_28/WI_D/W28WID_vrij-oefenen.html" target="_blank">extra inprenten</a> in de bronnen.</div></div>
+    </div>
+  </div>
+      <div class="sectie grijs">
+        <div class="sectie-icoon"><img src="./pictures/bronnen.png" alt="Bronnen"></div>
+        <div class="sectie-inhoud">
+          <div class="sectie-titel">Te gebruiken bronnen</div>
+          <div class="bron-tegels"><a href="https://maartenarts-svg.github.io/maarten-svg.github.io/cursus-prototype/weektaken/week_28/WI_D/W28WID_taak.html" target="_blank" class="bron-tegel"><span class="bron-icoon">🌐</span>P4W6 WI D</a><a href="https://maartenarts-svg.github.io/maarten-svg.github.io/cursus-prototype/dashboard/index.html" target="_blank" class="bron-tegel"><span class="bron-icoon">🌐</span>Hoofdstuk 10</a><a href="https://maartenarts-svg.github.io/maarten-svg.github.io/cursus-prototype/weektaken/week_28/WI_D/W28WID_vrij-oefenen.html" target="_blank" class="bron-tegel"><span class="bron-icoon">🌐</span>Extra inprenten</a></div>
+        </div>
+      </div>
+      <div class="sectie geel">
+        <div class="sectie-icoon"><img src="./pictures/indienen.png" alt="Indienen"></div>
+        <div class="sectie-inhoud">
+          <div class="sectie-titel">Indienen</div>
+          <div class="indienen-rijen"><div class="indienen-rij"><div class="indienen-rij-icoon">📌</div><div class="indienen-rij-tekst">Indienen in digitale omgeving.</div></div></div>
+        </div>
+      </div>
+  </div>
+
+  <div class="taak-blok verborgen" id="taak-Ug55TAcNcmZFwK8cwHKj-G" data-routes="G">
+    <div class="titelbalk">WI E: Statistiek: data verzamelen (20')</div>
+    
+      <div class="sectie grijs">
+        <div class="sectie-icoon"><img src="./pictures/succescriteria.png" alt="Succescriteria"></div>
+        <div class="sectie-inhoud">
+          <div class="sectie-titel">Succescriteria</div>
+          <div class="sc-subtitel">Wat leer je met deze taak?</div><ul class="doel-lijst"><li>Ik verzamel data voor een statistisch onderzoek. <span class="leerplandoel">(6.19)</span></li></ul><div class="sc-subtitel">Waarop word je geëvalueerd bij deze taak?</div><ul class="doel-lijst"><li>Ik beantwoord vragen om data te verzamelen. <span class="leerplandoel">(13.2)</span><div class="score-tekst">A: Ik beantwoord alle vragen.<br>B: Ik beantwoord maximaal twee vragen niet.<br>C: Ik beantwoord meer dan 2 vragen niet.</div></li><li>Ik duid op het overzicht van de succescriteria aan wat ik al kan. <span class="leerplandoel">(13.2)</span><div class="score-tekst">A: Ik doe dit.<br>C: Ik doe dit niet en weet zo onvoldoende wat ik al kan en waar ik nog extra op moet oefenen.</div></li></ul>
+        </div>
+      </div>
+  <div class="sectie wit">
+    <div class="sectie-icoon"><img src="./pictures/instructies.png" alt="Instructies"></div>
+    <div class="sectie-inhoud">
+      <div class="sectie-titel">Instructies</div>
+      <div class="instructie-stappen"><div style="margin-bottom:4px;">Na de taalstage doe je zelf twee keer een statistisch onderzoek.<br>Daarvoor heb je data nodig. Die verzamel je via deze taak.</div><div class="instructie-stap"><div class="stap-nr">1|</div><div class="stap-tekst">Open in de bronnen de link <a href="https://maartenarts-svg.github.io/maarten-svg.github.io/cursus-prototype/weektaken/week_28/WI_E/W28WIE_taak.html" target="_blank">W6 WI E</a> en beantwoord alle vragen.</div></div><div class="instructie-stap"><div class="stap-nr">2|</div><div class="stap-tekst"><span style="color:rood;"> Zorg dat je op het einde van de taak indient. </span></div></div></div>
+    </div>
+  </div>
+      <div class="sectie grijs">
+        <div class="sectie-icoon"><img src="./pictures/bronnen.png" alt="Bronnen"></div>
+        <div class="sectie-inhoud">
+          <div class="sectie-titel">Te gebruiken bronnen</div>
+          <div class="bron-tegels"><a href="https://drive.google.com/file/d/1TGZyxaD1J90gSHVXvzZOLfpU12FNsMw_/view?usp=drive_link" target="_blank" class="bron-tegel"><span class="bron-icoon">📄</span>Cursus H9</a><a href="https://drive.google.com/file/d/12gqRyEybMXqVyI1iAeWPmVXdwDOIZzOO/view?usp=drive_link" target="_blank" class="bron-tegel"><span class="bron-icoon">📖</span>Theorie H9</a><a href="https://drive.google.com/file/d/1L1zE5_BPwpdADPMcBWSBBUaP0pGz4xeC/view?usp=drive_link" target="_blank" class="bron-tegel"><span class="bron-icoon">✅</span>Correctiesleutel H9</a><a href="https://maartenarts-svg.github.io/maarten-svg.github.io/cursus-prototype/weektaken/week_28/WI_E/W28WIE_taak.html" target="_blank" class="bron-tegel"><span class="bron-icoon">🌐</span>P4W6 WI E</a></div>
+        </div>
+      </div>
+      <div class="sectie geel">
+        <div class="sectie-icoon"><img src="./pictures/indienen.png" alt="Indienen"></div>
+        <div class="sectie-inhoud">
+          <div class="sectie-titel">Indienen</div>
+          <div class="indienen-rijen"><div class="indienen-rij"><div class="indienen-rij-icoon">📌</div><div class="indienen-rij-tekst">Indienen in digitale omgeving.</div></div></div>
+        </div>
+      </div>
+  </div>
+
+  <div class="taak-blok verborgen" id="taak-XFokC45qAwpQWn0rQgdj-G" data-routes="G">
+    <div class="titelbalk">WI F: Eigenschappen van bewerkingen: opdrachten (25')</div>
+    <div style="background:#fff3f3;border-left:4px solid #c0392b;padding:12px 20px;color:#c0392b;font-size:10.5pt;line-height:1.6;">Opgelet, deze taak kun je pas maken na de taak <strong>WI D</strong>.</div>
+      <div class="sectie wit">
+        <div class="sectie-icoon"><img src="./pictures/voorkennis.png" alt="Voorkennis"></div>
+        <div class="sectie-inhoud">
+          <div class="sectie-titel">Welke voorkennis heb je nodig?</div>
+          <ul class="doel-lijst"><li>Ik ken de symbolen van de getallenverzamelingen.</li><li>Ik kan verschillende soorten getallen herkennen.</li><li>Ik kan het tegengestelde en het omgekeerde van een getal noteren.</li><li>Ik ken het verband tussen de optelling en de aftrekking en tussen de vermenigvuldiging en de deling.</li><li>Ik kan rekenen met rationale getallen.</li><li>Ik kan werken met regelmaat en formules.</li></ul>
+        </div>
+      </div>
+      <div class="sectie grijs">
+        <div class="sectie-icoon"><img src="./pictures/succescriteria.png" alt="Succescriteria"></div>
+        <div class="sectie-inhoud">
+          <div class="sectie-titel">Succescriteria</div>
+          <div class="sc-subtitel">Wat leer je met deze taak?</div><ul class="doel-lijst"><li>Ik verwoord de eigenschappen van de bewerkingen. <span class="leerplandoel">(6.01)</span></li><li>Ik noteer de eigenschappen van bewerkingen in symbolen. <span class="leerplandoel">(6.11)</span></li><li>Ik ken de betekenis van de eigenschappen van bewerkingen. <span class="leerplandoel">(6.01)</span></li><li>Ik pas de eigenschappen van bewerkingen toe bij het rekenen. <span class="leerplandoel">(6.01)</span></li><li>Ik herken de eigenschappen van bewerkingen. <span class="leerplandoel">(6.01)</span></li></ul>
+        </div>
+      </div>
+  <div class="sectie wit">
+    <div class="sectie-icoon"><img src="./pictures/instructies.png" alt="Instructies"></div>
+    <div class="sectie-inhoud">
+      <div class="sectie-titel">Instructies</div>
+      <div class="instructie-stappen"><div style="margin-bottom:4px;"><strong><span style="color:rood;">Werk verder daar waar je de vorige keer gestopt bent.</span></strong></div><div class="instructie-stap"><div class="stap-nr">1|</div><div class="stap-tekst">Maak de voorbeeldopdrachten. (cursus blz. 459-461, opdracht 2-6).</div></div><div class="instructie-stap"><div class="stap-nr">2|</div><div class="stap-tekst">Start met de opdrachten. (cursus blz. 462-465)</div></div><div class="instructie-stap"><div class="stap-nr">3|</div><div class="stap-tekst">Verbeter de opdrachten met de <a href="https://maartenarts-svg.github.io/maarten-svg.github.io/cursus-prototype/dashboard/index.html" target="_blank">online correctiesleutel</a> (zie bronnen).</div></div><div style="display:flex;gap:8px;padding-left:28px;margin-bottom:4px;"><span style="color:#2c4a6e;">•</span><span>Verbeter in kleur!</span></div><div style="display:flex;gap:8px;padding-left:28px;margin-bottom:4px;"><span style="color:#2c4a6e;">•</span><span>Fout gemaakt? Onderzoek je fout: Waarom is het niet juist? Wat kun je de volgende keer doen om die fout niet meer te maken?</span></div><div style="display:flex;gap:8px;padding-left:28px;margin-bottom:4px;"><span style="color:#2c4a6e;">•</span><span>Geef in het <a href="https://maartenarts-svg.github.io/maarten-svg.github.io/cursus-prototype/dashboard/index.html" target="_blank">online correctiesleutel</a> de opdracht de juiste kleur.</span></div></div>
+    </div>
+  </div>
+      <div class="sectie grijs">
+        <div class="sectie-icoon"><img src="./pictures/bronnen.png" alt="Bronnen"></div>
+        <div class="sectie-inhoud">
+          <div class="sectie-titel">Te gebruiken bronnen</div>
+          <div class="bron-tegels"><a href="https://maartenarts-svg.github.io/maarten-svg.github.io/cursus-prototype/dashboard/index.html" target="_blank" class="bron-tegel"><span class="bron-icoon">🌐</span>Hoofdstuk 10</a></div>
+        </div>
+      </div>
+      <div class="sectie geel">
+        <div class="sectie-icoon"><img src="./pictures/indienen.png" alt="Indienen"></div>
+        <div class="sectie-inhoud">
+          <div class="sectie-titel">Indienen</div>
+          <div class="indienen-rijen"><div class="indienen-rij"><div class="indienen-rij-icoon">📁</div><div class="indienen-rij-tekst">Bewaar alles in je map.</div></div></div>
+        </div>
+      </div>
+  </div>
+
+  <div class="taak-blok verborgen" id="taak-ukgSWVLgh53DPfaa0iTY-G" data-routes="G">
+    <div class="titelbalk">WI MC3: Lettervormen (rooster)</div>
+    <div style="background:#fff3f3;border-left:4px solid #c0392b;padding:12px 20px;color:#c0392b;font-size:10.5pt;line-height:1.6;">Opgelet, deze taak moet je maken voor de taak <strong>WI G</strong>.</div>
+      <div class="sectie wit">
+        <div class="sectie-icoon"><img src="./pictures/voorkennis.png" alt="Voorkennis"></div>
+        <div class="sectie-inhoud">
+          <div class="sectie-titel">Welke voorkennis heb je nodig?</div>
+          <ul class="doel-lijst"><li>Ik ken de symbolen van de getallenverzamelingen.</li><li>Ik kan verschillende soorten getallen herkennen.</li><li>Ik kan het tegengestelde en het omgekeerde van een getal noteren.</li><li>Ik ken het verband tussen de optelling en de aftrekking en tussen de vermenigvuldiging en de deling.</li><li>Ik kan rekenen met rationale getallen.</li><li>Ik kan werken met regelmaat en formules.</li></ul>
+        </div>
+      </div>
+      <div class="sectie grijs">
+        <div class="sectie-icoon"><img src="./pictures/succescriteria.png" alt="Succescriteria"></div>
+        <div class="sectie-inhoud">
+          <div class="sectie-titel">Succescriteria</div>
+          <div class="sc-subtitel">Wat leer je met deze taak?</div><ul class="doel-lijst"><li>Ik herken de coëfficiënt en het letterdeel bij lettervormen. <span class="leerplandoel">(6.12)</span></li><li>Ik gebruik de begrippen coëfficiënt en letterdeel. <span class="leerplandoel">(6.12)</span></li><li>Ik noteer een lettervorm volgens de afspraken. <span class="leerplandoel">(6.12)</span></li><li>Ik bereken de getalwaarde van een lettervorm. <span class="leerplandoel">(6.13)</span></li></ul>
+        </div>
+      </div>
+  <div class="sectie wit">
+    <div class="sectie-icoon"><img src="./pictures/instructies.png" alt="Instructies"></div>
+    <div class="sectie-inhoud">
+      <div class="sectie-titel">Instructies</div>
+      <div class="instructie-stappen"><div style="margin-bottom:4px;"><strong><span style="color:rood;">Werk verder daar waar je de vorige keer gestopt bent.</span></strong></div><div class="instructie-stap"><div class="stap-nr">1|</div><div class="stap-tekst">Maak opdracht 15, cursus blz. 458.</div></div><div class="instructie-stap"><div class="stap-nr">2|</div><div class="stap-tekst">Overloop de theorie bij <strong>10.2 Lettervormen</strong> (theorie blz. 82-83).</div></div><div class="instructie-stap"><div class="stap-nr">3|</div><div class="stap-tekst">Maak de voorbeeldopdrachten. (cursus blz. 466-467, opdracht 16-18).</div></div><div class="instructie-stap"><div class="stap-nr">4|</div><div class="stap-tekst">Test hoe ver je staat. (cursus blz. 468)</div></div><div class="instructie-stap"><div class="stap-nr">5|</div><div class="stap-tekst">Verbeter met de <a href="https://maartenarts-svg.github.io/maarten-svg.github.io/cursus-prototype/dashboard/index.html" target="_blank">online correctiesleutel</a> en kies welke opdrachtenreeks je maakt.</div></div><div class="instructie-stap"><div class="stap-nr">6|</div><div class="stap-tekst">Start met de opdrachten van jouw reeks. (cursus blz. 469-472)</div></div><div class="instructie-stap"><div class="stap-nr">7|</div><div class="stap-tekst">Verbeter de opdrachten met de <a href="https://maartenarts-svg.github.io/maarten-svg.github.io/cursus-prototype/dashboard/index.html" target="_blank">online correctiesleutel</a> (zie bronnen).</div></div><div style="display:flex;gap:8px;padding-left:28px;margin-bottom:4px;"><span style="color:#2c4a6e;">•</span><span>Verbeter in kleur!</span></div><div style="display:flex;gap:8px;padding-left:28px;margin-bottom:4px;"><span style="color:#2c4a6e;">•</span><span>Fout gemaakt? Onderzoek je fout: Waarom is het niet juist? Wat kun je de volgende keer doen om die fout niet meer te maken?</span></div><div style="display:flex;gap:8px;padding-left:28px;margin-bottom:4px;"><span style="color:#2c4a6e;">•</span><span>Geef in het <a href="https://maartenarts-svg.github.io/maarten-svg.github.io/cursus-prototype/dashboard/index.html" target="_blank">online correctiesleutel</a> de opdracht de juiste kleur.</span></div></div>
+    </div>
+  </div>
+      <div class="sectie grijs">
+        <div class="sectie-icoon"><img src="./pictures/bronnen.png" alt="Bronnen"></div>
+        <div class="sectie-inhoud">
+          <div class="sectie-titel">Te gebruiken bronnen</div>
+          <div class="bron-tegels"><a href="https://maartenarts-svg.github.io/maarten-svg.github.io/cursus-prototype/dashboard/index.html" target="_blank" class="bron-tegel"><span class="bron-icoon">🌐</span>Hoofdstuk 10</a></div>
+        </div>
+      </div>
+      <div class="sectie geel">
+        <div class="sectie-icoon"><img src="./pictures/indienen.png" alt="Indienen"></div>
+        <div class="sectie-inhoud">
+          <div class="sectie-titel">Indienen</div>
+          <div class="indienen-rijen"><div class="indienen-rij"><div class="indienen-rij-icoon">📁</div><div class="indienen-rij-tekst">Bewaar alles in je map.</div></div></div>
+        </div>
+      </div>
+  </div>
+
+  <div class="taak-blok verborgen" id="taak-5MqkSt3DNUpDOgqgZbez-G" data-routes="G">
+    <div class="titelbalk">WI G: Lettervormen: opdrachten (25')</div>
+    <div style="background:#fff3f3;border-left:4px solid #c0392b;padding:12px 20px;color:#c0392b;font-size:10.5pt;line-height:1.6;">Opgelet, deze taak kun je pas maken na de taak <strong>WI MC3</strong>.</div>
+      <div class="sectie wit">
+        <div class="sectie-icoon"><img src="./pictures/voorkennis.png" alt="Voorkennis"></div>
+        <div class="sectie-inhoud">
+          <div class="sectie-titel">Welke voorkennis heb je nodig?</div>
+          <ul class="doel-lijst"><li>Ik ken de symbolen van de getallenverzamelingen.</li><li>Ik kan verschillende soorten getallen herkennen.</li><li>Ik kan het tegengestelde en het omgekeerde van een getal noteren.</li><li>Ik ken het verband tussen de optelling en de aftrekking en tussen de vermenigvuldiging en de deling.</li><li>Ik kan rekenen met rationale getallen.</li><li>Ik kan werken met regelmaat en formules.</li></ul>
+        </div>
+      </div>
+      <div class="sectie grijs">
+        <div class="sectie-icoon"><img src="./pictures/succescriteria.png" alt="Succescriteria"></div>
+        <div class="sectie-inhoud">
+          <div class="sectie-titel">Succescriteria</div>
+          <div class="sc-subtitel">Wat leer je met deze taak?</div><ul class="doel-lijst"><li>Ik herken de coëfficiënt en het letterdeel bij lettervormen. <span class="leerplandoel">(6.12)</span></li><li>Ik gebruik de begrippen coëfficiënt en letterdeel. <span class="leerplandoel">(6.12)</span></li><li>Ik noteer een lettervorm volgens de afspraken. <span class="leerplandoel">(6.12)</span></li><li>Ik bereken de getalwaarde van een lettervorm. <span class="leerplandoel">(6.13)</span></li></ul>
+        </div>
+      </div>
+  <div class="sectie wit">
+    <div class="sectie-icoon"><img src="./pictures/instructies.png" alt="Instructies"></div>
+    <div class="sectie-inhoud">
+      <div class="sectie-titel">Instructies</div>
+      <div class="instructie-stappen"><div style="margin-bottom:4px;"><strong><span style="color:rood;">Werk verder daar waar je de vorige keer gestopt bent.</span></strong></div><div class="instructie-stap"><div class="stap-nr">1|</div><div class="stap-tekst">Maak de voorbeeldopdrachten. (cursus blz. 466-467, opdracht 16-18).</div></div><div class="instructie-stap"><div class="stap-nr">2|</div><div class="stap-tekst">Test hoe ver je staat. (cursus blz. 468)</div></div><div class="instructie-stap"><div class="stap-nr">3|</div><div class="stap-tekst">Verbeter met de <a href="https://maartenarts-svg.github.io/maarten-svg.github.io/cursus-prototype/dashboard/index.html" target="_blank">online correctiesleutel</a> en kies welke opdrachtenreeks je maakt.</div></div><div class="instructie-stap"><div class="stap-nr">4|</div><div class="stap-tekst">Start met de opdrachten van jouw reeks. (cursus blz. 469-472)</div></div><div class="instructie-stap"><div class="stap-nr">5|</div><div class="stap-tekst">Verbeter de opdrachten met de <a href="https://maartenarts-svg.github.io/maarten-svg.github.io/cursus-prototype/dashboard/index.html" target="_blank">online correctiesleutel</a> (zie bronnen).</div></div><div style="display:flex;gap:8px;padding-left:28px;margin-bottom:4px;"><span style="color:#2c4a6e;">•</span><span>Verbeter in kleur!</span></div><div style="display:flex;gap:8px;padding-left:28px;margin-bottom:4px;"><span style="color:#2c4a6e;">•</span><span>Fout gemaakt? Onderzoek je fout: Waarom is het niet juist? Wat kun je de volgende keer doen om die fout niet meer te maken?</span></div><div style="display:flex;gap:8px;padding-left:28px;margin-bottom:4px;"><span style="color:#2c4a6e;">•</span><span>Geef in het <a href="https://maartenarts-svg.github.io/maarten-svg.github.io/cursus-prototype/dashboard/index.html" target="_blank">online correctiesleutel</a> de opdracht de juiste kleur.</span></div></div>
+    </div>
+  </div>
+      <div class="sectie grijs">
+        <div class="sectie-icoon"><img src="./pictures/bronnen.png" alt="Bronnen"></div>
+        <div class="sectie-inhoud">
+          <div class="sectie-titel">Te gebruiken bronnen</div>
+          <div class="bron-tegels"><a href="https://maartenarts-svg.github.io/maarten-svg.github.io/cursus-prototype/dashboard/index.html" target="_blank" class="bron-tegel"><span class="bron-icoon">🌐</span>Hoofdstuk 10</a></div>
+        </div>
+      </div>
+      <div class="sectie geel">
+        <div class="sectie-icoon"><img src="./pictures/indienen.png" alt="Indienen"></div>
+        <div class="sectie-inhoud">
+          <div class="sectie-titel">Indienen</div>
+          <div class="indienen-rijen"><div class="indienen-rij"><div class="indienen-rij-icoon">📁</div><div class="indienen-rij-tekst">Bewaar alles in je map.</div></div></div>
+        </div>
+      </div>
+  </div>
+
+  <div class="taak-blok verborgen" id="taak-wbd9RWj9dAkKaZQTip5o-B" data-routes="B">
+    <div class="titelbalk">WI A: Rekenvaardigheden (15')</div>
+    
+      <div class="sectie wit">
+        <div class="sectie-icoon"><img src="./pictures/voorkennis.png" alt="Voorkennis"></div>
+        <div class="sectie-inhoud">
+          <div class="sectie-titel">Welke voorkennis heb je nodig?</div>
+          <ul class="doel-lijst"><li>Ik kan rekenen met rationale getallen.</li></ul>
+        </div>
+      </div>
+      <div class="sectie grijs">
+        <div class="sectie-icoon"><img src="./pictures/succescriteria.png" alt="Succescriteria"></div>
+        <div class="sectie-inhoud">
+          <div class="sectie-titel">Succescriteria</div>
+          <div class="sc-subtitel">Wat leer je met deze taak?</div><ul class="doel-lijst"><li>Ik reken met gehele getallen. <span class="leerplandoel">(6.01)</span></li><li>Ik reken met breuken. <span class="leerplandoel">(6.1)</span></li></ul><div class="sc-subtitel">Waarop word je geëvalueerd bij deze taak?</div><ul class="doel-lijst"><li>Ik oefen mijn rekenvaardigheden door minstens drie keer te oefenen. <span class="leerplandoel">(13.2)</span><div class="score-tekst">A: Ik doe dit.<br>C: Ik oefen, maar maak geen drie oefeningen.</div></li><li>Ik oefen mijn rekenvaardigheden door op minstens drie verschillende onderwerpen te oefenen. <span class="leerplandoel">(13.2)</span><div class="score-tekst">A: Ik doe dit.<br>C: Ik oefen, maar niet op drie verschillende onderwerpen.</div></li><li>Ik oefen mijn rekenvaardigheden en werk aan de onderdelen die ik nog niet zo goed beheers. <span class="leerplandoel">(13.2)</span><div class="score-tekst">A: Ik doe dit.<br>C: Ik oefen, maar werk niet altijd aan de onderdelen die ik nog niet zo goed beheers.</div></li></ul>
+        </div>
+      </div>
+  <div class="sectie wit">
+    <div class="sectie-icoon"><img src="./pictures/instructies.png" alt="Instructies"></div>
+    <div class="sectie-inhoud">
+      <div class="sectie-titel">Instructies</div>
+      <div class="instructie-stappen"><div class="sc-subtitel" style="margin-top:10px;">Algemene uitleg</div><div style="margin-bottom:4px;">Je oefent elke week minstens drie keer. (Dat mag drie keer op één dag zijn, dat mag ook op drie verschillende dagen.)</div><div style="margin-bottom:4px;">Je respecteert daarbij de volgende afspraken.</div><div style="display:flex;gap:8px;margin-bottom:4px;"><span style="color:#2c4a6e;">•</span><span>Je oefent per week minstens drie verschillende onderwerpen.</span></div><div style="display:flex;gap:8px;margin-bottom:4px;"><span style="color:#2c4a6e;">•</span><span>Tegen het einde van project 5 moet je elk onderwerp minstens één keer geoefend hebben.</span></div><div style="display:flex;gap:8px;margin-bottom:4px;"><span style="color:#2c4a6e;">•</span><span>Je kiest vooral onderwerpen waarin je nog moet groeien.</span></div><div style="height:5px;"></div><div style="height:5px;"></div><div style="margin-bottom:4px;"><strong>Tip!</strong></div><div style="display:flex;gap:8px;margin-bottom:4px;"><span style="color:#2c4a6e;">•</span><span>Bij "groei" zie je de scores die je al behaald hebt.</span></div><div style="display:flex;gap:8px;margin-bottom:4px;"><span style="color:#2c4a6e;">•</span><span>Bekijk eerst nog eens de theorie en de voorbeelden die bij een onderwerp horen. (zie bronnen)</span></div><div style="height:5px;"></div><div style="height:5px;"></div><div class="sc-subtitel" style="margin-top:10px;">Werkwijze voor één oefening</div><div class="instructie-stap"><div class="stap-nr">1|</div><div class="stap-tekst">Open het bestand met de verschillende oefenmogelijkheden. (zie bronnen)</div></div><div class="instructie-stap"><div class="stap-nr">2|</div><div class="stap-tekst">Kies één van de onderwerpen. Respecteer daarbij de afspraken!</div></div><div class="instructie-stap"><div class="stap-nr">3|</div><div class="stap-tekst">Maak de oefening.</div></div><div style="display:flex;gap:8px;padding-left:28px;margin-bottom:4px;"><span style="color:#2c4a6e;">•</span><span>Probeer opnieuw als het niet van de eerste keer lukt. <br>Bekijk de feedback die je daarbij krijgt.</span></div><div style="display:flex;gap:8px;padding-left:28px;margin-bottom:4px;"><span style="color:#2c4a6e;">•</span><span>Tweede keer ook niet gelukt: onderzoek wat je fout doet!</span></div></div>
+    </div>
+  </div>
+      <div class="sectie grijs">
+        <div class="sectie-icoon"><img src="./pictures/bronnen.png" alt="Bronnen"></div>
+        <div class="sectie-inhoud">
+          <div class="sectie-titel">Te gebruiken bronnen</div>
+          <div class="bron-tegels"><a href="https://maartenarts-svg.github.io/rekenvaardigheden_v01/login.html" target="_blank" class="bron-tegel"><span class="bron-icoon">🌐</span>vaardigheden oefenen: rekenen</a><a href="https://drive.google.com/file/d/1Bao0ubtXBvoM8iamK3MuVri_B8G7AyhC/view?usp=drive_link" target="_blank" class="bron-tegel"><span class="bron-icoon">📄</span>Cursus H3</a><a href="https://drive.google.com/file/d/19H9TfdLxAZQy0oUGghqXusrb8SP4MTKG/view?usp=drive_link" target="_blank" class="bron-tegel"><span class="bron-icoon">📖</span>Theorie H3</a><a href="https://drive.google.com/file/d/1_qHEwa4hR87XPAs_yit9CfxOXSoqk8Cc/view?usp=drive_link" target="_blank" class="bron-tegel"><span class="bron-icoon">✅</span>Correctiesleutel H3</a><a href="https://drive.google.com/file/d/1ZWOX2wv6s_0ohBnQUn-aIqtaS5a9WA59/view?usp=drive_link" target="_blank" class="bron-tegel"><span class="bron-icoon">📄</span>Cursus H7</a><a href="https://drive.google.com/file/d/1QR2jmZrfLZ2-yZKXO_B1HllTEETp-eBK/view?usp=drive_link" target="_blank" class="bron-tegel"><span class="bron-icoon">📖</span>Theorie H7</a><a href="https://drive.google.com/file/d/12DueqblA5x1S1jKrR0jIHkF5jkmG9BQA/view?usp=drive_link" target="_blank" class="bron-tegel"><span class="bron-icoon">✅</span>Correctiesleutel H7</a></div>
+        </div>
+      </div>
+      <div class="sectie geel">
+        <div class="sectie-icoon"><img src="./pictures/indienen.png" alt="Indienen"></div>
+        <div class="sectie-inhoud">
+          <div class="sectie-titel">Indienen</div>
+          <div class="indienen-rijen"><div class="indienen-rij"><div class="indienen-rij-icoon">📌</div><div class="indienen-rij-tekst">Indienen in digitale omgeving.</div></div></div>
+        </div>
+      </div>
+  </div>
+
+  <div class="taak-blok verborgen" id="taak-7e8ecBcQp2suJh7fhuei-B" data-routes="B">
+    <div class="titelbalk">WI MC1: Eigenschappen van bewerkingen (rooster)</div>
+    <div style="background:#fff3f3;border-left:4px solid #c0392b;padding:12px 20px;color:#c0392b;font-size:10.5pt;line-height:1.6;">Opgelet, deze taak moet je maken voor de taak <strong>WI F</strong>.</div>
+      <div class="sectie wit">
+        <div class="sectie-icoon"><img src="./pictures/voorkennis.png" alt="Voorkennis"></div>
+        <div class="sectie-inhoud">
+          <div class="sectie-titel">Welke voorkennis heb je nodig?</div>
+          <ul class="doel-lijst"><li>Ik ken de symbolen van de getallenverzamelingen.</li><li>Ik kan verschillende soorten getallen herkennen.</li><li>Ik kan het tegengestelde en het omgekeerde van een getal noteren.</li><li>Ik ken het verband tussen de optelling en de aftrekking en tussen de vermenigvuldiging en de deling.</li><li>Ik kan rekenen met rationale getallen.</li><li>Ik kan werken met regelmaat en formules.</li></ul>
+        </div>
+      </div>
+      <div class="sectie grijs">
+        <div class="sectie-icoon"><img src="./pictures/succescriteria.png" alt="Succescriteria"></div>
+        <div class="sectie-inhoud">
+          <div class="sectie-titel">Succescriteria</div>
+          <div class="sc-subtitel">Wat leer je met deze taak?</div><ul class="doel-lijst"><li>Ik verwoord de eigenschappen van de bewerkingen. <span class="leerplandoel">(6.01)</span></li><li>Ik noteer de eigenschappen van bewerkingen in symbolen. <span class="leerplandoel">(6.11)</span></li><li>Ik ken de betekenis van de eigenschappen van bewerkingen. <span class="leerplandoel">(6.01)</span></li><li>Ik pas de eigenschappen van bewerkingen toe bij het rekenen. <span class="leerplandoel">(6.01)</span></li><li>Ik herken de eigenschappen van bewerkingen. <span class="leerplandoel">(6.01)</span></li></ul>
+        </div>
+      </div>
+  <div class="sectie wit">
+    <div class="sectie-icoon"><img src="./pictures/instructies.png" alt="Instructies"></div>
+    <div class="sectie-inhoud">
+      <div class="sectie-titel">Instructies</div>
+      <div class="instructie-stappen"><div class="instructie-stap"><div class="stap-nr">1|</div><div class="stap-tekst">Maak opdracht 1, cursus blz. 458.</div></div><div class="instructie-stap"><div class="stap-nr">2|</div><div class="stap-tekst">Overloop de theorie bij <strong>10.1 Eigenschappen van bewerkingen</strong> (theorie blz. 80-81).</div></div><div class="instructie-stap"><div class="stap-nr">3|</div><div class="stap-tekst">Maak de voorbeeldopdrachten. (cursus blz. 459-461, opdracht 2-6).</div></div><div class="instructie-stap"><div class="stap-nr">4|</div><div class="stap-tekst">Start met de opdrachten. (cursus blz. 462-465)</div></div><div class="instructie-stap"><div class="stap-nr">5|</div><div class="stap-tekst">Verbeter de opdrachten met de <a href="https://maartenarts-svg.github.io/maarten-svg.github.io/cursus-prototype/dashboard/index.html" target="_blank">online correctiesleutel</a> (zie bronnen).</div></div><div style="display:flex;gap:8px;padding-left:28px;margin-bottom:4px;"><span style="color:#2c4a6e;">•</span><span>Verbeter in kleur!</span></div><div style="display:flex;gap:8px;padding-left:28px;margin-bottom:4px;"><span style="color:#2c4a6e;">•</span><span>Fout gemaakt? Onderzoek je fout: Waarom is het niet juist? Wat kun je de volgende keer doen om die fout niet meer te maken?</span></div><div style="display:flex;gap:8px;padding-left:28px;margin-bottom:4px;"><span style="color:#2c4a6e;">•</span><span>Geef in het <a href="https://maartenarts-svg.github.io/maarten-svg.github.io/cursus-prototype/dashboard/index.html" target="_blank">online correctiesleutel</a> de opdracht de juiste kleur.</span></div></div>
+    </div>
+  </div>
+      <div class="sectie grijs">
+        <div class="sectie-icoon"><img src="./pictures/bronnen.png" alt="Bronnen"></div>
+        <div class="sectie-inhoud">
+          <div class="sectie-titel">Te gebruiken bronnen</div>
+          <div class="bron-tegels"><a href="https://maartenarts-svg.github.io/maarten-svg.github.io/cursus-prototype/dashboard/index.html" target="_blank" class="bron-tegel"><span class="bron-icoon">🌐</span>Hoofdstuk 10</a></div>
+        </div>
+      </div>
+      <div class="sectie geel">
+        <div class="sectie-icoon"><img src="./pictures/indienen.png" alt="Indienen"></div>
+        <div class="sectie-inhoud">
+          <div class="sectie-titel">Indienen</div>
+          <div class="indienen-rijen"><div class="indienen-rij"><div class="indienen-rij-icoon">📁</div><div class="indienen-rij-tekst">Bewaar alles in je map.</div></div></div>
+        </div>
+      </div>
+  </div>
+
+  <div class="taak-blok verborgen" id="taak-PdwIrZQT6h9CHQUqUgBP-B" data-routes="B">
+    <div class="titelbalk">WI MC2: Lettervormen (rooster)</div>
+    <div style="background:#fff3f3;border-left:4px solid #c0392b;padding:12px 20px;color:#c0392b;font-size:10.5pt;line-height:1.6;">Opgelet, deze taak moet je maken voor de taak <strong>WI G</strong>.</div>
+      <div class="sectie wit">
+        <div class="sectie-icoon"><img src="./pictures/voorkennis.png" alt="Voorkennis"></div>
+        <div class="sectie-inhoud">
+          <div class="sectie-titel">Welke voorkennis heb je nodig?</div>
+          <ul class="doel-lijst"><li>Ik ken de symbolen van de getallenverzamelingen.</li><li>Ik kan verschillende soorten getallen herkennen.</li><li>Ik kan het tegengestelde en het omgekeerde van een getal noteren.</li><li>Ik ken het verband tussen de optelling en de aftrekking en tussen de vermenigvuldiging en de deling.</li><li>Ik kan rekenen met rationale getallen.</li><li>Ik kan werken met regelmaat en formules.</li></ul>
+        </div>
+      </div>
+      <div class="sectie grijs">
+        <div class="sectie-icoon"><img src="./pictures/succescriteria.png" alt="Succescriteria"></div>
+        <div class="sectie-inhoud">
+          <div class="sectie-titel">Succescriteria</div>
+          <div class="sc-subtitel">Wat leer je met deze taak?</div><ul class="doel-lijst"><li>Ik herken de coëfficiënt en het letterdeel bij lettervormen. <span class="leerplandoel">(6.12)</span></li><li>Ik gebruik de begrippen coëfficiënt en letterdeel. <span class="leerplandoel">(6.12)</span></li><li>Ik noteer een lettervorm volgens de afspraken. <span class="leerplandoel">(6.12)</span></li><li>Ik bereken de getalwaarde van een lettervorm. <span class="leerplandoel">(6.13)</span></li></ul>
+        </div>
+      </div>
+  <div class="sectie wit">
+    <div class="sectie-icoon"><img src="./pictures/instructies.png" alt="Instructies"></div>
+    <div class="sectie-inhoud">
+      <div class="sectie-titel">Instructies</div>
+      <div class="instructie-stappen"><div class="sc-subtitel" style="margin-top:10px;">10.2 Lettervormen</div><div class="instructie-stap"><div class="stap-nr">1|</div><div class="stap-tekst">Maak opdracht 15, cursus blz. 458.</div></div><div class="instructie-stap"><div class="stap-nr">2|</div><div class="stap-tekst">Overloop de theorie bij <strong>10.2 Lettervormen</strong> (theorie blz. 82-83).</div></div><div class="instructie-stap"><div class="stap-nr">3|</div><div class="stap-tekst">Maak de voorbeeldopdrachten. (cursus blz. 466-467, opdracht 16-18).</div></div><div class="instructie-stap"><div class="stap-nr">4|</div><div class="stap-tekst">Test hoe ver je staat. (cursus blz. 468)</div></div><div class="instructie-stap"><div class="stap-nr">5|</div><div class="stap-tekst">Verbeter met de <a href="https://maartenarts-svg.github.io/maarten-svg.github.io/cursus-prototype/dashboard/index.html" target="_blank">online correctiesleutel</a> en kies welke opdrachtenreeks je maakt.</div></div><div class="instructie-stap"><div class="stap-nr">6|</div><div class="stap-tekst">Start met de opdrachten van jouw reeks. (cursus blz. 469-472)</div></div><div class="instructie-stap"><div class="stap-nr">7|</div><div class="stap-tekst">Verbeter de opdrachten met de <a href="https://maartenarts-svg.github.io/maarten-svg.github.io/cursus-prototype/dashboard/index.html" target="_blank">online correctiesleutel</a> (zie bronnen).</div></div><div style="display:flex;gap:8px;padding-left:28px;margin-bottom:4px;"><span style="color:#2c4a6e;">•</span><span>Verbeter in kleur!</span></div><div style="display:flex;gap:8px;padding-left:28px;margin-bottom:4px;"><span style="color:#2c4a6e;">•</span><span>Fout gemaakt? Onderzoek je fout: Waarom is het niet juist? Wat kun je de volgende keer doen om die fout niet meer te maken?</span></div><div style="display:flex;gap:8px;padding-left:28px;margin-bottom:4px;"><span style="color:#2c4a6e;">•</span><span>Geef in het <a href="https://maartenarts-svg.github.io/maarten-svg.github.io/cursus-prototype/dashboard/index.html" target="_blank">online correctiesleutel</a> de opdracht de juiste kleur.</span></div></div>
+    </div>
+  </div>
+      <div class="sectie grijs">
+        <div class="sectie-icoon"><img src="./pictures/bronnen.png" alt="Bronnen"></div>
+        <div class="sectie-inhoud">
+          <div class="sectie-titel">Te gebruiken bronnen</div>
+          <div class="bron-tegels"><a href="https://maartenarts-svg.github.io/maarten-svg.github.io/cursus-prototype/dashboard/index.html" target="_blank" class="bron-tegel"><span class="bron-icoon">🌐</span>Hoofdstuk 10</a></div>
+        </div>
+      </div>
+      <div class="sectie geel">
+        <div class="sectie-icoon"><img src="./pictures/indienen.png" alt="Indienen"></div>
+        <div class="sectie-inhoud">
+          <div class="sectie-titel">Indienen</div>
+          <div class="indienen-rijen"><div class="indienen-rij"><div class="indienen-rij-icoon">📁</div><div class="indienen-rij-tekst">Bewaar alles in je map.</div></div></div>
+        </div>
+      </div>
+  </div>
+
+  <div class="taak-blok verborgen" id="taak-neIBpimTDGdW5iIh9wCk-B" data-routes="B">
+    <div class="titelbalk">WI F: Eigenschappen van bewerkingen: opdrachten (50')</div>
+    <div style="background:#fff3f3;border-left:4px solid #c0392b;padding:12px 20px;color:#c0392b;font-size:10.5pt;line-height:1.6;">Opgelet, deze taak kun je pas maken na de taak <strong>WI MC1</strong> en moet je maken voor de taak <strong>WI D</strong>.</div>
+      <div class="sectie wit">
+        <div class="sectie-icoon"><img src="./pictures/voorkennis.png" alt="Voorkennis"></div>
+        <div class="sectie-inhoud">
+          <div class="sectie-titel">Welke voorkennis heb je nodig?</div>
+          <ul class="doel-lijst"><li>Ik ken de symbolen van de getallenverzamelingen.</li><li>Ik kan verschillende soorten getallen herkennen.</li><li>Ik kan het tegengestelde en het omgekeerde van een getal noteren.</li><li>Ik ken het verband tussen de optelling en de aftrekking en tussen de vermenigvuldiging en de deling.</li><li>Ik kan rekenen met rationale getallen.</li><li>Ik kan werken met regelmaat en formules.</li></ul>
+        </div>
+      </div>
+      <div class="sectie grijs">
+        <div class="sectie-icoon"><img src="./pictures/succescriteria.png" alt="Succescriteria"></div>
+        <div class="sectie-inhoud">
+          <div class="sectie-titel">Succescriteria</div>
+          <div class="sc-subtitel">Wat leer je met deze taak?</div><ul class="doel-lijst"><li>Ik verwoord de eigenschappen van de bewerkingen. <span class="leerplandoel">(6.01)</span></li><li>Ik noteer de eigenschappen van bewerkingen in symbolen. <span class="leerplandoel">(6.11)</span></li><li>Ik ken de betekenis van de eigenschappen van bewerkingen. <span class="leerplandoel">(6.01)</span></li><li>Ik pas de eigenschappen van bewerkingen toe bij het rekenen. <span class="leerplandoel">(6.01)</span></li><li>Ik herken de eigenschappen van bewerkingen. <span class="leerplandoel">(6.01)</span></li></ul>
+        </div>
+      </div>
+  <div class="sectie wit">
+    <div class="sectie-icoon"><img src="./pictures/instructies.png" alt="Instructies"></div>
+    <div class="sectie-inhoud">
+      <div class="sectie-titel">Instructies</div>
+      <div class="instructie-stappen"><div style="margin-bottom:4px;"><strong><span style="color:rood;">Werk verder daar waar je de vorige keer gestopt bent.</span></strong></div><div class="instructie-stap"><div class="stap-nr">1|</div><div class="stap-tekst">Maak de voorbeeldopdrachten. (cursus blz. 459-461, opdracht 2-6).</div></div><div class="instructie-stap"><div class="stap-nr">2|</div><div class="stap-tekst">Start met de opdrachten. (cursus blz. 462-465)</div></div><div class="instructie-stap"><div class="stap-nr">3|</div><div class="stap-tekst">Verbeter de opdrachten met de <a href="https://maartenarts-svg.github.io/maarten-svg.github.io/cursus-prototype/dashboard/index.html" target="_blank">online correctiesleutel</a> (zie bronnen).</div></div><div style="display:flex;gap:8px;padding-left:28px;margin-bottom:4px;"><span style="color:#2c4a6e;">•</span><span>Verbeter in kleur!</span></div><div style="display:flex;gap:8px;padding-left:28px;margin-bottom:4px;"><span style="color:#2c4a6e;">•</span><span>Fout gemaakt? Onderzoek je fout: Waarom is het niet juist? Wat kun je de volgende keer doen om die fout niet meer te maken?</span></div><div style="display:flex;gap:8px;padding-left:28px;margin-bottom:4px;"><span style="color:#2c4a6e;">•</span><span>Geef in het <a href="https://maartenarts-svg.github.io/maarten-svg.github.io/cursus-prototype/dashboard/index.html" target="_blank">online correctiesleutel</a> de opdracht de juiste kleur.</span></div></div>
+    </div>
+  </div>
+      <div class="sectie grijs">
+        <div class="sectie-icoon"><img src="./pictures/bronnen.png" alt="Bronnen"></div>
+        <div class="sectie-inhoud">
+          <div class="sectie-titel">Te gebruiken bronnen</div>
+          <div class="bron-tegels"><a href="https://maartenarts-svg.github.io/maarten-svg.github.io/cursus-prototype/dashboard/index.html" target="_blank" class="bron-tegel"><span class="bron-icoon">🌐</span>Hoofdstuk 10</a></div>
+        </div>
+      </div>
+      <div class="sectie geel">
+        <div class="sectie-icoon"><img src="./pictures/indienen.png" alt="Indienen"></div>
+        <div class="sectie-inhoud">
+          <div class="sectie-titel">Indienen</div>
+          <div class="indienen-rijen"><div class="indienen-rij"><div class="indienen-rij-icoon">📁</div><div class="indienen-rij-tekst">Bewaar alles in je map.</div></div></div>
+        </div>
+      </div>
+  </div>
+
+  <div class="taak-blok verborgen" id="taak-z53U4cwmpdHKeY0wJ8p7-B" data-routes="B">
+    <div class="titelbalk">WI G: Lettervormen: opdrachten (50')</div>
+    <div style="background:#fff3f3;border-left:4px solid #c0392b;padding:12px 20px;color:#c0392b;font-size:10.5pt;line-height:1.6;">Opgelet, deze taak kun je pas maken na de taak <strong>WI MC2</strong>.</div>
+      <div class="sectie wit">
+        <div class="sectie-icoon"><img src="./pictures/voorkennis.png" alt="Voorkennis"></div>
+        <div class="sectie-inhoud">
+          <div class="sectie-titel">Welke voorkennis heb je nodig?</div>
+          <ul class="doel-lijst"><li>Ik ken de symbolen van de getallenverzamelingen.</li><li>Ik kan verschillende soorten getallen herkennen.</li><li>Ik kan het tegengestelde en het omgekeerde van een getal noteren.</li><li>Ik ken het verband tussen de optelling en de aftrekking en tussen de vermenigvuldiging en de deling.</li><li>Ik kan rekenen met rationale getallen.</li><li>Ik kan werken met regelmaat en formules.</li></ul>
+        </div>
+      </div>
+      <div class="sectie grijs">
+        <div class="sectie-icoon"><img src="./pictures/succescriteria.png" alt="Succescriteria"></div>
+        <div class="sectie-inhoud">
+          <div class="sectie-titel">Succescriteria</div>
+          <div class="sc-subtitel">Wat leer je met deze taak?</div><ul class="doel-lijst"><li>Ik herken de coëfficiënt en het letterdeel bij lettervormen. <span class="leerplandoel">(6.12)</span></li><li>Ik gebruik de begrippen coëfficiënt en letterdeel. <span class="leerplandoel">(6.12)</span></li><li>Ik noteer een lettervorm volgens de afspraken. <span class="leerplandoel">(6.12)</span></li><li>Ik bereken de getalwaarde van een lettervorm. <span class="leerplandoel">(6.13)</span></li></ul>
+        </div>
+      </div>
+  <div class="sectie wit">
+    <div class="sectie-icoon"><img src="./pictures/instructies.png" alt="Instructies"></div>
+    <div class="sectie-inhoud">
+      <div class="sectie-titel">Instructies</div>
+      <div class="instructie-stappen"><div style="margin-bottom:4px;"><strong><span style="color:rood;">Werk verder daar waar je de vorige keer gestopt bent.</span></strong></div><div class="instructie-stap"><div class="stap-nr">1|</div><div class="stap-tekst">Maak de voorbeeldopdrachten. (cursus blz. 466-467, opdracht 16-18).</div></div><div class="instructie-stap"><div class="stap-nr">2|</div><div class="stap-tekst">Test hoe ver je staat. (cursus blz. 468)</div></div><div class="instructie-stap"><div class="stap-nr">3|</div><div class="stap-tekst">Verbeter met de <a href="https://maartenarts-svg.github.io/maarten-svg.github.io/cursus-prototype/dashboard/index.html" target="_blank">online correctiesleutel</a> en kies welke opdrachtenreeks je maakt.</div></div><div class="instructie-stap"><div class="stap-nr">4|</div><div class="stap-tekst">Start met de opdrachten van jouw reeks. (cursus blz. 469-472)</div></div><div class="instructie-stap"><div class="stap-nr">5|</div><div class="stap-tekst">Verbeter de opdrachten met de <a href="https://maartenarts-svg.github.io/maarten-svg.github.io/cursus-prototype/dashboard/index.html" target="_blank">online correctiesleutel</a> (zie bronnen).</div></div><div style="display:flex;gap:8px;padding-left:28px;margin-bottom:4px;"><span style="color:#2c4a6e;">•</span><span>Verbeter in kleur!</span></div><div style="display:flex;gap:8px;padding-left:28px;margin-bottom:4px;"><span style="color:#2c4a6e;">•</span><span>Fout gemaakt? Onderzoek je fout: Waarom is het niet juist? Wat kun je de volgende keer doen om die fout niet meer te maken?</span></div><div style="display:flex;gap:8px;padding-left:28px;margin-bottom:4px;"><span style="color:#2c4a6e;">•</span><span>Geef in het <a href="https://maartenarts-svg.github.io/maarten-svg.github.io/cursus-prototype/dashboard/index.html" target="_blank">online correctiesleutel</a> de opdracht de juiste kleur.</span></div></div>
+    </div>
+  </div>
+      <div class="sectie grijs">
+        <div class="sectie-icoon"><img src="./pictures/bronnen.png" alt="Bronnen"></div>
+        <div class="sectie-inhoud">
+          <div class="sectie-titel">Te gebruiken bronnen</div>
+          <div class="bron-tegels"><a href="https://maartenarts-svg.github.io/maarten-svg.github.io/cursus-prototype/dashboard/index.html" target="_blank" class="bron-tegel"><span class="bron-icoon">🌐</span>Hoofdstuk 10</a></div>
+        </div>
+      </div>
+      <div class="sectie geel">
+        <div class="sectie-icoon"><img src="./pictures/indienen.png" alt="Indienen"></div>
+        <div class="sectie-inhoud">
+          <div class="sectie-titel">Indienen</div>
+          <div class="indienen-rijen"><div class="indienen-rij"><div class="indienen-rij-icoon">📁</div><div class="indienen-rij-tekst">Bewaar alles in je map.</div></div></div>
+        </div>
+      </div>
+  </div>
+
+  <div class="taak-blok verborgen" id="taak-bmkgKSJFuKUMaFG57SgZ-B" data-routes="B">
+    <div class="titelbalk">WI D: Eigenschappen van bewerkingen inprenten (25')</div>
+    <div style="background:#fff3f3;border-left:4px solid #c0392b;padding:12px 20px;color:#c0392b;font-size:10.5pt;line-height:1.6;">Opgelet, deze taak kun je pas maken na de taak <strong>WI F</strong>.</div>
+      <div class="sectie wit">
+        <div class="sectie-icoon"><img src="./pictures/voorkennis.png" alt="Voorkennis"></div>
+        <div class="sectie-inhoud">
+          <div class="sectie-titel">Welke voorkennis heb je nodig?</div>
+          <ul class="doel-lijst"><li>Ik ken de symbolen van de getallenverzamelingen.</li><li>Ik kan verschillende soorten getallen herkennen.</li><li>Ik kan het tegengestelde en het omgekeerde van een getal noteren.</li><li>Ik kan verbanden tussen grootheden voorstellen met een verhaal, een tabel, een grafiek en een formule.</li><li>Ik kan rekenen met rationale getallen.</li></ul>
+        </div>
+      </div>
+      <div class="sectie grijs">
+        <div class="sectie-icoon"><img src="./pictures/succescriteria.png" alt="Succescriteria"></div>
+        <div class="sectie-inhoud">
+          <div class="sectie-titel">Succescriteria</div>
+          <div class="sc-subtitel">Wat leer je met deze taak?</div><ul class="doel-lijst"><li>Ik verwoord de eigenschappen van de bewerkingen. <span class="leerplandoel">(6.01)</span></li><li>Ik noteer de eigenschappen van bewerkingen in symbolen. <span class="leerplandoel">(6.11)</span></li><li>Ik ken de betekenis van de eigenschappen van bewerkingen. <span class="leerplandoel">(6.01)</span></li><li>Ik herken de eigenschappen van bewerkingen. <span class="leerplandoel">(6.01)</span></li></ul><div class="sc-subtitel">Waarop word je geëvalueerd bij deze taak?</div><ul class="doel-lijst"><li>Ik maak foto's van mijn kladblad met eigenschappen in symbolen en stuur die door. <span class="leerplandoel">(13.2)</span><div class="score-tekst">A: Ik doe dit.<br>C: Ik doe dit, maar niet alle eigenschappen staan op het kladblad.</div></li><li>Ik prent de eigenschappen van bewerkingen in met flashcards. <span class="leerplandoel">(13.2)</span><div class="score-tekst">A: Ik heb alle flashcards gebruikt.<br>C: Ik heb flashcards gebruikt, maar niet in alle richtingen.</div></li><li>Ik duid op het overzicht van de succescriteria aan wat ik al kan. <span class="leerplandoel">(13.2)</span><div class="score-tekst">A: Ik doe dit.<br>C: Ik doe dit niet en weet zo onvoldoende wat ik al kan en waar ik nog extra op moet oefenen.</div></li></ul>
+        </div>
+      </div>
+  <div class="sectie wit">
+    <div class="sectie-icoon"><img src="./pictures/instructies.png" alt="Instructies"></div>
+    <div class="sectie-inhoud">
+      <div class="sectie-titel">Instructies</div>
+      <div class="instructie-stappen"><div class="instructie-stap"><div class="stap-nr">1|</div><div class="stap-tekst">Klik op de link <a href="https://maartenarts-svg.github.io/maarten-svg.github.io/cursus-prototype/weektaken/week_28/WI_D/W28WID_taak.html" target="_blank">W6 WI D</a> bij bronnen.</div></div><div class="instructie-stap"><div class="stap-nr">2|</div><div class="stap-tekst">Volg de instructies die daar gegeven worden.</div></div><div style="margin-bottom:4px;"><strong><span style="color:rood;"> Let op! Je bent pas klaar als je op het einde op ingediend hebt geklikt. </span></strong></div><div style="height:5px;"></div><div style="margin-bottom:4px;">Wil je extra oefenen? Dat kan via de link <a href="https://maartenarts-svg.github.io/maarten-svg.github.io/cursus-prototype/weektaken/week_28/WI_D/W28WID_vrij-oefenen.html" target="_blank">extra inprenten</a> in de bronnen.</div></div>
+    </div>
+  </div>
+      <div class="sectie grijs">
+        <div class="sectie-icoon"><img src="./pictures/bronnen.png" alt="Bronnen"></div>
+        <div class="sectie-inhoud">
+          <div class="sectie-titel">Te gebruiken bronnen</div>
+          <div class="bron-tegels"><a href="https://maartenarts-svg.github.io/maarten-svg.github.io/cursus-prototype/weektaken/week_28/WI_D/W28WID_taak.html" target="_blank" class="bron-tegel"><span class="bron-icoon">🌐</span>P4W6 WI D</a><a href="https://maartenarts-svg.github.io/maarten-svg.github.io/cursus-prototype/dashboard/index.html" target="_blank" class="bron-tegel"><span class="bron-icoon">🌐</span>Hoofdstuk 10</a><a href="https://maartenarts-svg.github.io/maarten-svg.github.io/cursus-prototype/weektaken/week_28/WI_D/W28WID_vrij-oefenen.html" target="_blank" class="bron-tegel"><span class="bron-icoon">🌐</span>Extra inprenten</a></div>
+        </div>
+      </div>
+      <div class="sectie geel">
+        <div class="sectie-icoon"><img src="./pictures/indienen.png" alt="Indienen"></div>
+        <div class="sectie-inhoud">
+          <div class="sectie-titel">Indienen</div>
+          <div class="indienen-rijen"><div class="indienen-rij"><div class="indienen-rij-icoon">📌</div><div class="indienen-rij-tekst">Indienen in digitale omgeving.</div></div></div>
+        </div>
+      </div>
+  </div>
+
+  <div class="taak-blok verborgen" id="taak-Ug55TAcNcmZFwK8cwHKj-B" data-routes="B">
+    <div class="titelbalk">WI E: Statistiek: data verzamelen (20')</div>
+    
+      <div class="sectie grijs">
+        <div class="sectie-icoon"><img src="./pictures/succescriteria.png" alt="Succescriteria"></div>
+        <div class="sectie-inhoud">
+          <div class="sectie-titel">Succescriteria</div>
+          <div class="sc-subtitel">Wat leer je met deze taak?</div><ul class="doel-lijst"><li>Ik verzamel data voor een statistisch onderzoek. <span class="leerplandoel">(6.19)</span></li></ul><div class="sc-subtitel">Waarop word je geëvalueerd bij deze taak?</div><ul class="doel-lijst"><li>Ik beantwoord vragen om data te verzamelen. <span class="leerplandoel">(13.2)</span><div class="score-tekst">A: Ik beantwoord alle vragen.<br>B: Ik beantwoord maximaal twee vragen niet.<br>C: Ik beantwoord meer dan 2 vragen niet.</div></li><li>Ik duid op het overzicht van de succescriteria aan wat ik al kan. <span class="leerplandoel">(13.2)</span><div class="score-tekst">A: Ik doe dit.<br>C: Ik doe dit niet en weet zo onvoldoende wat ik al kan en waar ik nog extra op moet oefenen.</div></li></ul>
+        </div>
+      </div>
+  <div class="sectie wit">
+    <div class="sectie-icoon"><img src="./pictures/instructies.png" alt="Instructies"></div>
+    <div class="sectie-inhoud">
+      <div class="sectie-titel">Instructies</div>
+      <div class="instructie-stappen"><div style="margin-bottom:4px;">Na de taalstage doe je zelf twee keer een statistisch onderzoek.<br>Daarvoor heb je data nodig. Die verzamel je via deze taak.</div><div class="instructie-stap"><div class="stap-nr">1|</div><div class="stap-tekst">Open in de bronnen de link <a href="https://maartenarts-svg.github.io/maarten-svg.github.io/cursus-prototype/weektaken/week_28/WI_E/W28WIE_taak.html" target="_blank">W6 WI E</a> en beantwoord alle vragen.</div></div><div class="instructie-stap"><div class="stap-nr">2|</div><div class="stap-tekst"><span style="color:rood;"> Zorg dat je op het einde van de taak indient. </span></div></div></div>
+    </div>
+  </div>
+      <div class="sectie grijs">
+        <div class="sectie-icoon"><img src="./pictures/bronnen.png" alt="Bronnen"></div>
+        <div class="sectie-inhoud">
+          <div class="sectie-titel">Te gebruiken bronnen</div>
+          <div class="bron-tegels"><a href="https://drive.google.com/file/d/1TGZyxaD1J90gSHVXvzZOLfpU12FNsMw_/view?usp=drive_link" target="_blank" class="bron-tegel"><span class="bron-icoon">📄</span>Cursus H9</a><a href="https://drive.google.com/file/d/12gqRyEybMXqVyI1iAeWPmVXdwDOIZzOO/view?usp=drive_link" target="_blank" class="bron-tegel"><span class="bron-icoon">📖</span>Theorie H9</a><a href="https://drive.google.com/file/d/1L1zE5_BPwpdADPMcBWSBBUaP0pGz4xeC/view?usp=drive_link" target="_blank" class="bron-tegel"><span class="bron-icoon">✅</span>Correctiesleutel H9</a><a href="https://maartenarts-svg.github.io/maarten-svg.github.io/cursus-prototype/weektaken/week_28/WI_E/W28WIE_taak.html" target="_blank" class="bron-tegel"><span class="bron-icoon">🌐</span>P4W6 WI E</a></div>
+        </div>
+      </div>
+      <div class="sectie geel">
+        <div class="sectie-icoon"><img src="./pictures/indienen.png" alt="Indienen"></div>
+        <div class="sectie-inhoud">
+          <div class="sectie-titel">Indienen</div>
+          <div class="indienen-rijen"><div class="indienen-rij"><div class="indienen-rij-icoon">📌</div><div class="indienen-rij-tekst">Indienen in digitale omgeving.</div></div></div>
+        </div>
+      </div>
+  </div>
+
+  <div class="taak-blok verborgen" id="taak-wbd9RWj9dAkKaZQTip5o-Z" data-routes="Z">
+    <div class="titelbalk">WI A: Rekenvaardigheden (15')</div>
+    
+      <div class="sectie wit">
+        <div class="sectie-icoon"><img src="./pictures/voorkennis.png" alt="Voorkennis"></div>
+        <div class="sectie-inhoud">
+          <div class="sectie-titel">Welke voorkennis heb je nodig?</div>
+          <ul class="doel-lijst"><li>Ik kan rekenen met rationale getallen.</li></ul>
+        </div>
+      </div>
+      <div class="sectie grijs">
+        <div class="sectie-icoon"><img src="./pictures/succescriteria.png" alt="Succescriteria"></div>
+        <div class="sectie-inhoud">
+          <div class="sectie-titel">Succescriteria</div>
+          <div class="sc-subtitel">Wat leer je met deze taak?</div><ul class="doel-lijst"><li>Ik reken met gehele getallen. <span class="leerplandoel">(6.01)</span></li><li>Ik reken met breuken. <span class="leerplandoel">(6.1)</span></li></ul><div class="sc-subtitel">Waarop word je geëvalueerd bij deze taak?</div><ul class="doel-lijst"><li>Ik oefen mijn rekenvaardigheden door minstens drie keer te oefenen. <span class="leerplandoel">(13.2)</span><div class="score-tekst">A: Ik doe dit.<br>C: Ik oefen, maar maak geen drie oefeningen.</div></li><li>Ik oefen mijn rekenvaardigheden door op minstens drie verschillende onderwerpen te oefenen. <span class="leerplandoel">(13.2)</span><div class="score-tekst">A: Ik doe dit.<br>C: Ik oefen, maar niet op drie verschillende onderwerpen.</div></li><li>Ik oefen mijn rekenvaardigheden en werk aan de onderdelen die ik nog niet zo goed beheers. <span class="leerplandoel">(13.2)</span><div class="score-tekst">A: Ik doe dit.<br>C: Ik oefen, maar werk niet altijd aan de onderdelen die ik nog niet zo goed beheers.</div></li></ul>
+        </div>
+      </div>
+  <div class="sectie wit">
+    <div class="sectie-icoon"><img src="./pictures/instructies.png" alt="Instructies"></div>
+    <div class="sectie-inhoud">
+      <div class="sectie-titel">Instructies</div>
+      <div class="instructie-stappen"><div class="sc-subtitel" style="margin-top:10px;">Algemene uitleg</div><div style="margin-bottom:4px;">Je oefent elke week minstens drie keer. (Dat mag drie keer op één dag zijn, dat mag ook op drie verschillende dagen.)</div><div style="margin-bottom:4px;">Je respecteert daarbij de volgende afspraken.</div><div style="display:flex;gap:8px;margin-bottom:4px;"><span style="color:#2c4a6e;">•</span><span>Je oefent per week minstens drie verschillende onderwerpen.</span></div><div style="display:flex;gap:8px;margin-bottom:4px;"><span style="color:#2c4a6e;">•</span><span>Tegen het einde van project 5 moet je elk onderwerp minstens één keer geoefend hebben.</span></div><div style="display:flex;gap:8px;margin-bottom:4px;"><span style="color:#2c4a6e;">•</span><span>Je kiest vooral onderwerpen waarin je nog moet groeien.</span></div><div style="height:5px;"></div><div style="height:5px;"></div><div style="margin-bottom:4px;"><strong>Tip!</strong></div><div style="display:flex;gap:8px;margin-bottom:4px;"><span style="color:#2c4a6e;">•</span><span>Bij "groei" zie je de scores die je al behaald hebt.</span></div><div style="display:flex;gap:8px;margin-bottom:4px;"><span style="color:#2c4a6e;">•</span><span>Bekijk eerst nog eens de theorie en de voorbeelden die bij een onderwerp horen. (zie bronnen)</span></div><div style="height:5px;"></div><div style="height:5px;"></div><div class="sc-subtitel" style="margin-top:10px;">Werkwijze voor één oefening</div><div class="instructie-stap"><div class="stap-nr">1|</div><div class="stap-tekst">Open het bestand met de verschillende oefenmogelijkheden. (zie bronnen)</div></div><div class="instructie-stap"><div class="stap-nr">2|</div><div class="stap-tekst">Kies één van de onderwerpen. Respecteer daarbij de afspraken!</div></div><div class="instructie-stap"><div class="stap-nr">3|</div><div class="stap-tekst">Maak de oefening.</div></div><div style="display:flex;gap:8px;padding-left:28px;margin-bottom:4px;"><span style="color:#2c4a6e;">•</span><span>Probeer opnieuw als het niet van de eerste keer lukt. <br>Bekijk de feedback die je daarbij krijgt.</span></div><div style="display:flex;gap:8px;padding-left:28px;margin-bottom:4px;"><span style="color:#2c4a6e;">•</span><span>Tweede keer ook niet gelukt: onderzoek wat je fout doet!</span></div></div>
+    </div>
+  </div>
+      <div class="sectie grijs">
+        <div class="sectie-icoon"><img src="./pictures/bronnen.png" alt="Bronnen"></div>
+        <div class="sectie-inhoud">
+          <div class="sectie-titel">Te gebruiken bronnen</div>
+          <div class="bron-tegels"><a href="https://maartenarts-svg.github.io/rekenvaardigheden_v01/login.html" target="_blank" class="bron-tegel"><span class="bron-icoon">🌐</span>vaardigheden oefenen: rekenen</a><a href="https://drive.google.com/file/d/1Bao0ubtXBvoM8iamK3MuVri_B8G7AyhC/view?usp=drive_link" target="_blank" class="bron-tegel"><span class="bron-icoon">📄</span>Cursus H3</a><a href="https://drive.google.com/file/d/19H9TfdLxAZQy0oUGghqXusrb8SP4MTKG/view?usp=drive_link" target="_blank" class="bron-tegel"><span class="bron-icoon">📖</span>Theorie H3</a><a href="https://drive.google.com/file/d/1_qHEwa4hR87XPAs_yit9CfxOXSoqk8Cc/view?usp=drive_link" target="_blank" class="bron-tegel"><span class="bron-icoon">✅</span>Correctiesleutel H3</a><a href="https://drive.google.com/file/d/1ZWOX2wv6s_0ohBnQUn-aIqtaS5a9WA59/view?usp=drive_link" target="_blank" class="bron-tegel"><span class="bron-icoon">📄</span>Cursus H7</a><a href="https://drive.google.com/file/d/1QR2jmZrfLZ2-yZKXO_B1HllTEETp-eBK/view?usp=drive_link" target="_blank" class="bron-tegel"><span class="bron-icoon">📖</span>Theorie H7</a><a href="https://drive.google.com/file/d/12DueqblA5x1S1jKrR0jIHkF5jkmG9BQA/view?usp=drive_link" target="_blank" class="bron-tegel"><span class="bron-icoon">✅</span>Correctiesleutel H7</a></div>
+        </div>
+      </div>
+      <div class="sectie geel">
+        <div class="sectie-icoon"><img src="./pictures/indienen.png" alt="Indienen"></div>
+        <div class="sectie-inhoud">
+          <div class="sectie-titel">Indienen</div>
+          <div class="indienen-rijen"><div class="indienen-rij"><div class="indienen-rij-icoon">📌</div><div class="indienen-rij-tekst">Indienen in digitale omgeving.</div></div></div>
+        </div>
+      </div>
+  </div>
+
+  <div class="taak-blok verborgen" id="taak-7e8ecBcQp2suJh7fhuei-Z" data-routes="Z">
+    <div class="titelbalk">WI MC1: Eigenschappen van bewerkingen (rooster)</div>
+    <div style="background:#fff3f3;border-left:4px solid #c0392b;padding:12px 20px;color:#c0392b;font-size:10.5pt;line-height:1.6;">Opgelet, deze taak moet je maken voor de taak <strong>WI F</strong>.</div>
+      <div class="sectie wit">
+        <div class="sectie-icoon"><img src="./pictures/voorkennis.png" alt="Voorkennis"></div>
+        <div class="sectie-inhoud">
+          <div class="sectie-titel">Welke voorkennis heb je nodig?</div>
+          <ul class="doel-lijst"><li>Ik ken de symbolen van de getallenverzamelingen.</li><li>Ik kan verschillende soorten getallen herkennen.</li><li>Ik kan het tegengestelde en het omgekeerde van een getal noteren.</li><li>Ik ken het verband tussen de optelling en de aftrekking en tussen de vermenigvuldiging en de deling.</li><li>Ik kan rekenen met rationale getallen.</li><li>Ik kan werken met regelmaat en formules.</li></ul>
+        </div>
+      </div>
+      <div class="sectie grijs">
+        <div class="sectie-icoon"><img src="./pictures/succescriteria.png" alt="Succescriteria"></div>
+        <div class="sectie-inhoud">
+          <div class="sectie-titel">Succescriteria</div>
+          <div class="sc-subtitel">Wat leer je met deze taak?</div><ul class="doel-lijst"><li>Ik verwoord de eigenschappen van de bewerkingen. <span class="leerplandoel">(6.01)</span></li><li>Ik noteer de eigenschappen van bewerkingen in symbolen. <span class="leerplandoel">(6.11)</span></li><li>Ik ken de betekenis van de eigenschappen van bewerkingen. <span class="leerplandoel">(6.01)</span></li><li>Ik pas de eigenschappen van bewerkingen toe bij het rekenen. <span class="leerplandoel">(6.01)</span></li><li>Ik herken de eigenschappen van bewerkingen. <span class="leerplandoel">(6.01)</span></li></ul>
+        </div>
+      </div>
+  <div class="sectie wit">
+    <div class="sectie-icoon"><img src="./pictures/instructies.png" alt="Instructies"></div>
+    <div class="sectie-inhoud">
+      <div class="sectie-titel">Instructies</div>
+      <div class="instructie-stappen"><div class="instructie-stap"><div class="stap-nr">1|</div><div class="stap-tekst">Maak opdracht 1, cursus blz. 458.</div></div><div class="instructie-stap"><div class="stap-nr">2|</div><div class="stap-tekst">Overloop de theorie bij <strong>10.1 Eigenschappen van bewerkingen</strong> (theorie blz. 80-81).</div></div><div class="instructie-stap"><div class="stap-nr">3|</div><div class="stap-tekst">Maak de voorbeeldopdrachten. (cursus blz. 459-461, opdracht 2-6).</div></div><div class="instructie-stap"><div class="stap-nr">4|</div><div class="stap-tekst">Start met de opdrachten. (cursus blz. 462-465)</div></div><div class="instructie-stap"><div class="stap-nr">5|</div><div class="stap-tekst">Verbeter de opdrachten met de <a href="https://maartenarts-svg.github.io/maarten-svg.github.io/cursus-prototype/dashboard/index.html" target="_blank">online correctiesleutel</a> (zie bronnen).</div></div><div style="display:flex;gap:8px;padding-left:28px;margin-bottom:4px;"><span style="color:#2c4a6e;">•</span><span>Verbeter in kleur!</span></div><div style="display:flex;gap:8px;padding-left:28px;margin-bottom:4px;"><span style="color:#2c4a6e;">•</span><span>Fout gemaakt? Onderzoek je fout: Waarom is het niet juist? Wat kun je de volgende keer doen om die fout niet meer te maken?</span></div><div style="display:flex;gap:8px;padding-left:28px;margin-bottom:4px;"><span style="color:#2c4a6e;">•</span><span>Geef in het <a href="https://maartenarts-svg.github.io/maarten-svg.github.io/cursus-prototype/dashboard/index.html" target="_blank">online correctiesleutel</a> de opdracht de juiste kleur.</span></div></div>
+    </div>
+  </div>
+      <div class="sectie grijs">
+        <div class="sectie-icoon"><img src="./pictures/bronnen.png" alt="Bronnen"></div>
+        <div class="sectie-inhoud">
+          <div class="sectie-titel">Te gebruiken bronnen</div>
+          <div class="bron-tegels"><a href="https://maartenarts-svg.github.io/maarten-svg.github.io/cursus-prototype/dashboard/index.html" target="_blank" class="bron-tegel"><span class="bron-icoon">🌐</span>Hoofdstuk 10</a></div>
+        </div>
+      </div>
+      <div class="sectie geel">
+        <div class="sectie-icoon"><img src="./pictures/indienen.png" alt="Indienen"></div>
+        <div class="sectie-inhoud">
+          <div class="sectie-titel">Indienen</div>
+          <div class="indienen-rijen"><div class="indienen-rij"><div class="indienen-rij-icoon">📁</div><div class="indienen-rij-tekst">Bewaar alles in je map.</div></div></div>
+        </div>
+      </div>
+  </div>
+
+  <div class="taak-blok verborgen" id="taak-noJbOwsVQXGut6bHWahI-Z" data-routes="Z">
+    <div class="titelbalk">WI F: Eigenschappen van bewerkingen: opdrachten (25')</div>
+    <div style="background:#fff3f3;border-left:4px solid #c0392b;padding:12px 20px;color:#c0392b;font-size:10.5pt;line-height:1.6;">Opgelet, deze taak kun je pas maken na de taak <strong>WI MC1</strong> en moet je maken voor de taak <strong>WI D</strong>.</div>
+      <div class="sectie wit">
+        <div class="sectie-icoon"><img src="./pictures/voorkennis.png" alt="Voorkennis"></div>
+        <div class="sectie-inhoud">
+          <div class="sectie-titel">Welke voorkennis heb je nodig?</div>
+          <ul class="doel-lijst"><li>Ik ken de symbolen van de getallenverzamelingen.</li><li>Ik kan verschillende soorten getallen herkennen.</li><li>Ik kan het tegengestelde en het omgekeerde van een getal noteren.</li><li>Ik ken het verband tussen de optelling en de aftrekking en tussen de vermenigvuldiging en de deling.</li><li>Ik kan rekenen met rationale getallen.</li><li>Ik kan werken met regelmaat en formules.</li></ul>
+        </div>
+      </div>
+      <div class="sectie grijs">
+        <div class="sectie-icoon"><img src="./pictures/succescriteria.png" alt="Succescriteria"></div>
+        <div class="sectie-inhoud">
+          <div class="sectie-titel">Succescriteria</div>
+          <div class="sc-subtitel">Wat leer je met deze taak?</div><ul class="doel-lijst"><li>Ik verwoord de eigenschappen van de bewerkingen. <span class="leerplandoel">(6.01)</span></li><li>Ik noteer de eigenschappen van bewerkingen in symbolen. <span class="leerplandoel">(6.11)</span></li><li>Ik ken de betekenis van de eigenschappen van bewerkingen. <span class="leerplandoel">(6.01)</span></li><li>Ik pas de eigenschappen van bewerkingen toe bij het rekenen. <span class="leerplandoel">(6.01)</span></li><li>Ik herken de eigenschappen van bewerkingen. <span class="leerplandoel">(6.01)</span></li></ul>
+        </div>
+      </div>
+  <div class="sectie wit">
+    <div class="sectie-icoon"><img src="./pictures/instructies.png" alt="Instructies"></div>
+    <div class="sectie-inhoud">
+      <div class="sectie-titel">Instructies</div>
+      <div class="instructie-stappen"><div style="margin-bottom:4px;"><strong><span style="color:rood;">Werk verder daar waar je de vorige keer gestopt bent.</span></strong></div><div class="instructie-stap"><div class="stap-nr">1|</div><div class="stap-tekst">Maak de voorbeeldopdrachten. (cursus blz. 459-461, opdracht 2-6).</div></div><div class="instructie-stap"><div class="stap-nr">2|</div><div class="stap-tekst">Start met de opdrachten. (cursus blz. 462-465)</div></div><div class="instructie-stap"><div class="stap-nr">3|</div><div class="stap-tekst">Verbeter de opdrachten met de <a href="https://maartenarts-svg.github.io/maarten-svg.github.io/cursus-prototype/dashboard/index.html" target="_blank">online correctiesleutel</a> (zie bronnen).</div></div><div style="display:flex;gap:8px;padding-left:28px;margin-bottom:4px;"><span style="color:#2c4a6e;">•</span><span>Verbeter in kleur!</span></div><div style="display:flex;gap:8px;padding-left:28px;margin-bottom:4px;"><span style="color:#2c4a6e;">•</span><span>Fout gemaakt? Onderzoek je fout: Waarom is het niet juist? Wat kun je de volgende keer doen om die fout niet meer te maken?</span></div><div style="display:flex;gap:8px;padding-left:28px;margin-bottom:4px;"><span style="color:#2c4a6e;">•</span><span>Geef in het <a href="https://maartenarts-svg.github.io/maarten-svg.github.io/cursus-prototype/dashboard/index.html" target="_blank">online correctiesleutel</a> de opdracht de juiste kleur.</span></div></div>
+    </div>
+  </div>
+      <div class="sectie grijs">
+        <div class="sectie-icoon"><img src="./pictures/bronnen.png" alt="Bronnen"></div>
+        <div class="sectie-inhoud">
+          <div class="sectie-titel">Te gebruiken bronnen</div>
+          <div class="bron-tegels"><a href="https://maartenarts-svg.github.io/maarten-svg.github.io/cursus-prototype/dashboard/index.html" target="_blank" class="bron-tegel"><span class="bron-icoon">🌐</span>Hoofdstuk 10</a></div>
+        </div>
+      </div>
+      <div class="sectie geel">
+        <div class="sectie-icoon"><img src="./pictures/indienen.png" alt="Indienen"></div>
+        <div class="sectie-inhoud">
+          <div class="sectie-titel">Indienen</div>
+          <div class="indienen-rijen"><div class="indienen-rij"><div class="indienen-rij-icoon">📁</div><div class="indienen-rij-tekst">Bewaar alles in je map.</div></div></div>
+        </div>
+      </div>
+  </div>
+
+  <div class="taak-blok verborgen" id="taak-rhhUAVa50YESSpIeMhyg-Z" data-routes="Z">
+    <div class="titelbalk">WI G: Lettervormen: opdrachten (75')</div>
+    <div style="background:#fff3f3;border-left:4px solid #c0392b;padding:12px 20px;color:#c0392b;font-size:10.5pt;line-height:1.6;">Opgelet, deze taak kun je pas maken na de taak <strong>WI D</strong>.</div>
+      <div class="sectie wit">
+        <div class="sectie-icoon"><img src="./pictures/voorkennis.png" alt="Voorkennis"></div>
+        <div class="sectie-inhoud">
+          <div class="sectie-titel">Welke voorkennis heb je nodig?</div>
+          <ul class="doel-lijst"><li>Ik ken de symbolen van de getallenverzamelingen.</li><li>Ik kan verschillende soorten getallen herkennen.</li><li>Ik kan het tegengestelde en het omgekeerde van een getal noteren.</li><li>Ik ken het verband tussen de optelling en de aftrekking en tussen de vermenigvuldiging en de deling.</li><li>Ik kan rekenen met rationale getallen.</li><li>Ik kan werken met regelmaat en formules.</li></ul>
+        </div>
+      </div>
+      <div class="sectie grijs">
+        <div class="sectie-icoon"><img src="./pictures/succescriteria.png" alt="Succescriteria"></div>
+        <div class="sectie-inhoud">
+          <div class="sectie-titel">Succescriteria</div>
+          <div class="sc-subtitel">Wat leer je met deze taak?</div><ul class="doel-lijst"><li>Ik herken de coëfficiënt en het letterdeel bij lettervormen. <span class="leerplandoel">(6.12)</span></li><li>Ik gebruik de begrippen coëfficiënt en letterdeel. <span class="leerplandoel">(6.12)</span></li><li>Ik noteer een lettervorm volgens de afspraken. <span class="leerplandoel">(6.12)</span></li><li>Ik bereken de getalwaarde van een lettervorm. <span class="leerplandoel">(6.13)</span></li></ul>
+        </div>
+      </div>
+  <div class="sectie wit">
+    <div class="sectie-icoon"><img src="./pictures/instructies.png" alt="Instructies"></div>
+    <div class="sectie-inhoud">
+      <div class="sectie-titel">Instructies</div>
+      <div class="instructie-stappen"><div class="instructie-stap"><div class="stap-nr">1|</div><div class="stap-tekst">Maak opdracht 15, cursus blz. 458.</div></div><div style="display:flex;gap:8px;padding-left:28px;margin-bottom:4px;"><span style="color:#2c4a6e;">•</span><span>Klik in de <a href="https://maartenarts-svg.github.io/maarten-svg.github.io/cursus-prototype/dashboard/index.html" target="_blank">online cursus</a> op het icoon van de camera voor het instructiefilmpje.</span></div><div class="instructie-stap"><div class="stap-nr">2|</div><div class="stap-tekst">Overloop de theorie bij <strong>10.2 Lettervormen</strong> (theorie blz. 82-83).</div></div><div class="instructie-stap"><div class="stap-nr">3|</div><div class="stap-tekst">Maak de voorbeeldopdrachten. (cursus blz. 466-467, opdracht 16-18).</div></div><div style="display:flex;gap:8px;padding-left:28px;margin-bottom:4px;"><span style="color:#2c4a6e;">•</span><span>Klik in de <a href="https://maartenarts-svg.github.io/maarten-svg.github.io/cursus-prototype/dashboard/index.html" target="_blank">online cursus</a> op het icoon van de camera voor het instructiefilmpje.</span></div><div class="instructie-stap"><div class="stap-nr">4|</div><div class="stap-tekst">Test hoe ver je staat. (cursus blz. 468)</div></div><div class="instructie-stap"><div class="stap-nr">5|</div><div class="stap-tekst">Verbeter met de <a href="https://maartenarts-svg.github.io/maarten-svg.github.io/cursus-prototype/dashboard/index.html" target="_blank">online correctiesleutel</a> en kies welke opdrachtenreeks je maakt.</div></div><div class="instructie-stap"><div class="stap-nr">6|</div><div class="stap-tekst">Start met de opdrachten van jouw reeks. (cursus blz. 469-472)</div></div><div class="instructie-stap"><div class="stap-nr">7|</div><div class="stap-tekst">Verbeter de opdrachten met de <a href="https://maartenarts-svg.github.io/maarten-svg.github.io/cursus-prototype/dashboard/index.html" target="_blank">online correctiesleutel</a> (zie bronnen).</div></div><div style="display:flex;gap:8px;padding-left:28px;margin-bottom:4px;"><span style="color:#2c4a6e;">•</span><span>Verbeter in kleur!</span></div><div style="display:flex;gap:8px;padding-left:28px;margin-bottom:4px;"><span style="color:#2c4a6e;">•</span><span>Fout gemaakt? Onderzoek je fout: Waarom is het niet juist? Wat kun je de volgende keer doen om die fout niet meer te maken?</span></div><div style="display:flex;gap:8px;padding-left:28px;margin-bottom:4px;"><span style="color:#2c4a6e;">•</span><span>Geef in het <a href="https://maartenarts-svg.github.io/maarten-svg.github.io/cursus-prototype/dashboard/index.html" target="_blank">online correctiesleutel</a> de opdracht de juiste kleur.</span></div></div>
+    </div>
+  </div>
+      <div class="sectie grijs">
+        <div class="sectie-icoon"><img src="./pictures/bronnen.png" alt="Bronnen"></div>
+        <div class="sectie-inhoud">
+          <div class="sectie-titel">Te gebruiken bronnen</div>
+          <div class="bron-tegels"><a href="https://maartenarts-svg.github.io/maarten-svg.github.io/cursus-prototype/dashboard/index.html" target="_blank" class="bron-tegel"><span class="bron-icoon">🌐</span>Hoofdstuk 10</a></div>
+        </div>
+      </div>
+      <div class="sectie geel">
+        <div class="sectie-icoon"><img src="./pictures/indienen.png" alt="Indienen"></div>
+        <div class="sectie-inhoud">
+          <div class="sectie-titel">Indienen</div>
+          <div class="indienen-rijen"><div class="indienen-rij"><div class="indienen-rij-icoon">📁</div><div class="indienen-rij-tekst">Bewaar alles in je map.</div></div></div>
+        </div>
+      </div>
+  </div>
+
+  <div class="taak-blok verborgen" id="taak-bmkgKSJFuKUMaFG57SgZ-Z" data-routes="Z">
+    <div class="titelbalk">WI D: Eigenschappen van bewerkingen inprenten (25')</div>
+    <div style="background:#fff3f3;border-left:4px solid #c0392b;padding:12px 20px;color:#c0392b;font-size:10.5pt;line-height:1.6;">Opgelet, deze taak kun je pas maken na de taak <strong>WI F</strong> en moet je maken voor de taak <strong>WI G</strong>.</div>
+      <div class="sectie wit">
+        <div class="sectie-icoon"><img src="./pictures/voorkennis.png" alt="Voorkennis"></div>
+        <div class="sectie-inhoud">
+          <div class="sectie-titel">Welke voorkennis heb je nodig?</div>
+          <ul class="doel-lijst"><li>Ik ken de symbolen van de getallenverzamelingen.</li><li>Ik kan verschillende soorten getallen herkennen.</li><li>Ik kan het tegengestelde en het omgekeerde van een getal noteren.</li><li>Ik kan verbanden tussen grootheden voorstellen met een verhaal, een tabel, een grafiek en een formule.</li><li>Ik kan rekenen met rationale getallen.</li></ul>
+        </div>
+      </div>
+      <div class="sectie grijs">
+        <div class="sectie-icoon"><img src="./pictures/succescriteria.png" alt="Succescriteria"></div>
+        <div class="sectie-inhoud">
+          <div class="sectie-titel">Succescriteria</div>
+          <div class="sc-subtitel">Wat leer je met deze taak?</div><ul class="doel-lijst"><li>Ik verwoord de eigenschappen van de bewerkingen. <span class="leerplandoel">(6.01)</span></li><li>Ik noteer de eigenschappen van bewerkingen in symbolen. <span class="leerplandoel">(6.11)</span></li><li>Ik ken de betekenis van de eigenschappen van bewerkingen. <span class="leerplandoel">(6.01)</span></li><li>Ik herken de eigenschappen van bewerkingen. <span class="leerplandoel">(6.01)</span></li></ul><div class="sc-subtitel">Waarop word je geëvalueerd bij deze taak?</div><ul class="doel-lijst"><li>Ik maak foto's van mijn kladblad met eigenschappen in symbolen en stuur die door. <span class="leerplandoel">(13.2)</span><div class="score-tekst">A: Ik doe dit.<br>C: Ik doe dit, maar niet alle eigenschappen staan op het kladblad.</div></li><li>Ik prent de eigenschappen van bewerkingen in met flashcards. <span class="leerplandoel">(13.2)</span><div class="score-tekst">A: Ik heb alle flashcards gebruikt.<br>C: Ik heb flashcards gebruikt, maar niet in alle richtingen.</div></li><li>Ik duid op het overzicht van de succescriteria aan wat ik al kan. <span class="leerplandoel">(13.2)</span><div class="score-tekst">A: Ik doe dit.<br>C: Ik doe dit niet en weet zo onvoldoende wat ik al kan en waar ik nog extra op moet oefenen.</div></li></ul>
+        </div>
+      </div>
+  <div class="sectie wit">
+    <div class="sectie-icoon"><img src="./pictures/instructies.png" alt="Instructies"></div>
+    <div class="sectie-inhoud">
+      <div class="sectie-titel">Instructies</div>
+      <div class="instructie-stappen"><div class="instructie-stap"><div class="stap-nr">1|</div><div class="stap-tekst">Klik op de link <a href="https://maartenarts-svg.github.io/maarten-svg.github.io/cursus-prototype/weektaken/week_28/WI_D/W28WID_taak.html" target="_blank">W6 WI D</a> bij bronnen.</div></div><div class="instructie-stap"><div class="stap-nr">2|</div><div class="stap-tekst">Volg de instructies die daar gegeven worden.</div></div><div style="margin-bottom:4px;"><strong><span style="color:rood;"> Let op! Je bent pas klaar als je op het einde op ingediend hebt geklikt. </span></strong></div><div style="height:5px;"></div><div style="margin-bottom:4px;">Wil je extra oefenen? Dat kan via de link <a href="https://maartenarts-svg.github.io/maarten-svg.github.io/cursus-prototype/weektaken/week_28/WI_D/W28WID_vrij-oefenen.html" target="_blank">extra inprenten</a> in de bronnen.</div></div>
+    </div>
+  </div>
+      <div class="sectie grijs">
+        <div class="sectie-icoon"><img src="./pictures/bronnen.png" alt="Bronnen"></div>
+        <div class="sectie-inhoud">
+          <div class="sectie-titel">Te gebruiken bronnen</div>
+          <div class="bron-tegels"><a href="https://maartenarts-svg.github.io/maarten-svg.github.io/cursus-prototype/weektaken/week_28/WI_D/W28WID_taak.html" target="_blank" class="bron-tegel"><span class="bron-icoon">🌐</span>P4W6 WI D</a><a href="https://maartenarts-svg.github.io/maarten-svg.github.io/cursus-prototype/dashboard/index.html" target="_blank" class="bron-tegel"><span class="bron-icoon">🌐</span>Hoofdstuk 10</a><a href="https://maartenarts-svg.github.io/maarten-svg.github.io/cursus-prototype/weektaken/week_28/WI_D/W28WID_vrij-oefenen.html" target="_blank" class="bron-tegel"><span class="bron-icoon">🌐</span>Extra inprenten</a></div>
+        </div>
+      </div>
+      <div class="sectie geel">
+        <div class="sectie-icoon"><img src="./pictures/indienen.png" alt="Indienen"></div>
+        <div class="sectie-inhoud">
+          <div class="sectie-titel">Indienen</div>
+          <div class="indienen-rijen"><div class="indienen-rij"><div class="indienen-rij-icoon">📌</div><div class="indienen-rij-tekst">Indienen in digitale omgeving.</div></div></div>
+        </div>
+      </div>
+  </div>
+
+  <div class="taak-blok verborgen" id="taak-Ug55TAcNcmZFwK8cwHKj-Z" data-routes="Z">
+    <div class="titelbalk">WI E: Statistiek: data verzamelen (20')</div>
+    
+      <div class="sectie grijs">
+        <div class="sectie-icoon"><img src="./pictures/succescriteria.png" alt="Succescriteria"></div>
+        <div class="sectie-inhoud">
+          <div class="sectie-titel">Succescriteria</div>
+          <div class="sc-subtitel">Wat leer je met deze taak?</div><ul class="doel-lijst"><li>Ik verzamel data voor een statistisch onderzoek. <span class="leerplandoel">(6.19)</span></li></ul><div class="sc-subtitel">Waarop word je geëvalueerd bij deze taak?</div><ul class="doel-lijst"><li>Ik beantwoord vragen om data te verzamelen. <span class="leerplandoel">(13.2)</span><div class="score-tekst">A: Ik beantwoord alle vragen.<br>B: Ik beantwoord maximaal twee vragen niet.<br>C: Ik beantwoord meer dan 2 vragen niet.</div></li><li>Ik duid op het overzicht van de succescriteria aan wat ik al kan. <span class="leerplandoel">(13.2)</span><div class="score-tekst">A: Ik doe dit.<br>C: Ik doe dit niet en weet zo onvoldoende wat ik al kan en waar ik nog extra op moet oefenen.</div></li></ul>
+        </div>
+      </div>
+  <div class="sectie wit">
+    <div class="sectie-icoon"><img src="./pictures/instructies.png" alt="Instructies"></div>
+    <div class="sectie-inhoud">
+      <div class="sectie-titel">Instructies</div>
+      <div class="instructie-stappen"><div style="margin-bottom:4px;">Na de taalstage doe je zelf twee keer een statistisch onderzoek.<br>Daarvoor heb je data nodig. Die verzamel je via deze taak.</div><div class="instructie-stap"><div class="stap-nr">1|</div><div class="stap-tekst">Open in de bronnen de link <a href="https://maartenarts-svg.github.io/maarten-svg.github.io/cursus-prototype/weektaken/week_28/WI_E/W28WIE_taak.html" target="_blank">W6 WI E</a> en beantwoord alle vragen.</div></div><div class="instructie-stap"><div class="stap-nr">2|</div><div class="stap-tekst"><span style="color:rood;"> Zorg dat je op het einde van de taak indient. </span></div></div></div>
+    </div>
+  </div>
+      <div class="sectie grijs">
+        <div class="sectie-icoon"><img src="./pictures/bronnen.png" alt="Bronnen"></div>
+        <div class="sectie-inhoud">
+          <div class="sectie-titel">Te gebruiken bronnen</div>
+          <div class="bron-tegels"><a href="https://drive.google.com/file/d/1TGZyxaD1J90gSHVXvzZOLfpU12FNsMw_/view?usp=drive_link" target="_blank" class="bron-tegel"><span class="bron-icoon">📄</span>Cursus H9</a><a href="https://drive.google.com/file/d/12gqRyEybMXqVyI1iAeWPmVXdwDOIZzOO/view?usp=drive_link" target="_blank" class="bron-tegel"><span class="bron-icoon">📖</span>Theorie H9</a><a href="https://drive.google.com/file/d/1L1zE5_BPwpdADPMcBWSBBUaP0pGz4xeC/view?usp=drive_link" target="_blank" class="bron-tegel"><span class="bron-icoon">✅</span>Correctiesleutel H9</a><a href="https://maartenarts-svg.github.io/maarten-svg.github.io/cursus-prototype/weektaken/week_28/WI_E/W28WIE_taak.html" target="_blank" class="bron-tegel"><span class="bron-icoon">🌐</span>P4W6 WI E</a></div>
+        </div>
+      </div>
+      <div class="sectie geel">
+        <div class="sectie-icoon"><img src="./pictures/indienen.png" alt="Indienen"></div>
+        <div class="sectie-inhoud">
+          <div class="sectie-titel">Indienen</div>
+          <div class="indienen-rijen"><div class="indienen-rij"><div class="indienen-rij-icoon">📌</div><div class="indienen-rij-tekst">Indienen in digitale omgeving.</div></div></div>
+        </div>
+      </div>
+  </div>
+</div>
+<script>
+  
+  const vanafMoment = new Date('2026-04-18T19:17').getTime();
+
+  function updateAfteller() {
+    const nu = Date.now();
+    const verschil = vanafMoment - nu;
+
+    if (verschil <= 0) {
+      // Tijd bereikt: verberg wachtscherm, toon inhoud
+      document.getElementById('wachtscherm').style.display = 'none';
+      document.getElementById('weekinhoud').style.display = 'block';
+      clearInterval(aftellerInterval);
+      return;
+    }
+
+    const dagen = Math.floor(verschil / (1000 * 60 * 60 * 24));
+    const uren = Math.floor((verschil % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+    const minuten = Math.floor((verschil % (1000 * 60 * 60)) / (1000 * 60));
+    const seconden = Math.floor((verschil % (1000 * 60)) / 1000);
+
+    document.getElementById('af-dagen').textContent = String(dagen).padStart(2, '0');
+    document.getElementById('af-uren').textContent = String(uren).padStart(2, '0');
+    document.getElementById('af-minuten').textContent = String(minuten).padStart(2, '0');
+    document.getElementById('af-seconden').textContent = String(seconden).padStart(2, '0');
+  }
+
+  // Controleer bij laden
+  if (Date.now() >= vanafMoment) {
+    document.getElementById('weekinhoud').style.display = 'block';
+  } else {
+    document.getElementById('wachtscherm').style.display = 'flex';
+    updateAfteller();
+    var aftellerInterval = setInterval(updateAfteller, 1000);
+  }
+
+  function kiesRoute(route) {
+    document.querySelectorAll('.route-tegel').forEach(t => t.classList.remove('actief'));
+    document.querySelector('.route-tegel.' + route).classList.add('actief');
+    document.getElementById('welkom-bericht').classList.add('verborgen');
+    document.getElementById('inhoudstafel').classList.remove('verborgen');
+    document.querySelectorAll('.taak-blok').forEach(blok => {
+      blok.classList.toggle('verborgen', blok.dataset.routes !== route);
+    });
+    document.querySelectorAll('.inhoudslink').forEach(link => {
+      link.style.display = link.dataset.routes === route ? 'block' : 'none';
+    });
+  }
+</script>
+</body>
+</html>
