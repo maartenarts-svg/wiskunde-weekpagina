@@ -639,16 +639,22 @@ function renderInstructieVoorExport(tekst) {
 
   function inline(t) {
     const kleurMap = { rood: '#c0392b', blauw: '#2c4a6e', groen: '#27ae60', oranje: '#e07b00', grijs: '#6b7280' };
+  
     return t
-      .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
-      .replace(/\*(.+?)\*/g, '<em>$1</em>')
-      .replace(/__(.+?)__/g, '<u>$1</u>')
-      .replace(/\^\^(.+?)\^\^/g, '<span style="font-size:13pt;">$1</span>')
-      .replace(/~(.+?)~/g, '<span style="font-size:9pt;">$1</span>')
-      .replace(/\[kleur:(\w+|#[0-9a-fA-F]{3,6})\](.+?)\[\/kleur\]/g, (m, k, tekst) => {
+      // eerst complexere dingen
+      .replace(/\[kleur:(\w+|#[0-9a-fA-F]{3,6})\]([\s\S]+?)\[\/kleur\]/g, (m, k, tekst) => {
         const kleurWaarde = kleurMap[k] || k;
         return `<span style="color:${kleurWaarde};">${tekst}</span>`;
       })
+      .replace(/\^\^([\s\S]+?)\^\^/g, '<span style="font-size:13pt;">$1</span>')
+      .replace(/~([\s\S]+?)~/g, '<span style="font-size:9pt;">$1</span>')
+  
+      // dan simpele markdown
+      .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+      .replace(/\*(.+?)\*/g, '<em>$1</em>')
+      .replace(/__(.+?)__/g, '<u>$1</u>')
+  
+      // links en linebreaks
       .replace(/\[(.+?)\]\((.+?)\)/g, '<a href="$2" target="_blank">$1</a>')
       .replace(/\+\+/g, '<br>');
   }
