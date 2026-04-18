@@ -441,7 +441,7 @@ function wachtschermHTML(vanafDatum) {
   const datumTekst = dt.toLocaleDateString('nl-BE', opties);
   const uurTekst = dt.toLocaleTimeString('nl-BE', { hour: '2-digit', minute: '2-digit' });
   return `
-  <div id="wachtscherm" style="display:none;min-height:100vh;background:linear-gradient(135deg,#1e3a56 0%,#2c4a6e 60%,#3a5f8a 100%);color:white;font-family:'Lato',sans-serif;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:40px 20px;">
+  <div id="wachtscherm" style="display:none;min-height:100vh;background:linear-gradient(135deg,#1e3a56 0%,#2c4a6e 60%,#3a5f8a 100%);color:white;font-family:'Lato',sans-serif;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:40px 20px;">
     <div style="font-size:48pt;margin-bottom:20px;">⏳</div>
     <div style="font-size:20pt;font-weight:900;margin-bottom:12px;letter-spacing:1px;">Je bent al nieuwsgierig naar het vervolg!</div>
     <div style="font-size:14pt;opacity:0.85;margin-bottom:32px;">Super! Helaas moet je nog even wachten.</div>
@@ -638,11 +638,17 @@ function renderInstructieVoorExport(tekst) {
   let numTeller = 0;
 
   function inline(t) {
+    const kleurMap = { rood: '#c0392b', blauw: '#2c4a6e', groen: '#27ae60', oranje: '#e07b00', grijs: '#6b7280' };
     return t
       .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
       .replace(/\*(.+?)\*/g, '<em>$1</em>')
       .replace(/__(.+?)__/g, '<u>$1</u>')
-      .replace(/\[kleur:(\w+|#[0-9a-fA-F]{3,6})\](.+?)\[\/kleur\]/g, (m, k, t) => `<span style="color:${k};">${t}</span>`)
+      .replace(/\^\^(.+?)\^\^/g, '<span style="font-size:13pt;">$1</span>')
+      .replace(/~(.+?)~/g, '<span style="font-size:9pt;">$1</span>')
+      .replace(/\[kleur:(\w+|#[0-9a-fA-F]{3,6})\](.+?)\[\/kleur\]/g, (m, k, tekst) => {
+        const kleurWaarde = kleurMap[k] || k;
+        return `<span style="color:${kleurWaarde};">${tekst}</span>`;
+      })
       .replace(/\[(.+?)\]\((.+?)\)/g, '<a href="$2" target="_blank">$1</a>')
       .replace(/\+\+/g, '<br>');
   }
@@ -777,6 +783,7 @@ function weekpaginaScript(vanafDatum = '') {
       // Tijd bereikt: verberg wachtscherm, toon inhoud
       document.getElementById('wachtscherm').style.display = 'none';
       document.getElementById('weekinhoud').style.display = 'block';
+      document.getElementById('weekinhoud').style.visibility = 'visible';
       clearInterval(aftellerInterval);
       return;
     }
@@ -794,6 +801,7 @@ function weekpaginaScript(vanafDatum = '') {
 
   // Controleer bij laden
   if (Date.now() >= vanafMoment) {
+    document.getElementById('wachtscherm').style.display = 'none';
     document.getElementById('weekinhoud').style.display = 'block';
   } else {
     document.getElementById('wachtscherm').style.display = 'flex';
