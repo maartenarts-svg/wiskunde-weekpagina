@@ -401,7 +401,8 @@ export function exporteerWeekpagina() {
     actueleKolommen[route] = ids.map(id => kolomData[route].find(t => t.id === id)).filter(Boolean);
   });
 
-  const volledigeHTML = bouwVolledigeHTML(actueleKolommen, huidigWeekWO);
+  const vanafInput = document.getElementById('wo-zichtbaar-vanaf')?.value || '';
+  const volledigeHTML = bouwVolledigeHTML(actueleKolommen, huidigWeekWO, vanafInput);
 
   const blob = new Blob([volledigeHTML], { type: 'text/html;charset=utf-8' });
   const url = URL.createObjectURL(blob);
@@ -413,7 +414,7 @@ export function exporteerWeekpagina() {
 }
 
 // ===== VOLLEDIGE HTML BOUWEN (voor preview én export) =====
-function bouwVolledigeHTML(actueleKolommen, weekNr) {
+function bouwVolledigeHTML(actueleKolommen, weekNr, vanafDatum = '') {
   const body = renderWeekpaginaHTML(actueleKolommen, weekNr, true);
   return `<!DOCTYPE html>
 <html lang="nl">
@@ -425,10 +426,33 @@ function bouwVolledigeHTML(actueleKolommen, weekNr) {
 ${weekpaginaCSS()}
 </head>
 <body>
+${vanafDatum ? wachtschermHTML(vanafDatum) : ''}
+<div id="weekinhoud" style="${vanafDatum ? 'display:none;' : ''}">
 ${body}
-${weekpaginaScript()}
+</div>
+${weekpaginaScript(vanafDatum)}
 </body>
 </html>`;
+}
+
+function wachtschermHTML(vanafDatum) {
+  const dt = new Date(vanafDatum);
+  const opties = { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' };
+  const datumTekst = dt.toLocaleDateString('nl-BE', opties);
+  const uurTekst = dt.toLocaleTimeString('nl-BE', { hour: '2-digit', minute: '2-digit' });
+  return `
+  <div id="wachtscherm" style="display:none;min-height:100vh;background:linear-gradient(135deg,#1e3a56 0%,#2c4a6e 60%,#3a5f8a 100%);color:white;font-family:'Lato',sans-serif;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:40px 20px;">
+    <div style="font-size:48pt;margin-bottom:20px;">⏳</div>
+    <div style="font-size:20pt;font-weight:900;margin-bottom:12px;letter-spacing:1px;">Je bent al nieuwsgierig naar het vervolg!</div>
+    <div style="font-size:14pt;opacity:0.85;margin-bottom:32px;">Super! Helaas moet je nog even wachten.</div>
+    <div style="font-size:11pt;opacity:0.7;margin-bottom:24px;">Beschikbaar op ${datumTekst} om ${uurTekst}</div>
+    <div id="afteller" style="display:flex;gap:24px;flex-wrap:wrap;justify-content:center;">
+      <div class="afteller-blok"><span id="af-dagen">--</span><div class="afteller-label">dagen</div></div>
+      <div class="afteller-blok"><span id="af-uren">--</span><div class="afteller-label">uren</div></div>
+      <div class="afteller-blok"><span id="af-minuten">--</span><div class="afteller-label">minuten</div></div>
+      <div class="afteller-blok"><span id="af-seconden">--</span><div class="afteller-label">seconden</div></div>
+    </div>
+  </div>`;
 }
 
 // ===== WEEKPAGINA HTML RENDERER =====
@@ -712,17 +736,74 @@ function weekpaginaCSS() {
   .indienen-rij { display: flex; align-items: flex-start; gap: 16px; }
   .indienen-rij-icoon { font-size: 28px; min-width: 40px; text-align: center; }
   .indienen-rij-tekst { font-size: 11pt; line-height: 1.6; }
+  .afteller-blok {
+    background: rgba(255,255,255,0.15);
+    border-radius: 12px;
+    padding: 16px 24px;
+    min-width: 80px;
+  }
+  .afteller-blok span {
+    display: block;
+    font-size: 36pt;
+    font-weight: 900;
+    line-height: 1;
+    margin-bottom: 4px;
+  }
+  .afteller-label {
+    font-size: 10pt;
+    opacity: 0.75;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
   @media (max-width: 600px) {
     .sectie { padding: 20px 18px; gap: 14px; }
     .titelbalk { padding: 14px 18px; font-size: 15pt; }
     .route-sectie, .inhoudstafel { padding: 18px; }
+    .afteller-blok span { font-size: 24pt; }
   }
 </style>`;
 }
 
 // ===== JS VOOR EXPORT =====
-function weekpaginaScript() {
+function weekpaginaScript(vanafDatum = '') {
+  const aftellScript = vanafDatum ? `
+  const vanafMoment = new Date('${vanafDatum}').getTime();
+
+  function updateAfteller() {
+    const nu = Date.now();
+    const verschil = vanafMoment - nu;
+
+    if (verschil <= 0) {
+      // Tijd bereikt: verberg wachtscherm, toon inhoud
+      document.getElementById('wachtscherm').style.display = 'none';
+      document.getElementById('weekinhoud').style.display = 'block';
+      clearInterval(aftellerInterval);
+      return;
+    }
+
+    const dagen = Math.floor(verschil / (1000 * 60 * 60 * 24));
+    const uren = Math.floor((verschil % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+    const minuten = Math.floor((verschil % (1000 * 60 * 60)) / (1000 * 60));
+    const seconden = Math.floor((verschil % (1000 * 60)) / 1000);
+
+    document.getElementById('af-dagen').textContent = String(dagen).padStart(2, '0');
+    document.getElementById('af-uren').textContent = String(uren).padStart(2, '0');
+    document.getElementById('af-minuten').textContent = String(minuten).padStart(2, '0');
+    document.getElementById('af-seconden').textContent = String(seconden).padStart(2, '0');
+  }
+
+  // Controleer bij laden
+  if (Date.now() >= vanafMoment) {
+    document.getElementById('weekinhoud').style.display = 'block';
+  } else {
+    document.getElementById('wachtscherm').style.display = 'flex';
+    updateAfteller();
+    var aftellerInterval = setInterval(updateAfteller, 1000);
+  }
+` : '';
+
   return `<script>
+  ${aftellScript}
   function kiesRoute(route) {
     document.querySelectorAll('.route-tegel').forEach(t => t.classList.remove('actief'));
     document.querySelector('.route-tegel.' + route).classList.add('actief');
