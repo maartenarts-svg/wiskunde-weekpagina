@@ -1060,9 +1060,20 @@
           </div>
 
           <!-- Actieknoppen -->
-          <div id="wo-acties" style="display:none;gap:10px;margin-top:16px;">
+          <div id="wo-acties" style="display:none;gap:10px;margin-top:16px;align-items:flex-end;flex-wrap:wrap;">
             <button class="knop knop-secundair" onclick="window._slaWeekoverzichtOp()">&#128190; Volgorde opslaan</button>
             <button class="knop knop-primair" onclick="window._toonWeekoverzichtPreview()">&#128065; Preview</button>
+            <div style="display:flex;flex-direction:column;gap:4px;">
+              <label style="font-size:9.5pt;font-weight:700;color:var(--tekst-licht);text-transform:uppercase;letter-spacing:0.5px;">
+                Zichtbaar vanaf
+              </label>
+              <div style="display:flex;gap:8px;align-items:center;">
+                <input type="datetime-local" id="wo-zichtbaar-vanaf"
+                  style="padding:7px 10px;border:1.5px solid var(--grijs-rand);border-radius:8px;font-family:var(--font);font-size:10pt;">
+                <span style="font-size:9pt;color:var(--tekst-licht);">(leeg = meteen zichtbaar)</span>
+              </div>
+            </div>
+            <button class="knop knop-primair" onclick="window._exporteerWeekpagina()">&#11015; Exporteren als HTML</button>
           </div>
         </div>
 
