@@ -222,7 +222,16 @@ function valideerStap(nr) {
     if (!document.getElementById('taak-code').value.trim()) return fout('Vul een code in.');
     if (!document.getElementById('taak-titel').value.trim()) return fout('Vul een titel in.');
     const type = document.getElementById('taak-type').value;
-    if (type === 'taak' && !document.getElementById('taak-tijd').value.trim()) return fout('Vul de tijd in.');
+    if (type === 'taak') {
+      const geselecteerdeRoutes = ['G', 'B', 'Z'].filter(r => document.getElementById('route-' + r)?.checked);
+      const tijdKeuze = document.querySelector('input[name="tijd-keuze"]:checked')?.value || 'zelfde';
+      if (tijdKeuze === 'verschilt' && geselecteerdeRoutes.length >= 2) {
+        const ontbreekt = geselecteerdeRoutes.some(r => !document.querySelector(`.tijd-route-veld[data-route="${r}"]`)?.value.trim());
+        if (ontbreekt) return fout('Vul de tijd in voor alle geselecteerde routes.');
+      } else if (!document.getElementById('taak-tijd')?.value.trim()) {
+        return fout('Vul de tijd in.');
+      }
+    }
     if (!document.getElementById('taak-klas').value) return fout('Kies een klas.');
     if (!document.getElementById('taak-lesweek').value) return fout('Kies een lesweek.');
     const routes = ['G', 'B', 'Z', 'geen'].filter(r => document.getElementById('route-' + r)?.checked);
@@ -273,7 +282,25 @@ function verzamelStapData(nr) {
     huidigeTaak.code = document.getElementById('taak-code')?.value.trim() || '';
     huidigeTaak.titel = document.getElementById('taak-titel')?.value.trim() || '';
     huidigeTaak.type = type;
-    huidigeTaak.tijd = type === 'les' ? 'rooster' : (document.getElementById('taak-tijd')?.value.trim() || '');
+    if (type === 'les') {
+      huidigeTaak.tijd = 'rooster';
+      huidigeTaak.tijdVerschilt = false;
+      huidigeTaak.tijdPerRoute = {};
+    } else {
+      const geselecteerdeRoutes = ['G', 'B', 'Z'].filter(r => document.getElementById('route-' + r)?.checked);
+      const tijdKeuze = document.querySelector('input[name="tijd-keuze"]:checked')?.value || 'zelfde';
+      if (tijdKeuze === 'verschilt' && geselecteerdeRoutes.length >= 2) {
+        huidigeTaak.tijdVerschilt = true;
+        huidigeTaak.tijd = '';
+        const perRoute = {};
+        document.querySelectorAll('.tijd-route-veld').forEach(el => { perRoute[el.dataset.route] = el.value.trim(); });
+        huidigeTaak.tijdPerRoute = perRoute;
+      } else {
+        huidigeTaak.tijdVerschilt = false;
+        huidigeTaak.tijd = document.getElementById('taak-tijd')?.value.trim() || '';
+        huidigeTaak.tijdPerRoute = {};
+      }
+    }
     huidigeTaak.vak = document.getElementById('taak-vak')?.value || 'Wiskunde';
     huidigeTaak.klas = document.getElementById('taak-klas')?.value || '1a';
     huidigeTaak.schooljaar = document.getElementById('taak-schooljaar')?.value.trim() || huidigSchooljaar();
@@ -486,6 +513,8 @@ function initStap1() {
 
   // Schooljaar weken vullen
   vulLesweekDropdown(sjVeld?.value || huidigSchooljaar());
+  // Tijdveld bijwerken op basis van huidig type en routes
+  toggleTijdVeld();
 }
 
 export function vulLesweekDropdown(schooljaar) {
@@ -529,15 +558,55 @@ export function verwijderTaakRef(id) {
 export function toggleTijdVeld() {
   const type = document.getElementById('taak-type')?.value;
   const tijdVeld = document.getElementById('taak-tijd');
+  const routesKeuze = document.getElementById('tijd-routes-keuze');
+  const perRouteContainer = document.getElementById('tijd-per-route-container');
   if (!tijdVeld) return;
+
+  const geselecteerdeRoutes = ['G', 'B', 'Z'].filter(r => document.getElementById('route-' + r)?.checked);
+
   if (type === 'les') {
     tijdVeld.value = 'rooster';
     tijdVeld.readOnly = true;
+    tijdVeld.style.display = '';
     tijdVeld.style.background = '#f4f5f7';
+    if (routesKeuze) routesKeuze.style.display = 'none';
+    return;
+  }
+
+  if (tijdVeld.value === 'rooster') tijdVeld.value = '';
+  tijdVeld.readOnly = false;
+  tijdVeld.style.background = '';
+
+  if (geselecteerdeRoutes.length < 2) {
+    tijdVeld.style.display = '';
+    if (routesKeuze) routesKeuze.style.display = 'none';
+    return;
+  }
+
+  // ≥2 routes en type = taak
+  if (routesKeuze) routesKeuze.style.display = 'block';
+  const keuze = document.querySelector('input[name="tijd-keuze"]:checked')?.value || 'zelfde';
+
+  if (keuze === 'zelfde') {
+    tijdVeld.style.display = '';
+    if (perRouteContainer) perRouteContainer.style.display = 'none';
   } else {
-    tijdVeld.value = '';
-    tijdVeld.readOnly = false;
-    tijdVeld.style.background = '';
+    tijdVeld.style.display = 'none';
+    if (perRouteContainer) {
+      const huidigeWaarden = {};
+      perRouteContainer.querySelectorAll('.tijd-route-veld').forEach(el => {
+        huidigeWaarden[el.dataset.route] = el.value;
+      });
+      perRouteContainer.style.display = 'flex';
+      perRouteContainer.innerHTML = geselecteerdeRoutes.map(r => `
+        <div style="display:flex;flex-direction:column;gap:4px;">
+          <label style="font-size:9pt;font-weight:600;">${r}-route</label>
+          <input type="text" class="tijd-route-veld" data-route="${r}"
+                 placeholder="50" style="width:80px;"
+                 value="${huidigeWaarden[r] || ''}">
+        </div>
+      `).join('');
+    }
   }
 }
 
@@ -781,9 +850,10 @@ export async function slaaNieuwDoelOp(prefix, typeFilter) {
   };
 
   try {
-    const docRef = doc(collection(db, 'doelen'));
-    await setDoc(docRef, data);
-    const nieuw = { id: docRef.id, ...data };
+    const nieuwId = crypto.randomUUID();
+    const nieuw = { id: nieuwId, ...data };
+    const bestaandeDoelen = alleDoelen || await haalCache('doelen', db);
+    await setDoc(doc(db, 'doelen', 'wiskunde1a'), { items: [...bestaandeDoelen, nieuw] });
     if (alleDoelen) alleDoelen.push(nieuw);
     wisCache('doelen');
 
@@ -1081,9 +1151,10 @@ export async function slaaNieuwBronOp() {
     aangepastOp: new Date().toISOString(),
   };
   try {
-    const docRef = doc(collection(db, 'bronnen'));
-    await setDoc(docRef, data);
-    const nieuw = { id: docRef.id, ...data };
+    const nieuwId = crypto.randomUUID();
+    const nieuw = { id: nieuwId, ...data };
+    const bestaandeBronnen = alleBronnen || await haalCache('bronnen', db);
+    await setDoc(doc(db, 'bronnen', 'wiskunde1a'), { items: [...bestaandeBronnen, nieuw] });
     if (alleBronnen) alleBronnen.push(nieuw);
     wisCache('bronnen');
     geselecteerdeBronnen.push(nieuw);
@@ -1151,6 +1222,8 @@ export async function slaaTaakOp() {
     titel: huidigeTaak.titel || '',
     type: huidigeTaak.type || 'taak',
     tijd: huidigeTaak.tijd || '',
+    tijdVerschilt: huidigeTaak.tijdVerschilt || false,
+    tijdPerRoute: huidigeTaak.tijdPerRoute || {},
     vak: huidigeTaak.vak || 'Wiskunde',
     klas: huidigeTaak.klas || '',
     schooljaar: huidigeTaak.schooljaar || huidigSchooljaar(),
@@ -1172,14 +1245,11 @@ export async function slaaTaakOp() {
     templateId: huidigeTaak.templateId || null,
     templateParams: huidigeTaak.templateParams || {},
     templateInhoud: huidigeTaak.templateInhoud || '',
-    bronnen: (huidigeTaak.bronnenData || []).map(b => ({
-      id: b.id || '',
-      label: b.label || '',
-      type: b.type || 'andere',
-      link: b.link || '',
-      icoon: b.icoon || '',
-      standaard: b.standaard || false,
-    })),
+    bronnen: (huidigeTaak.bronnenData || []).map(b =>
+      b.standaard
+        ? { id: b.id || '', label: b.label || '', type: b.type || 'andere', link: b.link || '', icoon: b.icoon || '', standaard: true }
+        : { id: b.id || '' }
+    ),
     indienwijze: huidigeTaak.indienwijze || {},
     leerkrachtId: uid,
     aangepastOp: nu,
@@ -1205,6 +1275,7 @@ export async function slaaTaakOp() {
     document.getElementById('taak-stappen-wrapper').style.display = 'block';
     document.getElementById('taak-formulier').style.display = 'none';
     resetTaakState();
+    wisCache('taken');
     laadTaken();
     setTimeout(() => toonMelding('taken', `Taak "${data.code}" opgeslagen.`, 'succes'), 100);
   } catch (e) {
@@ -1323,7 +1394,10 @@ function renderTaakPreview(taak) {
       </div>`;
   }
 
-  const tijd = taak.tijd === 'rooster' ? 'rooster' : `${taak.tijd}'`;
+  const tijd = taak.tijd === 'rooster' ? 'rooster'
+    : (taak.tijdVerschilt && taak.tijdPerRoute)
+      ? Object.entries(taak.tijdPerRoute).map(([r, t]) => `${r}:${t}'`).join(' / ')
+      : `${taak.tijd}'`;
   return `
     <div class="taak-blok">
       <div class="titelbalk">${taak.code}: ${taak.titel} (${tijd})</div>
@@ -1371,8 +1445,21 @@ export async function laadTaken() {
     let taken = [...takenLijst];
 
     const filterSj = document.getElementById('filter-taak-schooljaar')?.value || '';
-    const filterWeek = document.getElementById('filter-taak-week')?.value || '';
     const filterStatus = document.getElementById('filter-taak-status')?.value || '';
+
+    // Week dropdown bijwerken op basis van geselecteerd schooljaar
+    const weekSel = document.getElementById('filter-taak-week');
+    if (weekSel) {
+      const huidigWeek = weekSel.value;
+      if (filterSj) {
+        const weken = genereerSchoolweken(filterSj);
+        weekSel.innerHTML = '<option value="">Alle weken</option>' +
+          weken.map(w => `<option value="${w.nr}" ${w.nr == huidigWeek ? 'selected' : ''}>${w.label}</option>`).join('');
+      } else {
+        weekSel.innerHTML = '<option value="">Alle weken</option>';
+      }
+    }
+    const filterWeek = weekSel?.value || '';
 
     if (filterSj) taken = taken.filter(t => t.schooljaar === filterSj);
     if (filterWeek) taken = taken.filter(t => t.lesweek == filterWeek);
@@ -1416,10 +1503,10 @@ export function nieuweTaak() {
   resetTaakState();
   taakRefTeller = 0;
   alleBestaandeTaken = [];
-  // Zorg dat wrapper altijd zichtbaar is, ongeacht vorige staat
   document.getElementById('taak-stappen-wrapper').style.display = 'block';
   document.getElementById('taak-preview-wrapper').style.display = 'none';
   document.getElementById('taak-formulier').style.display = 'block';
+  document.getElementById('taak-formulier').scrollIntoView({ behavior: 'smooth' });
   renderStap0();
   toonStap(0);
 }
@@ -1481,8 +1568,20 @@ function vulFormulierStap1(data, isKopie) {
     set('taak-code', isKopie ? '' : (data.code || ''));
     set('taak-titel', data.titel || '');
     set('taak-type', data.type || 'taak');
+    // Routes en tijdkeuze vóór toggleTijdVeld zetten
+    ['G','B','Z','geen'].forEach(r => { const el = document.getElementById('route-' + r); if (el) el.checked = (data.routes || []).includes(r); });
+    const tijdRadio = document.querySelector(`input[name="tijd-keuze"][value="${data.tijdVerschilt ? 'verschilt' : 'zelfde'}"]`);
+    if (tijdRadio) tijdRadio.checked = true;
     toggleTijdVeld();
-    set('taak-tijd', data.tijd === 'rooster' ? '' : (data.tijd || ''));
+    // Tijdwaarden invullen
+    if (data.tijdVerschilt && data.tijdPerRoute) {
+      Object.entries(data.tijdPerRoute).forEach(([route, waarde]) => {
+        const el = document.querySelector(`.tijd-route-veld[data-route="${route}"]`);
+        if (el) el.value = waarde;
+      });
+    } else {
+      set('taak-tijd', data.tijd === 'rooster' ? '' : (data.tijd || ''));
+    }
     set('taak-vak', data.vak || 'Wiskunde');
     set('taak-klas', data.klas || '1a');
     set('taak-schooljaar', data.schooljaar || huidigSchooljaar());
@@ -1493,8 +1592,6 @@ function vulFormulierStap1(data, isKopie) {
     set('taak-status', isKopie ? 'concept' : (data.status || 'concept'));
     vulLesweekDropdown(data.schooljaar || huidigSchooljaar());
     setTimeout(() => set('taak-lesweek', isKopie ? '' : (data.lesweek || '')), 50);
-    // Routes
-    ['G','B','Z','geen'].forEach(r => { const el = document.getElementById('route-' + r); if (el) el.checked = (data.routes || []).includes(r); });
     // Fases
     ['verkennen','verwerken','inprenten','evalueren','herhalen'].forEach(f => { const el = document.getElementById('fase-' + f); if (el) el.checked = (data.fases || []).includes(f); });
     // Extra papier

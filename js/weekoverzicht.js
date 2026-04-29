@@ -131,15 +131,19 @@ export async function laadWeekoverzicht() {
         const weekMatch = parseInt(t.lesweek) === weekGetal;
         return sjMatch && weekMatch;
       })
-      .sort((a, b) => (a.volgorde || 999) - (b.volgorde || 999));
+      .sort((a, b) => (a.code || '').localeCompare(b.code || '', 'nl'));
     console.log('Gefilterde taken:', alleTakenVanWeek.length, alleTakenVanWeek.map(t => t.code));
 
-    // Haal alle doelen op voor verrijking (via cache)
+    // Haal alle doelen en bronnen op voor verrijking (via cache)
     const doelenLijst = await haalCache('doelen', db);
     const alleDoelen = {};
     doelenLijst.forEach(d => { alleDoelen[d.id] = d; });
 
-    // Verrijk taken met doeldata (voorkennisData, scData)
+    const bronnenLijst = await haalCache('bronnen', db);
+    const alleBronnen = {};
+    bronnenLijst.forEach(b => { alleBronnen[b.id] = b; });
+
+    // Verrijk taken met doeldata en brondata
     alleTakenVanWeek = alleTakenVanWeek.map(taak => {
       const voorkennisData = (taak.voorkennis || [])
         .map(id => alleDoelen[id]).filter(Boolean);
@@ -148,7 +152,10 @@ export async function laadWeekoverzicht() {
         leren: scLijst.filter(s => s.scIndeling === 'leren').map(s => alleDoelen[s.id]).filter(Boolean),
         eval: scLijst.filter(s => s.scIndeling === 'eval').map(s => alleDoelen[s.id]).filter(Boolean),
       };
-      return { ...taak, voorkennisData, scData };
+      const bronnen = (taak.bronnen || []).map(b =>
+        b.standaard ? b : alleBronnen[b.id]
+      ).filter(Boolean);
+      return { ...taak, voorkennisData, scData, bronnen };
     });
 
     // Bouw kolomData op
@@ -166,6 +173,13 @@ export async function laadWeekoverzicht() {
         });
       }
     }
+
+    // Sorteer elke route op volgordePerRoute — niet op het algemene volgorde-veld
+    ['G', 'B', 'Z'].forEach(route => {
+      kolomData[route].sort((a, b) =>
+        (a.volgordePerRoute?.[route] || 999) - (b.volgordePerRoute?.[route] || 999)
+      );
+    });
 
     document.getElementById('wo-lader').style.display = 'none';
     renderKolommen();
@@ -215,7 +229,9 @@ function maakTegel(taak, route, idx) {
   div.dataset.route = route;
   div.draggable = true;
 
-  const tijd = taak.tijd === 'rooster' ? 'rooster (50\')' : `${taak.tijd}'`;
+  const tijd = taak.tijd === 'rooster' ? 'rooster (50\')'
+    : (taak.tijdVerschilt && taak.tijdPerRoute?.[route]) ? `${taak.tijdPerRoute[route]}'`
+    : `${taak.tijd}'`;
   const routes = (taak.routes || []).filter(r => r !== 'geen').join('/') || '—';
 
   div.innerHTML = `
@@ -336,32 +352,34 @@ function berekenVtTekst(taak, kolomLijst) {
   const [xStr, yStr] = vt.split('.');
   const x = parseInt(xStr);
   const y = parseInt(yStr);
-  if (!x || isNaN(y)) return ''; // 0.0 of ongeldig
+  if (!x || isNaN(y)) return '';
 
-  // Alle taken in deze kolom met hetzelfde x, gesorteerd op y
-  const reeks = kolomLijst
-    .filter(t => {
-      const [tx, ty] = (t._volgtijdelijkheid || '0.0').split('.');
-      return parseInt(tx) === x && !isNaN(parseInt(ty));
-    })
-    .sort((a, b) => {
-      const ya = parseInt((a._volgtijdelijkheid || '0.0').split('.')[1]);
-      const yb = parseInt((b._volgtijdelijkheid || '0.0').split('.')[1]);
-      return ya - yb;
-    });
+  // Groepeer alle taken in de reeks per y-waarde
+  const groepen = {};
+  kolomLijst.forEach(t => {
+    const [tx, ty] = (t._volgtijdelijkheid || '0.0').split('.');
+    if (parseInt(tx) === x && !isNaN(parseInt(ty))) {
+      const tyNr = parseInt(ty);
+      if (!groepen[tyNr]) groepen[tyNr] = [];
+      groepen[tyNr].push(t);
+    }
+  });
 
-  const eigenIdx = reeks.findIndex(t => t.id === taak.id);
+  const yWaarden = Object.keys(groepen).map(Number).sort((a, b) => a - b);
+  const eigenIdx = yWaarden.indexOf(y);
   if (eigenIdx === -1) return '';
 
-  const voorganger = eigenIdx > 0 ? reeks[eigenIdx - 1] : null;
-  const opvolger = eigenIdx < reeks.length - 1 ? reeks[eigenIdx + 1] : null;
+  const vorigeGroep = eigenIdx > 0 ? groepen[yWaarden[eigenIdx - 1]] : [];
+  const volgendeGroep = eigenIdx < yWaarden.length - 1 ? groepen[yWaarden[eigenIdx + 1]] : [];
 
-  if (voorganger && opvolger) {
-    return `Opgelet, deze taak kun je pas maken na de taak <strong>${voorganger.code}</strong> en moet je maken voor de taak <strong>${opvolger.code}</strong>.`;
-  } else if (voorganger) {
-    return `Opgelet, deze taak kun je pas maken na de taak <strong>${voorganger.code}</strong>.`;
-  } else if (opvolger) {
-    return `Opgelet, deze taak moet je maken voor de taak <strong>${opvolger.code}</strong>.`;
+  const fmt = taken => taken.map(t => `<strong>${t.code}</strong>`).join(' en ');
+
+  if (vorigeGroep.length && volgendeGroep.length) {
+    return `Opgelet, deze taak kun je pas maken na de taak ${fmt(vorigeGroep)} en moet je maken voor de taak ${fmt(volgendeGroep)}.`;
+  } else if (vorigeGroep.length) {
+    return `Opgelet, deze taak kun je pas maken na de taak ${fmt(vorigeGroep)}.`;
+  } else if (volgendeGroep.length) {
+    return `Opgelet, deze taak moet je maken voor de taak ${fmt(volgendeGroep)}.`;
   }
   return '';
 }
@@ -377,7 +395,8 @@ export function toonWeekoverzichtPreview() {
   });
 
   // Genereer volledige HTML (zelfde als export) en toon in iframe
-  const volledigeHTML = bouwVolledigeHTML(actueleKolommen, huidigWeekWO);
+  const schoolWeekNr = document.getElementById('wo-school-week')?.value?.trim() || huidigWeekWO;
+  const volledigeHTML = bouwVolledigeHTML(actueleKolommen, huidigWeekWO, '', schoolWeekNr);
   const iframe = document.getElementById('wo-preview-iframe');
   if (!iframe) return;
   iframe.srcdoc = volledigeHTML;
@@ -402,7 +421,8 @@ export function exporteerWeekpagina() {
   });
 
   const vanafInput = document.getElementById('wo-zichtbaar-vanaf')?.value || '';
-  const volledigeHTML = bouwVolledigeHTML(actueleKolommen, huidigWeekWO, vanafInput);
+  const schoolWeekNr = document.getElementById('wo-school-week')?.value?.trim() || huidigWeekWO;
+  const volledigeHTML = bouwVolledigeHTML(actueleKolommen, huidigWeekWO, vanafInput, schoolWeekNr);
 
   const blob = new Blob([volledigeHTML], { type: 'text/html;charset=utf-8' });
   const url = URL.createObjectURL(blob);
@@ -414,14 +434,14 @@ export function exporteerWeekpagina() {
 }
 
 // ===== VOLLEDIGE HTML BOUWEN (voor preview én export) =====
-function bouwVolledigeHTML(actueleKolommen, weekNr, vanafDatum = '') {
-  const body = renderWeekpaginaHTML(actueleKolommen, weekNr, true);
+function bouwVolledigeHTML(actueleKolommen, weekNr, vanafDatum = '', schoolWeekNr = weekNr) {
+  const body = renderWeekpaginaHTML(actueleKolommen, schoolWeekNr, true);
   return `<!DOCTYPE html>
 <html lang="nl">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Week ${weekNr}</title>
+<title>Week ${schoolWeekNr}</title>
 <link href="https://fonts.googleapis.com/css2?family=Lato:wght@300;400;700;900&display=swap" rel="stylesheet">
 ${weekpaginaCSS()}
 </head>
@@ -474,7 +494,9 @@ function renderWeekpaginaHTML(actueleKolommen, weekNr, isExport) {
   // Genereer HTML per taakblok
   const blokkenHtml = taakBlokken.map(({ taak, route, idx, vtTekst }) => {
     const taakId = `taak-${taak.id}-${route}`;
-    const tijd = taak.tijd === 'rooster' ? 'rooster' : `${taak.tijd}'`;
+    const tijd = taak.tijd === 'rooster' ? 'rooster'
+      : (taak.tijdVerschilt && taak.tijdPerRoute?.[route]) ? `${taak.tijdPerRoute[route]}'`
+      : `${taak.tijd}'`;
 
     // Instructie
     let instructieHtml = '';
@@ -599,7 +621,9 @@ function renderWeekpaginaHTML(actueleKolommen, weekNr, isExport) {
   // Inhoudstafel
   const inhoudstafelLinks = ['G', 'B', 'Z'].flatMap(route =>
     (actueleKolommen[route] || []).map(taak => {
-      const tijd = taak.tijd === 'rooster' ? 'rooster' : `${taak.tijd}'`;
+      const tijd = taak.tijd === 'rooster' ? 'rooster'
+      : (taak.tijdVerschilt && taak.tijdPerRoute?.[route]) ? `${taak.tijdPerRoute[route]}'`
+      : `${taak.tijd}'`;
       return `  <a href="#taak-${taak.id}-${route}" class="inhoudslink" data-routes="${route}">${taak.code}: ${taak.titel} (${tijd})</a>`;
     })
   ).join('\n');
@@ -610,7 +634,7 @@ function renderWeekpaginaHTML(actueleKolommen, weekNr, isExport) {
 </header>
 
 <div class="route-sectie">
-  <div class="route-label">Kies jouw route</div>
+  <div class="route-label">Klik op jouw route</div>
   <div class="route-tegels">
     <div class="route-tegel G" onclick="kiesRoute('G')">G-route</div>
     <div class="route-tegel B" onclick="kiesRoute('B')">B-route</div>

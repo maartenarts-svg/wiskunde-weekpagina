@@ -1,9 +1,9 @@
 import { db } from './firebase-config.js';
 import {
-  collection, doc, setDoc, getDoc, getDocs, deleteDoc
+  doc, setDoc
 } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
 import { toonMelding, niveauBadge } from './ui.js';
-import { wisCache, zetResetSignaal } from './appCache.js';
+import { haalCache, wisCache, zetResetSignaal } from './appCache.js';
 
 // ===== STATE =====
 let cache = null;
@@ -143,25 +143,31 @@ export async function importeerCSV(event) {
   const importTekst = document.getElementById('import-tekst');
   voortgang.style.display = 'block';
 
-  let opgeslagen = 0, fouten = 0;
-  for (let i = 0; i < doelen.length; i++) {
-    const d = doelen[i];
-    importTekst.textContent = `Bezig... ${i + 1} van ${doelen.length} (${d.code})`;
-    balk.style.width = ((i + 1) / doelen.length * 100) + '%';
-    try {
-      await setDoc(doc(db, 'leerplandoelen', d.code), d);
-      opgeslagen++;
-    } catch (e) { fouten++; }
-    if (i % 5 === 4) await new Promise(r => setTimeout(r, 200));
-  }
+  importTekst.textContent = `Bezig... ${doelen.length} leerplandoelen samenvoegen...`;
+  balk.style.width = '50%';
 
-  cache = null; wisCache('leerplandoelen'); zetResetSignaal('leerplanDropdown');
-  voortgang.style.display = 'none';
-  event.target.value = '';
-  toonMelding('leerplandoelen',
-    fouten === 0 ? `✓ ${opgeslagen} leerplandoelen geïmporteerd.` : `${opgeslagen} geïmporteerd, ${fouten} mislukt.`,
-    fouten === 0 ? 'succes' : 'fout'
-  );
+  try {
+    const bestaandeItems = cache || (await haalCache('leerplandoelen', db)).slice();
+    const nieuweCodes = new Set(doelen.map(d => d.code));
+    const items = [
+      ...bestaandeItems.filter(d => !nieuweCodes.has(d.code)),
+      ...doelen.map(d => ({ id: d.code, ...d }))
+    ];
+
+    importTekst.textContent = 'Opslaan naar Firestore...';
+    balk.style.width = '90%';
+    await setDoc(doc(db, 'leerplandoelen', 'wiskunde1a'), { items });
+    balk.style.width = '100%';
+
+    cache = null; wisCache('leerplandoelen'); zetResetSignaal('leerplanDropdown');
+    voortgang.style.display = 'none';
+    event.target.value = '';
+    toonMelding('leerplandoelen', `✓ ${doelen.length} leerplandoelen geïmporteerd.`, 'succes');
+  } catch (e) {
+    voortgang.style.display = 'none';
+    event.target.value = '';
+    toonMelding('leerplandoelen', 'Fout bij importeren: ' + e.message, 'fout');
+  }
   laadLeerplandoelen();
 }
 
@@ -183,7 +189,16 @@ export async function slaLeerplandoelOp() {
   };
 
   try {
-    await setDoc(doc(db, 'leerplandoelen', bewerkId || code), data);
+    if (!cache) cache = (await haalCache('leerplandoelen', db)).slice();
+    let items = [...cache];
+    const doelId = bewerkId || code;
+    const idx = items.findIndex(d => d.id === doelId);
+    if (idx !== -1) {
+      items[idx] = { id: doelId, ...data };
+    } else {
+      items.push({ id: code, ...data });
+    }
+    await setDoc(doc(db, 'leerplandoelen', 'wiskunde1a'), { items });
     cache = null; wisCache('leerplandoelen'); zetResetSignaal('leerplanDropdown');
     toonMelding('leerplandoelen', `Leerplandoel ${code} opgeslagen.`, 'succes');
     annuleerLeerplandoel();
@@ -201,21 +216,15 @@ export async function laadLeerplandoelen() {
   document.getElementById('lp-leeg').style.display = 'none';
 
   try {
-    if (!cache || filterNiveau) {
-      const snap = await getDocs(collection(db, 'leerplandoelen'));
-      let doelen = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    if (!cache) {
+      let doelen = (await haalCache('leerplandoelen', db)).slice();
       doelen.sort((a, b) => {
         const volgorde = c => c.startsWith('BG') ? 2 : c.startsWith('V') ? 1 : 0;
         const vA = volgorde(a.code), vB = volgorde(b.code);
         if (vA !== vB) return vA - vB;
         return a.code.localeCompare(b.code, 'nl', { numeric: true });
       });
-      if (!filterNiveau) cache = doelen;
-      else {
-        doelen = doelen.filter(d => d.niveau === filterNiveau);
-        renderLeerplandoelen(doelen);
-        return;
-      }
+      cache = doelen;
     }
     renderLeerplandoelen(filterNiveau ? cache.filter(d => d.niveau === filterNiveau) : cache);
   } catch (e) {
@@ -246,9 +255,18 @@ function renderLeerplandoelen(doelen) {
 // ===== BEWERKEN =====
 export async function bewerkLeerplandoel(id) {
   try {
-    const snap = await getDoc(doc(db, 'leerplandoelen', id));
-    if (!snap.exists()) return;
-    const d = snap.data();
+    if (!cache) {
+      let doelen = (await haalCache('leerplandoelen', db)).slice();
+      doelen.sort((a, b) => {
+        const volgorde = c => c.startsWith('BG') ? 2 : c.startsWith('V') ? 1 : 0;
+        const vA = volgorde(a.code), vB = volgorde(b.code);
+        if (vA !== vB) return vA - vB;
+        return a.code.localeCompare(b.code, 'nl', { numeric: true });
+      });
+      cache = doelen;
+    }
+    const d = cache.find(d => d.id === id);
+    if (!d) return;
     document.getElementById('lp-niveau').value = d.niveau;
     document.getElementById('lp-nummer').value = d.nummer;
     document.getElementById('lp-code').value = d.code;
@@ -271,7 +289,9 @@ export async function bewerkLeerplandoel(id) {
 export async function verwijderLeerplandoel(id, code) {
   if (!confirm(`Ben je zeker dat je leerplandoel ${code} wil verwijderen?`)) return;
   try {
-    await deleteDoc(doc(db, 'leerplandoelen', id));
+    if (!cache) cache = (await haalCache('leerplandoelen', db)).slice();
+    const items = cache.filter(d => d.id !== id);
+    await setDoc(doc(db, 'leerplandoelen', 'wiskunde1a'), { items });
     cache = null; wisCache('leerplandoelen'); zetResetSignaal('leerplanDropdown');
     toonMelding('leerplandoelen', `Leerplandoel ${code} verwijderd.`, 'succes');
     laadLeerplandoelen();

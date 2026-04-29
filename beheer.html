@@ -59,6 +59,10 @@
       <div class="menu-item" id="menu-weekoverzicht" data-sectie="weekoverzicht">
         <span class="menu-icoon">🗓️</span> Weekoverzicht
       </div>
+      <div class="menu-scheiding"></div>
+      <div class="menu-item" id="menu-migratie" data-sectie="migratie">
+        <span class="menu-icoon">🔄</span> Migratie
+      </div>
     </nav>
 
     <!-- HOOFDINHOUD -->
@@ -713,12 +717,35 @@
                 <div class="formulier-groep"><label>Type <span style="color:var(--rood);">*</span></label>
                   <select id="taak-type" onchange="window._toggleTijdVeld()"><option value="taak">Taak</option><option value="les">Les</option></select>
                 </div>
-                <div class="formulier-groep"><label>Tijd <span style="color:var(--rood);">*</span></label><input type="text" id="taak-tijd" placeholder="50"></div>
                 <div class="formulier-groep"><label>Vak <span style="color:var(--rood);">*</span></label>
                   <select id="taak-vak"><option value="Wiskunde">Wiskunde</option><option value="Frans">Frans</option><option value="Nederlands">Nederlands</option></select>
                 </div>
                 <div class="formulier-groep"><label>Klas <span style="color:var(--rood);">*</span></label>
                   <select id="taak-klas"><option value="1a">1a</option><option value="1b">1b</option></select>
+                </div>
+              </div>
+              <div class="formulier-rij">
+                <div class="formulier-groep">
+                  <label>Routes <span style="color:var(--rood);">*</span></label>
+                  <div style="display:flex;flex-wrap:wrap;gap:12px;margin-top:4px;">
+                    <label class="check-label"><input type="checkbox" id="route-G" value="G" onchange="window._toggleTijdVeld()"> G-route</label>
+                    <label class="check-label"><input type="checkbox" id="route-B" value="B" onchange="window._toggleTijdVeld()"> B-route</label>
+                    <label class="check-label"><input type="checkbox" id="route-Z" value="Z" onchange="window._toggleTijdVeld()"> Z-route</label>
+                    <label class="check-label"><input type="checkbox" id="route-geen" value="geen"> Geen route</label>
+                  </div>
+                </div>
+              </div>
+              <div class="formulier-rij">
+                <div id="tijd-groep" class="formulier-groep">
+                  <label>Tijd <span style="color:var(--rood);">*</span></label>
+                  <input type="text" id="taak-tijd" placeholder="50" style="max-width:100px;">
+                  <div id="tijd-routes-keuze" style="display:none;margin-top:8px;">
+                    <div style="display:flex;gap:16px;margin-bottom:8px;">
+                      <label class="check-label"><input type="radio" name="tijd-keuze" value="zelfde" checked onchange="window._toggleTijdVeld()"> Zelfde voor alle routes</label>
+                      <label class="check-label"><input type="radio" name="tijd-keuze" value="verschilt" onchange="window._toggleTijdVeld()"> Andere tijd per route</label>
+                    </div>
+                    <div id="tijd-per-route-container" style="display:flex;gap:12px;flex-wrap:wrap;"></div>
+                  </div>
                 </div>
               </div>
               <div class="formulier-rij">
@@ -737,17 +764,6 @@
               <div class="formulier-rij">
                 <div class="formulier-groep vol"><label>Tags (kommagescheiden)</label>
                   <input type="text" id="taak-tags" placeholder="bv. breuken, optellen">
-                </div>
-              </div>
-              <div class="formulier-rij">
-                <div class="formulier-groep">
-                  <label>Routes <span style="color:var(--rood);">*</span></label>
-                  <div style="display:flex;flex-wrap:wrap;gap:12px;margin-top:4px;">
-                    <label class="check-label"><input type="checkbox" id="route-G" value="G"> G-route</label>
-                    <label class="check-label"><input type="checkbox" id="route-B" value="B"> B-route</label>
-                    <label class="check-label"><input type="checkbox" id="route-Z" value="Z"> Z-route</label>
-                    <label class="check-label"><input type="checkbox" id="route-geen" value="geen"> Geen route</label>
-                  </div>
                 </div>
               </div>
               <div class="formulier-rij">
@@ -1065,6 +1081,13 @@
             <button class="knop knop-primair" onclick="window._toonWeekoverzichtPreview()">&#128065; Preview</button>
             <div style="display:flex;flex-direction:column;gap:4px;">
               <label style="font-size:9.5pt;font-weight:700;color:var(--tekst-licht);text-transform:uppercase;letter-spacing:0.5px;">
+                Week
+              </label>
+              <input type="text" id="wo-school-week" placeholder="bv. 12"
+                style="padding:7px 10px;border:1.5px solid var(--grijs-rand);border-radius:8px;font-family:var(--font);font-size:10pt;width:120px;">
+            </div>
+            <div style="display:flex;flex-direction:column;gap:4px;">
+              <label style="font-size:9.5pt;font-weight:700;color:var(--tekst-licht);text-transform:uppercase;letter-spacing:0.5px;">
                 Zichtbaar vanaf
               </label>
               <div style="display:flex;gap:8px;align-items:center;">
@@ -1094,12 +1117,30 @@
 
       </div>
 
+      <!-- MIGRATIE -->
+      <div class="sectie" id="sectie-migratie">
+        <div class="pagina-titel">Migratie</div>
+        <div class="pagina-ondertitel">Verplaats bestaande data naar de samengebundelde structuur (één document per collectie).</div>
+
+        <div class="kaart">
+          <div class="kaart-titel">Migratie uitvoeren</div>
+          <p style="margin-bottom:16px;">
+            Dit verplaatst alle bestaande documenten uit de collecties <strong>bronnen</strong>, <strong>doelen</strong>
+            en <strong>leerplandoelen</strong> naar één document per collectie (<code>wiskunde1a</code>).
+            De oude documenten worden daarna verwijderd. <strong>Voer dit slechts eenmaal uit.</strong>
+          </p>
+          <button class="knop knop-primair" id="migratie-knop" onclick="window._startMigratie()">Migratie starten</button>
+          <div id="migratie-log" style="display:none; margin-top:16px; background:var(--achtergrond); border:1px solid var(--rand); border-radius:6px; padding:12px; font-family:monospace; font-size:10pt; white-space:pre-wrap; max-height:300px; overflow-y:auto;"></div>
+        </div>
+      </div>
+
     </main>
   </div>
 </div>
 
 <script type="module">
   import { initAuth } from './js/auth.js';
+  import { migreerNaarWiskunde1a } from './js/migratie.js';
   import { toonSectie } from './js/ui.js';
   import {
     laadLeerplandoelen, slaLeerplandoelOp, bewerkLeerplandoel, verwijderLeerplandoel,
@@ -1236,6 +1277,25 @@
     document.querySelectorAll('#taak-stap-3 .tabblad-knop').forEach(k => k.classList.remove('actief'));
     document.getElementById('sc-tab-' + id).classList.add('actief');
     knop.classList.add('actief');
+  };
+
+  window._startMigratie = async () => {
+    const knop = document.getElementById('migratie-knop');
+    const log = document.getElementById('migratie-log');
+    knop.disabled = true;
+    knop.textContent = 'Bezig...';
+    log.style.display = 'block';
+    log.textContent = '';
+    try {
+      await migreerNaarWiskunde1a(tekst => {
+        log.textContent += tekst + '\n';
+        log.scrollTop = log.scrollHeight;
+      });
+    } catch (e) {
+      log.textContent += '❌ Fout: ' + e.message + '\n';
+    }
+    knop.disabled = false;
+    knop.textContent = 'Opnieuw uitvoeren';
   };
 
   document.addEventListener('DOMContentLoaded', () => {

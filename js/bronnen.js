@@ -1,6 +1,6 @@
 import { db } from './firebase-config.js';
 import {
-  collection, doc, setDoc, getDoc, getDocs, deleteDoc
+  doc, setDoc
 } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
 import { toonMelding } from './ui.js';
 import { haalCache, wisCache } from './appCache.js';
@@ -34,7 +34,7 @@ export async function slaBronOp() {
   const label = document.getElementById('bron-label').value.trim();
   if (!label) { toonMelding('bronnen', 'Vul minstens een label in.', 'fout'); return; }
 
-  const data = {
+  const velden = {
     label,
     type: document.getElementById('bron-type').value,
     link: document.getElementById('bron-link').value.trim(),
@@ -44,8 +44,17 @@ export async function slaBronOp() {
   };
 
   try {
-    const docRef = bewerkId ? doc(db, 'bronnen', bewerkId) : doc(collection(db, 'bronnen'));
-    await setDoc(docRef, data);
+    if (!cache) cache = (await haalCache('bronnen', db)).slice().sort((a, b) => a.label.localeCompare(b.label, 'nl'));
+    let items = [...cache];
+
+    if (bewerkId) {
+      const idx = items.findIndex(b => b.id === bewerkId);
+      if (idx !== -1) items[idx] = { ...items[idx], ...velden };
+    } else {
+      items.push({ id: crypto.randomUUID(), ...velden });
+    }
+
+    await setDoc(doc(db, 'bronnen', 'wiskunde1a'), { items });
     cache = null; wisCache('bronnen');
     toonMelding('bronnen', 'Bron opgeslagen.', 'succes');
     annuleerBron();
@@ -98,9 +107,9 @@ export async function laadBronnen() {
 // ===== BEWERKEN =====
 export async function bewerkBron(id) {
   try {
-    const snap = await getDoc(doc(db, 'bronnen', id));
-    if (!snap.exists()) return;
-    const b = snap.data();
+    if (!cache) cache = (await haalCache('bronnen', db)).slice().sort((a, b) => a.label.localeCompare(b.label, 'nl'));
+    const b = cache.find(b => b.id === id);
+    if (!b) return;
     document.getElementById('bron-label').value = b.label || '';
     document.getElementById('bron-type').value = b.type || 'website';
     document.getElementById('bron-link').value = b.link || '';
@@ -119,7 +128,9 @@ export async function bewerkBron(id) {
 export async function verwijderBron(id) {
   if (!confirm('Ben je zeker dat je deze bron wil verwijderen?')) return;
   try {
-    await deleteDoc(doc(db, 'bronnen', id));
+    if (!cache) cache = (await haalCache('bronnen', db)).slice().sort((a, b) => a.label.localeCompare(b.label, 'nl'));
+    const items = cache.filter(b => b.id !== id);
+    await setDoc(doc(db, 'bronnen', 'wiskunde1a'), { items });
     cache = null; wisCache('bronnen');
     toonMelding('bronnen', 'Bron verwijderd.', 'succes');
     laadBronnen();

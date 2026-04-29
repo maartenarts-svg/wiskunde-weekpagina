@@ -8,7 +8,9 @@
  *   wisCache('doelen');
  */
 
-import { collection, getDocs } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
+import { collection, getDocs, doc, getDoc } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
+
+const enkelvoudigeCollecties = new Set(['bronnen', 'doelen', 'leerplandoelen']);
 
 const cache = {};
 const bezig = {}; // voorkomt dubbele parallelle reads
@@ -33,9 +35,14 @@ export async function haalCache(naam, db, forceer = false) {
 
   try {
     console.log(`[Cache] Laden: ${naam}`);
-    const snap = await getDocs(collection(db, naam));
-    cache[naam] = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-    console.log(`[Cache] ${naam}: ${cache[naam].length} docs`);
+    if (enkelvoudigeCollecties.has(naam)) {
+      const snap = await getDoc(doc(db, naam, 'wiskunde1a'));
+      cache[naam] = snap.exists() ? (snap.data().items || []) : [];
+    } else {
+      const snap = await getDocs(collection(db, naam));
+      cache[naam] = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    }
+    console.log(`[Cache] ${naam}: ${cache[naam].length} ${enkelvoudigeCollecties.has(naam) ? 'items' : 'docs'}`);
   } finally {
     delete bezig[naam];
     resolve?.();

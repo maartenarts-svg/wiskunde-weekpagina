@@ -1,6 +1,6 @@
 import { db } from './firebase-config.js';
 import {
-  collection, doc, setDoc, getDoc, getDocs, deleteDoc
+  doc, setDoc
 } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
 import { toonMelding } from './ui.js';
 import { haalCache, wisCache, checkResetSignaal } from './appCache.js';
@@ -244,24 +244,28 @@ export async function importeerDoelenCSV(event) {
   const importTekst = document.getElementById('doelen-import-tekst');
   voortgang.style.display = 'block';
 
-  let opgeslagen = 0, fouten = 0;
-  for (let i = 0; i < doelen.length; i++) {
-    importTekst.textContent = `Bezig... ${i + 1} van ${doelen.length}`;
-    balk.style.width = ((i + 1) / doelen.length * 100) + '%';
-    try {
-      await setDoc(doc(collection(db, 'doelen')), doelen[i]);
-      opgeslagen++;
-    } catch (e) { fouten++; }
-    if (i % 5 === 4) await new Promise(r => setTimeout(r, 200));
-  }
+  importTekst.textContent = `Bezig... ${doelen.length} doelen voorbereiden...`;
+  balk.style.width = '50%';
 
-  cache = null;
-  voortgang.style.display = 'none';
-  event.target.value = '';
-  toonMelding('doelen',
-    fouten === 0 ? `✓ ${opgeslagen} doelen geïmporteerd.` : `${opgeslagen} geïmporteerd, ${fouten} mislukt.`,
-    fouten === 0 ? 'succes' : 'fout'
-  );
+  try {
+    const bestaandeItems = cache || await haalCache('doelen', db);
+    const nieuweItems = doelen.map(d => ({ id: crypto.randomUUID(), ...d }));
+    const items = [...bestaandeItems, ...nieuweItems];
+
+    importTekst.textContent = 'Opslaan naar Firestore...';
+    balk.style.width = '90%';
+    await setDoc(doc(db, 'doelen', 'wiskunde1a'), { items });
+    balk.style.width = '100%';
+
+    cache = null; wisCache('doelen');
+    voortgang.style.display = 'none';
+    event.target.value = '';
+    toonMelding('doelen', `✓ ${doelen.length} doelen geïmporteerd.`, 'succes');
+  } catch (e) {
+    voortgang.style.display = 'none';
+    event.target.value = '';
+    toonMelding('doelen', 'Fout bij importeren: ' + e.message, 'fout');
+  }
   laadDoelen();
 }
 
@@ -287,8 +291,15 @@ export async function slaDoelOp() {
   };
 
   try {
-    const docRef = bewerkId ? doc(db, 'doelen', bewerkId) : doc(collection(db, 'doelen'));
-    await setDoc(docRef, data);
+    if (!cache) cache = await haalCache('doelen', db);
+    let items = [...cache];
+    if (bewerkId) {
+      const idx = items.findIndex(d => d.id === bewerkId);
+      if (idx !== -1) items[idx] = { ...items[idx], ...data };
+    } else {
+      items.push({ id: crypto.randomUUID(), ...data });
+    }
+    await setDoc(doc(db, 'doelen', 'wiskunde1a'), { items });
     cache = null; wisCache('doelen');
     toonMelding('doelen', 'Doel opgeslagen.', 'succes');
     annuleerDoel();
@@ -365,9 +376,9 @@ export async function laadDoelen() {
 // ===== BEWERKEN =====
 export async function bewerkDoel(id) {
   try {
-    const snap = await getDoc(doc(db, 'doelen', id));
-    if (!snap.exists()) return;
-    const d = snap.data();
+    if (!cache) cache = await haalCache('doelen', db);
+    const d = cache.find(d => d.id === id);
+    if (!d) return;
     document.getElementById('doel-tekst').value = d.tekst || '';
     document.getElementById('doel-type').value = d.type || 'succescriterium';
     document.getElementById('leerplan-container').querySelectorAll('.subdoel-item').forEach(e => e.remove());
@@ -394,7 +405,9 @@ export async function bewerkDoel(id) {
 export async function verwijderDoel(id) {
   if (!confirm('Ben je zeker dat je dit doel wil verwijderen?')) return;
   try {
-    await deleteDoc(doc(db, 'doelen', id));
+    if (!cache) cache = await haalCache('doelen', db);
+    const items = cache.filter(d => d.id !== id);
+    await setDoc(doc(db, 'doelen', 'wiskunde1a'), { items });
     cache = null; wisCache('doelen');
     toonMelding('doelen', 'Doel verwijderd.', 'succes');
     laadDoelen();
